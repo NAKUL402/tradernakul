@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app/AppShell";
 import { Badge, Panel } from "@/components/app/ui-kit";
-import { money, pnlUsd, trades } from "@/lib/trades";
+import { fetchUserTrades, money, pnlUsd, trades as defaultMockTrades, type Trade } from "@/lib/trades";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -18,11 +18,17 @@ export const Route = createFileRoute("/calendar")({
   component: CalendarPage,
 });
 
-const byDay = new Map<string, number>();
-for (const t of trades) byDay.set(t.date, (byDay.get(t.date) ?? 0) + pnlUsd(t));
-
 function CalendarPage() {
+  const [userTrades, setUserTrades] = useState<Trade[]>(defaultMockTrades);
   const [offset, setOffset] = useState(0);
+
+  useEffect(() => {
+    fetchUserTrades().then((data) => setUserTrades(data));
+  }, []);
+
+  const byDay = new Map<string, number>();
+  for (const t of userTrades) byDay.set(t.date, (byDay.get(t.date) ?? 0) + pnlUsd(t));
+
   const base = new Date(Date.UTC(2026, 6 + offset, 1));
   const year = base.getUTCFullYear();
   const month = base.getUTCMonth();

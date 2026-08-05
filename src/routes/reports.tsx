@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app/AppShell";
 import { Badge, Panel } from "@/components/app/ui-kit";
 import { BarsChart, TrendChart } from "@/components/app/charts";
-import { money, monthly, pct, stats } from "@/lib/trades";
+import { fetchUserTrades, money, monthly, pct, stats, trades as defaultMockTrades, type Trade } from "@/lib/trades";
 import { Download, FileText } from "lucide-react";
 
 export const Route = createFileRoute("/reports")({
@@ -18,8 +19,14 @@ export const Route = createFileRoute("/reports")({
 });
 
 function Reports() {
-  const months = monthly();
-  const s = stats();
+  const [userTrades, setUserTrades] = useState<Trade[]>(defaultMockTrades);
+
+  useEffect(() => {
+    fetchUserTrades().then((data) => setUserTrades(data));
+  }, []);
+
+  const months = monthly(userTrades);
+  const s = stats(userTrades);
   const weekly = months.slice(-6).map((m, i) => ({ label: `Week ${i + 1}`, pnl: Math.round(m.pnl / 4), winRate: m.winRate }));
 
   return (

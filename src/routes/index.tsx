@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app/AppShell";
 import { Panel, StatCard, Badge } from "@/components/app/ui-kit";
 import { BarsChart, EquityChart, WinLossPie } from "@/components/app/charts";
-import { equityCurve, monthly, money, pct, pnlUsd, stats, trades } from "@/lib/trades";
+import { equityCurve, fetchUserTrades, monthly, money, pct, pnlUsd, stats, trades as defaultMockTrades, type Trade } from "@/lib/trades";
 import { Activity, Flame, Percent, Scale, Snowflake, Target, TrendingDown, TrendingUp, Trophy, Wallet } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -18,10 +19,16 @@ export const Route = createFileRoute("/")({
 });
 
 function Dashboard() {
-  const s = stats();
-  const eq = equityCurve();
-  const months = monthly();
-  const recent = [...trades].slice(-8).reverse();
+  const [userTrades, setUserTrades] = useState<Trade[]>(defaultMockTrades);
+
+  useEffect(() => {
+    fetchUserTrades().then((data) => setUserTrades(data));
+  }, []);
+
+  const s = stats(userTrades);
+  const eq = equityCurve(userTrades);
+  const months = monthly(userTrades);
+  const recent = [...userTrades].slice(-8).reverse();
   const weekly = months.slice(-7).map((m, i) => ({ label: `W${i + 1}`, pnl: Math.round(m.pnl / 4) }));
 
   return (

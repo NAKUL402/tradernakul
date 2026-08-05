@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app/AppShell";
 import { Badge, Panel, StatCard } from "@/components/app/ui-kit";
 import { BarsChart, DrawdownChart, TrendChart } from "@/components/app/charts";
-import { DOW, equityCurve, groupStats, money, monthly, pct, stats, trades } from "@/lib/trades";
+import { DOW, equityCurve, fetchUserTrades, groupStats, money, monthly, pct, stats, trades as defaultMockTrades, type Trade } from "@/lib/trades";
 
 export const Route = createFileRoute("/analytics")({
   head: () => ({
@@ -41,15 +42,21 @@ function Table({ rows }: { rows: { name: string; trades: number; winRate: number
 }
 
 function Analytics() {
-  const s = stats();
-  const eq = equityCurve();
-  const byPair = groupStats(trades, (t) => t.pair).sort((a, b) => b.pnl - a.pnl);
-  const bySession = groupStats(trades, (t) => t.session);
-  const bySetup = groupStats(trades, (t) => t.setup).sort((a, b) => b.pnl - a.pnl);
-  const byDow = groupStats(trades, (t) => DOW[new Date(`${t.date}T00:00:00Z`).getUTCDay()]!).map((g) => ({ ...g, label: g.name }));
-  const byHour = groupStats(trades, (t) => `${t.entryTime.slice(0, 2)}:00`).sort((a, b) => (a.name < b.name ? -1 : 1)).map((g) => ({ ...g, label: g.name }));
-  const months = monthly();
-  const risk = groupStats(trades, (t) => `${t.riskPct}%`).sort((a, b) => parseFloat(a.name) - parseFloat(b.name)).map((g) => ({ ...g, label: g.name, count: g.trades }));
+  const [userTrades, setUserTrades] = useState<Trade[]>(defaultMockTrades);
+
+  useEffect(() => {
+    fetchUserTrades().then((data) => setUserTrades(data));
+  }, []);
+
+  const s = stats(userTrades);
+  const eq = equityCurve(userTrades);
+  const byPair = groupStats(userTrades, (t) => t.pair).sort((a, b) => b.pnl - a.pnl);
+  const bySession = groupStats(userTrades, (t) => t.session);
+  const bySetup = groupStats(userTrades, (t) => t.setup).sort((a, b) => b.pnl - a.pnl);
+  const byDow = groupStats(userTrades, (t) => DOW[new Date(`${t.date}T00:00:00Z`).getUTCDay()]!).map((g) => ({ ...g, label: g.name }));
+  const byHour = groupStats(userTrades, (t) => `${t.entryTime.slice(0, 2)}:00`).sort((a, b) => (a.name < b.name ? -1 : 1)).map((g) => ({ ...g, label: g.name }));
+  const months = monthly(userTrades);
+  const risk = groupStats(userTrades, (t) => `${t.riskPct}%`).sort((a, b) => parseFloat(a.name) - parseFloat(b.name)).map((g) => ({ ...g, label: g.name, count: g.trades }));
   const maxDd = Math.min(...eq.map((e) => e.drawdown));
 
   return (
