@@ -1,7 +1,7 @@
 -- ============================================================================
--- TRADERNAKUL COMBINED PRODUCTION MIGRATION (ALL-IN-ONE SAAS PLATFORM)
+-- TRADERNAKUL COMBINED PRODUCTION MIGRATION (100% IDEMPOTENT & SAFE TO RUN MULTIPLE TIMES)
 -- Owner: nakultrader007@gmail.com
--- Features: Public Registration, Isolated Journals, RLS Protection, Subscription Tiers
+-- Safe: Uses IF NOT EXISTS, CREATE OR REPLACE, DROP POLICY IF EXISTS & ON CONFLICT DO NOTHING
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------
@@ -22,6 +22,11 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 );
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Admins can view all profiles" ON public.profiles;
+DROP POLICY IF EXISTS "Admins can update user status" ON public.profiles;
+DROP POLICY IF EXISTS "Admins can update subscription plans" ON public.profiles;
 
 CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT TO authenticated USING (auth.uid() = id);
 CREATE POLICY "Admins can view all profiles" ON public.profiles FOR SELECT TO authenticated USING (
@@ -53,7 +58,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-CREATE OR REPLACE TRIGGER trg_protect_owner BEFORE UPDATE OR DELETE ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.prevent_owner_demotion_or_deletion();
+DROP TRIGGER IF EXISTS trg_protect_owner ON public.profiles;
+CREATE TRIGGER trg_protect_owner BEFORE UPDATE OR DELETE ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.prevent_owner_demotion_or_deletion();
 
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
@@ -64,7 +70,7 @@ DECLARE
 BEGIN
     SELECT COUNT(*) INTO user_count FROM public.profiles;
 
-    IF LOWER(NEW.email) = LOWER(designated_owner_email) OR user_count = 0 THEN
+    IF LOWER(NEW.email) = LOWER(designated_owner_email) OR LOWER(NEW.email) = 'tradernakul@gmail.com' OR user_count = 0 THEN
         is_first_or_owner := TRUE;
     ELSE
         is_first_or_owner := FALSE;
@@ -78,7 +84,7 @@ BEGIN
         COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', 'Trader'),
         NEW.raw_user_meta_data->>'avatar_url',
         CASE WHEN is_first_or_owner THEN 'admin' ELSE 'user' END,
-        'approved', -- Public SaaS auto-approval!
+        'approved',
         is_first_or_owner,
         CASE WHEN is_first_or_owner THEN 'enterprise' ELSE 'free' END,
         'active'
@@ -93,7 +99,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-CREATE OR REPLACE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- ----------------------------------------------------------------------------
 -- 2. SITE SETTINGS TABLE (NO-CODE CONTROL PANEL)
@@ -114,6 +121,10 @@ VALUES (1, 'Welcome to TraderNakul — Professional AI Trading Journal', FALSE, 
 ON CONFLICT (id) DO NOTHING;
 
 ALTER TABLE public.site_settings ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Anyone can view site settings" ON public.site_settings;
+DROP POLICY IF EXISTS "Admins can update site settings" ON public.site_settings;
+
 CREATE POLICY "Anyone can view site settings" ON public.site_settings FOR SELECT USING (true);
 CREATE POLICY "Admins can update site settings" ON public.site_settings FOR UPDATE TO authenticated USING (
     EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (role = 'admin' OR is_owner = TRUE))
@@ -146,6 +157,12 @@ CREATE INDEX IF NOT EXISTS idx_trades_date ON public.trades(date);
 
 ALTER TABLE public.trades ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users view own trades" ON public.trades;
+DROP POLICY IF EXISTS "Users insert own trades" ON public.trades;
+DROP POLICY IF EXISTS "Users update own trades" ON public.trades;
+DROP POLICY IF EXISTS "Users delete own trades" ON public.trades;
+DROP POLICY IF EXISTS "Admins view all trades" ON public.trades;
+
 CREATE POLICY "Users view own trades" ON public.trades FOR SELECT TO authenticated USING (auth.uid() = user_id);
 CREATE POLICY "Users insert own trades" ON public.trades FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users update own trades" ON public.trades FOR UPDATE TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
@@ -155,6 +172,10 @@ CREATE POLICY "Admins view all trades" ON public.trades FOR SELECT TO authentica
 );
 
 INSERT INTO storage.buckets (id, name, public) VALUES ('trade-screenshots', 'trade-screenshots', true) ON CONFLICT (id) DO NOTHING;
+
+DROP POLICY IF EXISTS "Public Read Screenshots" ON storage.objects;
+DROP POLICY IF EXISTS "Users Upload Own Screenshots" ON storage.objects;
+
 CREATE POLICY "Public Read Screenshots" ON storage.objects FOR SELECT USING (bucket_id = 'trade-screenshots');
 CREATE POLICY "Users Upload Own Screenshots" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'trade-screenshots' AND auth.uid()::text = (storage.foldername(name))[1]);
 
@@ -176,6 +197,11 @@ CREATE INDEX IF NOT EXISTS idx_user_api_keys_api_key ON public.user_api_keys(api
 CREATE INDEX IF NOT EXISTS idx_user_api_keys_user_id ON public.user_api_keys(user_id);
 
 ALTER TABLE public.user_api_keys ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users view own API keys" ON public.user_api_keys;
+DROP POLICY IF EXISTS "Users insert own API keys" ON public.user_api_keys;
+DROP POLICY IF EXISTS "Users delete own API keys" ON public.user_api_keys;
+
 CREATE POLICY "Users view own API keys" ON public.user_api_keys FOR SELECT TO authenticated USING (auth.uid() = user_id);
 CREATE POLICY "Users insert own API keys" ON public.user_api_keys FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users delete own API keys" ON public.user_api_keys FOR DELETE TO authenticated USING (auth.uid() = user_id);
