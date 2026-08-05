@@ -1,13 +1,18 @@
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://placeholder.supabase.co";
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "placeholder-anon-key";
+const supabaseUrl =
+  import.meta.env.VITE_SUPABASE_URL ||
+  "https://placeholder.supabase.co";
+
+const supabaseAnonKey =
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsYWNlaG9sZGVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE2MDAwMDAwMDAsImV4cCI6MjAwMDAwMDAwMH0.placeholder";
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
+    persistSession: typeof window !== "undefined",
+    autoRefreshToken: typeof window !== "undefined",
+    detectSessionInUrl: typeof window !== "undefined",
   },
 });
 
@@ -19,6 +24,8 @@ export type Profile = {
   role: "admin" | "user";
   status: "pending" | "approved" | "rejected";
   is_owner: boolean;
+  subscription_plan?: "free" | "pro" | "enterprise";
+  subscription_status?: "active" | "past_due" | "canceled" | "trialing";
   created_at: string;
   updated_at: string;
 };

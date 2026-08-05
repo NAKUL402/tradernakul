@@ -123,6 +123,25 @@ export function groupStats(list: Trade[], key: (t: Trade) => string) {
 }
 
 export function stats(list: Trade[] = trades) {
+  if (!list || list.length === 0) {
+    return {
+      total: 0,
+      winRate: 0,
+      avgRRR: 0,
+      profitFactor: 0,
+      winStreak: 0,
+      lossStreak: 0,
+      bestPair: { name: "XAUUSD", trades: 0, wins: 0, pnl: 0, winRate: 0 },
+      worstPair: { name: "USDJPY", trades: 0, wins: 0, pnl: 0, winRate: 0 },
+      net: 0,
+      monthlyPnl: 0,
+      weeklyPnl: 0,
+      avgWin: 0,
+      avgLoss: 0,
+      wins: 0,
+      losses: 0,
+    };
+  }
   const wins = list.filter((t) => t.result === "Win");
   const losses = list.filter((t) => t.result === "Loss");
   const gross = wins.reduce((s, t) => s + pnlUsd(t), 0);
@@ -138,8 +157,8 @@ export function stats(list: Trade[] = trades) {
     profitFactor: grossLoss === 0 ? gross : gross / grossLoss,
     winStreak: s.win,
     lossStreak: s.loss,
-    bestPair: byPair[0]!,
-    worstPair: byPair[byPair.length - 1]!,
+    bestPair: byPair[0] ?? { name: "XAUUSD", trades: 0, wins: 0, pnl: 0, winRate: 0 },
+    worstPair: byPair[byPair.length - 1] ?? { name: "USDJPY", trades: 0, wins: 0, pnl: 0, winRate: 0 },
     net,
     monthlyPnl: list.filter((t) => t.date.startsWith(month)).reduce((s2, t) => s2 + pnlUsd(t), 0),
     weeklyPnl: list.slice(-8).reduce((s2, t) => s2 + pnlUsd(t), 0),

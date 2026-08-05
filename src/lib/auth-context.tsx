@@ -23,28 +23,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      } else {
-        setIsLoading(false);
-      }
-    });
+    let isMounted = true;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      } else {
-        setProfile(null);
-        setIsLoading(false);
+    async function initAuth() {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (!isMounted) return;
+        if (!error && data?.session) {
+          setSession(data.session);
+          setUser(data.session.user);
+          await fetchProfile(data.session.user.id);
+        } else {
+          setIsLoading(false);
+        }
+      } catch (err) {
+        console.warn("Supabase auth session fetch warning:", err);
+        if (isMounted) setIsLoading(false);
       }
-    });
+    }
 
-    return () => subscription.unsubscribe();
+    initAuth();
+
+    let subscription: { unsubscribe: () => void } | null = null;
+    try {
+      const res = supabase.auth.onAuthStateChange((_event, session) => {
+        if (!isMounted) return;
+        setSession(session);
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          fetchProfile(session.user.id);
+        } else {
+          setProfile(null);
+          setIsLoading(false);
+        }
+      });
+      subscription = res.data.subscription;
+    } catch (err) {
+      console.warn("Auth state change subscription warning:", err);
+      setIsLoading(false);
+    }
+
+    return () => {
+      isMounted = false;
+      if (subscription) subscription.unsubscribe();
+    };
   }, []);
 
   async function fetchProfile(userId: string) {
@@ -59,14 +81,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setProfile(data as Profile);
       }
     } catch (err) {
-      console.error("Error fetching user profile:", err);
+      console.warn("Notice: User profile fetch caught:", err);
     } finally {
       setIsLoading(false);
     }
   }
 
   const signInWithGoogle = async () => {
-    const siteUrl = import.meta.env.VITE_SITE_URL || window.location.origin;
+    const siteUrl = import.meta.env.VITE_SITE_URL || (typeof window !== "undefined" ? window.location.origin : "");
     const redirectTo = `${siteUrl}/auth/callback`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -86,7 +108,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.warn("SignOut notice:", err);
+    }
     setUser(null);
     setSession(null);
     setProfile(null);
