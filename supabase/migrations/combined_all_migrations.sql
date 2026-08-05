@@ -1,10 +1,11 @@
 -- ============================================================================
--- TRADERNAKUL COMBINED PRODUCTION MIGRATION (ALL-IN-ONE)
--- Run this single script in Supabase SQL Editor to set up everything.
+-- TRADERNAKUL COMBINED PRODUCTION MIGRATION (ALL-IN-ONE SAAS PLATFORM)
+-- Owner: nakultrader007@gmail.com
+-- Features: Public Registration, Isolated Journals, RLS Protection, Subscription Tiers
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------
--- 1. PROFILES TABLE & AUTH TRIGGERS
+-- 1. PROFILES TABLE & SAAS AUTH TRIGGERS
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -12,8 +13,10 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     full_name TEXT,
     avatar_url TEXT,
     role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('admin', 'user')),
-    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+    status TEXT NOT NULL DEFAULT 'approved' CHECK (status IN ('pending', 'approved', 'rejected')),
     is_owner BOOLEAN NOT NULL DEFAULT FALSE,
+    subscription_plan TEXT NOT NULL DEFAULT 'free' CHECK (subscription_plan IN ('free', 'pro', 'enterprise')),
+    subscription_status TEXT NOT NULL DEFAULT 'active' CHECK (subscription_status IN ('active', 'past_due', 'canceled', 'trialing')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -56,24 +59,29 @@ CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 DECLARE
     user_count INT;
-    designated_owner_email TEXT := 'tradernakul@gmail.com';
+    designated_owner_email TEXT := 'nakultrader007@gmail.com';
     is_first_or_owner BOOLEAN;
 BEGIN
     SELECT COUNT(*) INTO user_count FROM public.profiles;
+
     IF LOWER(NEW.email) = LOWER(designated_owner_email) OR user_count = 0 THEN
         is_first_or_owner := TRUE;
     ELSE
         is_first_or_owner := FALSE;
     END IF;
 
-    INSERT INTO public.profiles (id, email, full_name, avatar_url, role, status, is_owner)
+    INSERT INTO public.profiles (
+        id, email, full_name, avatar_url, role, status, is_owner, subscription_plan, subscription_status
+    )
     VALUES (
         NEW.id, NEW.email,
         COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', 'Trader'),
         NEW.raw_user_meta_data->>'avatar_url',
         CASE WHEN is_first_or_owner THEN 'admin' ELSE 'user' END,
-        CASE WHEN is_first_or_owner THEN 'approved' ELSE 'pending' END,
-        is_first_or_owner
+        'approved', -- Public SaaS auto-approval!
+        is_first_or_owner,
+        CASE WHEN is_first_or_owner THEN 'enterprise' ELSE 'free' END,
+        'active'
     )
     ON CONFLICT (id) DO UPDATE SET
         email = EXCLUDED.email,
@@ -114,7 +122,7 @@ CREATE POLICY "Admins can update site settings" ON public.site_settings FOR UPDA
 );
 
 -- ----------------------------------------------------------------------------
--- 3. TRADES DATABASE & SCREENSHOTS STORAGE
+-- 3. TRADES DATABASE & SCREENSHOTS STORAGE (ROW LEVEL SECURITY)
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.trades (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
