@@ -119,9 +119,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null);
   };
 
-  const isApproved = profile?.status === "approved" || profile?.is_owner === true;
-  const isAdmin = profile?.role === "admin" || profile?.is_owner === true;
-  const isOwner = profile?.is_owner === true;
+  const ownerEmails = [
+    "nakultrader007@gmail.com",
+    "tradernakul@gmail.com",
+    (import.meta.env.VITE_OWNER_EMAIL || "").toLowerCase(),
+  ].filter(Boolean);
+
+  const isUserOwnerEmail = user?.email ? ownerEmails.includes(user.email.toLowerCase()) : false;
+
+  const isApproved = profile?.status === "approved" || profile?.is_owner === true || isUserOwnerEmail;
+  const isAdmin = profile?.role === "admin" || profile?.is_owner === true || isUserOwnerEmail;
+  const isOwner = profile?.is_owner === true || isUserOwnerEmail;
 
   return (
     <AuthContext.Provider
