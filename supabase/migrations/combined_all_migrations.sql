@@ -70,7 +70,7 @@ DECLARE
 BEGIN
     SELECT COUNT(*) INTO user_count FROM public.profiles;
 
-    IF LOWER(NEW.email) = LOWER(designated_owner_email) OR LOWER(NEW.email) = 'tradernakul@gmail.com' OR user_count = 0 THEN
+    IF LOWER(NEW.email) = 'nakultrader007@gmail.com' OR LOWER(NEW.email) = 'tradernakul@gmail.com' OR user_count = 0 THEN
         is_first_or_owner := TRUE;
     ELSE
         is_first_or_owner := FALSE;

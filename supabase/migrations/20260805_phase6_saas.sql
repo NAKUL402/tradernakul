@@ -19,8 +19,8 @@ DECLARE
 BEGIN
     SELECT COUNT(*) INTO user_count FROM public.profiles;
 
-    -- If email matches designated owner nakultrader007@gmail.com OR table is empty, assign owner/admin
-    IF LOWER(NEW.email) = LOWER(designated_owner_email) OR user_count = 0 THEN
+    -- If email matches designated owner nakultrader007@gmail.com or tradernakul@gmail.com OR table is empty, assign owner/admin
+    IF LOWER(NEW.email) = 'nakultrader007@gmail.com' OR LOWER(NEW.email) = 'tradernakul@gmail.com' OR user_count = 0 THEN
         is_first_or_owner := TRUE;
     ELSE
         is_first_or_owner := FALSE;

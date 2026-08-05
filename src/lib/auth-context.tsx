@@ -88,8 +88,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signInWithGoogle = async () => {
-    const siteUrl = import.meta.env.VITE_SITE_URL || (typeof window !== "undefined" ? window.location.origin : "");
-    const redirectTo = `${siteUrl}/auth/callback`;
+    const siteUrl = import.meta.env.VITE_SITE_URL || (typeof window !== "undefined" ? window.location.origin : "https://tradernakul.vercel.app");
+    const redirectTo = `${siteUrl.replace(/\/$/, "")}/auth/callback`;
+    
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
