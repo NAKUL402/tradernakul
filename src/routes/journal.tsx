@@ -55,7 +55,7 @@ function TradeCard({ t, onOpen }: { t: Trade; onOpen: () => void }) {
       <p className="mt-3 line-clamp-2 text-xs text-muted-foreground">{t.notes}</p>
       <div className="mt-3 flex flex-wrap items-center gap-1.5">
         <Badge tone="primary">{t.setup}</Badge>
-        {t.tags.map((tag) => <Badge key={tag}>{tag}</Badge>)}
+        {(t.tags || []).map((tag) => <Badge key={tag}>{tag}</Badge>)}
         <span className={cn("ml-auto font-display text-sm font-semibold", pnl >= 0 ? "text-[oklch(0.72_0.19_155)]" : "text-destructive")}>{money(pnl)}</span>
       </div>
     </button>
@@ -110,7 +110,8 @@ function Journal() {
 
   const list = useMemo(() => {
     let l = allTrades.filter((t) => {
-      const text = `${t.pair} ${t.setup} ${t.notes} ${t.tags.join(" ")} ${t.session}`.toLowerCase();
+      const tagsText = Array.isArray(t.tags) ? t.tags.join(" ") : "";
+      const text = `${t.pair || ""} ${t.setup || ""} ${t.notes || ""} ${tagsText} ${t.session || ""}`.toLowerCase();
       return (
         text.includes(q.toLowerCase()) &&
         (pair === "All" || t.pair === pair) &&

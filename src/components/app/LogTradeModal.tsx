@@ -22,7 +22,7 @@ export function LogTradeModal({ isOpen, onClose, onSave, initialTrade }: LogTrad
   const [setup, setSetup] = useState(initialTrade?.setup || SETUPS[0]!);
   const [confirmation, setConfirmation] = useState(initialTrade?.confirmation || "CHoCH");
   const [notes, setNotes] = useState(initialTrade?.notes || "");
-  const [tags, setTags] = useState(initialTrade?.tags ? initialTrade.tags.join(", ") : "A+ Setup, Patience");
+  const [tags, setTags] = useState(Array.isArray(initialTrade?.tags) ? initialTrade.tags.join(", ") : "A+ Setup, Patience");
   const [date, setDate] = useState(initialTrade?.date || new Date().toISOString().slice(0, 10));
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);

@@ -37,7 +37,9 @@ function AdminPage() {
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
   useEffect(() => {
-    if (!isLoading && !isAdmin && !isOwner) {
+    if (isLoading) return;
+
+    if (!isAdmin && !isOwner) {
       toast.error("Unauthorized: Owner Admin access only.");
       navigate({ to: "/" });
       return;
