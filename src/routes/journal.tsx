@@ -76,6 +76,10 @@ function Journal() {
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
 
+  // Delete confirmation state
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   useEffect(() => {
     loadTrades();
   }, []);
@@ -95,16 +99,21 @@ function Journal() {
   };
 
   const handleDeleteTrade = async (tradeId: string) => {
-    if (confirm("Are you sure you want to delete this trade entry?")) {
-      try {
-        await deleteTradeFromSupabase(tradeId);
-        toast.success("Trade entry deleted.");
-        setOpen(null);
-        await loadTrades();
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : "Failed to delete trade";
-        toast.error(msg);
-      }
+    setIsDeleting(true);
+    try {
+      await deleteTradeFromSupabase(tradeId);
+      // Also remove from local state immediately for instant UI feedback
+      setAllTrades((prev) => prev.filter((t) => t.id !== tradeId));
+      toast.success("Trade entry deleted successfully!");
+      setOpen(null);
+      setConfirmDeleteId(null);
+      // Reload from source to sync
+      await loadTrades();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to delete trade";
+      toast.error(msg);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -186,7 +195,7 @@ function Journal() {
 
       {/* Trade Detail Modal */}
       {open && (
-        <div className="fixed inset-0 z-50 grid place-items-end bg-black/60 p-0 backdrop-blur-sm sm:place-items-center sm:p-6" onClick={() => setOpen(null)}>
+        <div className="fixed inset-0 z-50 grid place-items-end bg-black/60 p-0 backdrop-blur-sm sm:place-items-center sm:p-6" onClick={() => { setOpen(null); setConfirmDeleteId(null); }}>
           <div className="glass max-h-[85vh] w-full max-w-lg animate-rise overflow-y-auto rounded-t-3xl p-5 sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-start justify-between">
               <div>
@@ -207,17 +216,53 @@ function Journal() {
                   <Edit3 className="size-4" />
                 </button>
                 <button
-                  onClick={() => handleDeleteTrade(open.id)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setConfirmDeleteId(open.id);
+                  }}
                   className="rounded-lg p-1.5 text-muted-foreground hover:text-destructive"
                   title="Delete trade"
                 >
                   <Trash2 className="size-4" />
                 </button>
-                <button aria-label="Close" onClick={() => setOpen(null)} className="rounded-lg p-1.5 text-muted-foreground hover:text-foreground">
+                <button aria-label="Close" onClick={() => { setOpen(null); setConfirmDeleteId(null); }} className="rounded-lg p-1.5 text-muted-foreground hover:text-foreground">
                   <X className="size-4" />
                 </button>
               </div>
             </div>
+
+            {/* Inline Delete Confirmation */}
+            {confirmDeleteId === open.id && (
+              <div className="mt-3 rounded-xl border border-destructive/50 bg-destructive/10 p-3">
+                <p className="text-sm font-medium text-destructive">Are you sure you want to delete this trade?</p>
+                <p className="mt-1 text-xs text-muted-foreground">This action cannot be undone.</p>
+                <div className="mt-3 flex items-center gap-2">
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleDeleteTrade(open.id);
+                    }}
+                    disabled={isDeleting}
+                    className="rounded-lg bg-destructive px-4 py-2 text-xs font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+                  >
+                    {isDeleting ? "Deleting..." : "Yes, Delete"}
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setConfirmDeleteId(null);
+                    }}
+                    className="rounded-lg border border-border px-4 py-2 text-xs font-semibold text-foreground transition hover:bg-muted"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
             {open.screenshot && open.screenshot.startsWith("http") ? (
               <img src={open.screenshot} alt={open.pair} className="mt-4 h-48 w-full rounded-2xl object-cover ring-1 ring-border" />
             ) : (
@@ -234,7 +279,7 @@ function Journal() {
               ))}
             </div>
             <p className="mt-4 text-sm text-muted-foreground">{open.notes}</p>
-            <div className="mt-3 flex flex-wrap gap-1.5">{open.tags.map((t) => <Badge key={t}>{t}</Badge>)}</div>
+            <div className="mt-3 flex flex-wrap gap-1.5">{(open.tags || []).map((t) => <Badge key={t}>{t}</Badge>)}</div>
           </div>
         </div>
       )}
