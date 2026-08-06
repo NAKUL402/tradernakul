@@ -10,8 +10,8 @@ type AuthContextType = {
   isApproved: boolean;
   isAdmin: boolean;
   isOwner: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
+  sendOTP: (email: string) => Promise<void>;
+  verifyOTP: (email: string, token: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -145,14 +145,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const sendOTP = async (email: string) => {
     if (!isSupabaseConfigured) {
       throw new Error("Supabase is not configured. Setup environment variables in Vercel.");
     }
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+    const { error } = await supabase.auth.signInWithOtp({
+      email: email.toLowerCase().trim(),
+      options: {
+        shouldCreateUser: true,
+      },
+    });
+
+    if (error) {
+      throw error;
+    }
+  };
+
+  const verifyOTP = async (email: string, token: string) => {
+    if (!isSupabaseConfigured) {
+      throw new Error("Supabase is not configured. Setup environment variables in Vercel.");
+    }
+
+    const { data, error } = await supabase.auth.verifyOtp({
+      email: email.toLowerCase().trim(),
+      token: token.trim(),
+      type: "email",
     });
 
     if (error) {
@@ -163,28 +181,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(data.user);
       setSession(data.session);
       await fetchProfile(data.user.id, data.user);
-    }
-  };
-
-  const signInWithGoogle = async () => {
-    if (!isSupabaseConfigured) {
-      throw new Error("Supabase is not configured. Setup environment variables in Vercel.");
-    }
-
-    const siteUrl = 
-      import.meta.env.VITE_SITE_URL || 
-      process.env.SITE_URL || 
-      (typeof window !== "undefined" ? window.location.origin : "");
-
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${siteUrl}/login`,
-      },
-    });
-
-    if (error) {
-      throw error;
     }
   };
 
@@ -214,8 +210,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isApproved,
         isAdmin,
         isOwner,
-        signIn,
-        signInWithGoogle,
+        sendOTP,
+        verifyOTP,
         signOut,
       }}
     >
