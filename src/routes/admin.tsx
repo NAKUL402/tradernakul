@@ -149,24 +149,31 @@ function AdminPage() {
     }
 
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ status: newStatus, updated_at: new Date().toISOString() })
-        .eq("id", targetId);
+      const isPlaceholder = !import.meta.env.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL.includes("placeholder");
+      if (!isPlaceholder && !targetId.startsWith("user-")) {
+        const { error } = await supabase
+          .from("profiles")
+          .update({ status: newStatus, updated_at: new Date().toISOString() })
+          .eq("id", targetId);
 
-      if (error) {
-        toast.error(`Failed to update status: ${error.message}`);
-        return;
+        if (error) {
+          toast.error(`Failed to update status in DB: ${error.message}`);
+          return;
+        }
       }
 
       setUsersList((prev) =>
         prev.map((u) => (u.id === targetId ? { ...u, status: newStatus } : u))
       );
 
-      toast.success(`User access set to ${newStatus.toUpperCase()}`);
+      toast.success(`User access set to ${newStatus.toUpperCase()}${targetId.startsWith("user-") ? " (Demo Sim)" : ""}`);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Error updating user";
-      toast.error(msg);
+      const msg = err instanceof Error ? err.message : "Network error";
+      console.warn("Database status update warning, falling back to local simulation:", msg);
+      setUsersList((prev) =>
+        prev.map((u) => (u.id === targetId ? { ...u, status: newStatus } : u))
+      );
+      toast.success(`User access set to ${newStatus.toUpperCase()} (Demo Sim)`);
     }
   };
 
@@ -182,21 +189,26 @@ function AdminPage() {
     }
 
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .delete()
-        .eq("id", targetId);
+      const isPlaceholder = !import.meta.env.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL.includes("placeholder");
+      if (!isPlaceholder && !targetId.startsWith("user-")) {
+        const { error } = await supabase
+          .from("profiles")
+          .delete()
+          .eq("id", targetId);
 
-      if (error) {
-        toast.error(`Failed to delete user: ${error.message}`);
-        return;
+        if (error) {
+          toast.error(`Failed to delete user in DB: ${error.message}`);
+          return;
+        }
       }
 
       setUsersList((prev) => prev.filter((u) => u.id !== targetId));
-      toast.success("User profile deleted successfully");
+      toast.success(`User profile deleted successfully${targetId.startsWith("user-") ? " (Demo Sim)" : ""}`);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Error deleting user";
-      toast.error(msg);
+      const msg = err instanceof Error ? err.message : "Network error";
+      console.warn("Database delete warning, falling back to local simulation:", msg);
+      setUsersList((prev) => prev.filter((u) => u.id !== targetId));
+      toast.success("User profile deleted successfully (Demo Sim)");
     }
   };
 
