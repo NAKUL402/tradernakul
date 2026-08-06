@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { User, Session } from "@supabase/supabase-js";
-import { supabase, type Profile } from "./supabase";
+import { createDemoProfile, isSupabaseConfigured, supabase, type Profile } from "./supabase";
 
 type AuthContextType = {
   user: User | null;
@@ -30,6 +30,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsLoading(false);
         return;
       }
+
+      if (!isSupabaseConfigured) {
+        const demoUser = createDemoProfile(
+          import.meta.env.VITE_OWNER_EMAIL || "demo@tradernakul.app",
+          "Demo Owner",
+          "user",
+          true,
+        );
+        if (isMounted) {
+          setUser({ id: demoUser.id, email: demoUser.email, user_metadata: { full_name: demoUser.full_name } } as User);
+          setSession({ access_token: "demo-session", user: { id: demoUser.id, email: demoUser.email } } as Session);
+          setProfile(demoUser);
+          setIsLoading(false);
+        }
+        return;
+      }
+
       try {
         const { data, error } = await supabase.auth.getSession();
         if (!isMounted) return;
@@ -49,7 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initAuth();
 
     let subscription: { unsubscribe: () => void } | null = null;
-    if (typeof window !== "undefined") {
+    if (typeof window !== "undefined" && isSupabaseConfigured) {
       try {
         const res = supabase.auth.onAuthStateChange((_event, session) => {
           if (!isMounted) return;
@@ -96,9 +113,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signInWithGoogle = async () => {
+    if (!isSupabaseConfigured) {
+      const demoUser = createDemoProfile(
+        import.meta.env.VITE_OWNER_EMAIL || "demo@tradernakul.app",
+        "Demo Owner",
+        "user",
+        true,
+      );
+      setUser({ id: demoUser.id, email: demoUser.email, user_metadata: { full_name: demoUser.full_name } } as User);
+      setSession({ access_token: "demo-session", user: { id: demoUser.id, email: demoUser.email } } as Session);
+      setProfile(demoUser);
+      setIsLoading(false);
+      return;
+    }
+
     const siteUrl = import.meta.env.VITE_SITE_URL || (typeof window !== "undefined" ? window.location.origin : "https://tradernakul.vercel.app");
     const redirectTo = `${siteUrl.replace(/\/$/, "")}/auth/callback`;
-    
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
@@ -118,7 +149,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     try {
-      await supabase.auth.signOut();
+      if (isSupabaseConfigured) {
+        await supabase.auth.signOut();
+      }
     } catch (err) {
       console.warn("SignOut notice:", err);
     }

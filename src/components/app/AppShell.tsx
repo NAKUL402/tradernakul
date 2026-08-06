@@ -1,7 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, NotebookPen, BarChart3, Brain, CalendarDays, FileText,
-  Settings, User, Menu, Plus, Bell, Search,
+  Settings, User, Menu, Plus, Bell, Search, ShieldCheck,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
@@ -80,8 +80,6 @@ export function AppShell({ title, subtitle, children }: { title: string; subtitl
             <Menu className="size-4" />
           </button>
         )}
-
-import { ShieldCheck } from "lucide-react";
 
         <nav className="flex flex-1 flex-col gap-1">
           {nav.map((item) => {
