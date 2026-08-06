@@ -1,7 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { supabase, supabaseUrl, supabaseAnonKey, isSupabaseConfigured, getServerEnvDiagnostics } from "@/lib/supabase";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
@@ -29,17 +28,6 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [approvalStatus, setApprovalStatus] = useState<"pending" | "rejected" | "suspended" | null>(null);
-  const [serverDiag, setServerDiag] = useState<{
-    serverUrlLength: number;
-    serverKeyLength: number;
-    serverUrlStart: string;
-  } | null>(null);
-
-  useEffect(() => {
-    getServerEnvDiagnostics()
-      .then((data) => setServerDiag(data))
-      .catch((err) => console.error("Server diagnostics failed:", err));
-  }, []);
 
   useEffect(() => {
     // Listen for custom approval block events from AuthContext
@@ -100,8 +88,6 @@ function LoginPage() {
     }
   };
 
-  const isOnline = isSupabaseConfigured || (serverDiag && serverDiag.serverUrlLength > 0);
-
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10">
       <div className="pointer-events-none absolute -left-32 top-0 size-[28rem] animate-float-slow rounded-full bg-primary/25 blur-[120px]" />
@@ -119,30 +105,6 @@ function LoginPage() {
 
         <h1 className="mt-7 font-display text-2xl font-semibold">Welcome back</h1>
         <p className="mt-1 text-sm text-muted-foreground">Log in to manage and analyze your trades.</p>
-
-        <div className="mt-4 rounded-xl border border-border/40 bg-card/40 p-3.5 text-xs font-mono text-muted-foreground leading-normal space-y-1">
-          <div className="flex items-center justify-between border-b border-border/20 pb-1.5 mb-1.5 font-sans font-semibold text-[11px] uppercase tracking-wider text-foreground">
-            <span>🔧 Diagnostic Monitor</span>
-            <span className={isOnline ? "text-emerald-500" : "text-amber-500 animate-pulse"}>
-              ● {isOnline ? "Online" : "Off"}
-            </span>
-          </div>
-          <p className="text-[10px] text-foreground/80 font-sans font-semibold mb-1">Client-Side Bundle:</p>
-          <div className="flex justify-between pl-2"><span>URL length:</span><span className="font-semibold text-foreground">{supabaseUrl ? supabaseUrl.length : 0}</span></div>
-          <div className="flex justify-between pl-2"><span>Key length:</span><span className="font-semibold text-foreground">{supabaseAnonKey ? supabaseAnonKey.length : 0}</span></div>
-          <div className="flex justify-between pl-2"><span>Configured:</span><span className="font-semibold text-foreground">{isSupabaseConfigured ? "TRUE" : "FALSE"}</span></div>
-          
-          <p className="text-[10px] text-foreground/80 font-sans font-semibold mt-2.5 mb-1">Serverless Runtime (SSR):</p>
-          {serverDiag ? (
-            <>
-              <div className="flex justify-between pl-2"><span>URL length:</span><span className="font-semibold text-foreground">{serverDiag.serverUrlLength}</span></div>
-              <div className="flex justify-between pl-2"><span>Key length:</span><span className="font-semibold text-foreground">{serverDiag.serverKeyLength}</span></div>
-              <div className="flex justify-between pl-2"><span>URL start:</span><span className="font-semibold text-foreground">{serverDiag.serverUrlStart || "none"}</span></div>
-            </>
-          ) : (
-            <p className="pl-2 italic text-muted-foreground animate-pulse">Loading server diagnostics...</p>
-          )}
-        </div>
 
         {approvalStatus && (
           <div className="mt-5 rounded-2xl border border-primary/30 bg-primary/10 p-4 text-xs animate-rise">
