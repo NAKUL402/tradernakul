@@ -26,6 +26,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let isMounted = true;
 
     async function initAuth() {
+      if (typeof window === "undefined") {
+        setIsLoading(false);
+        return;
+      }
       try {
         const { data, error } = await supabase.auth.getSession();
         if (!isMounted) return;
@@ -45,21 +49,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initAuth();
 
     let subscription: { unsubscribe: () => void } | null = null;
-    try {
-      const res = supabase.auth.onAuthStateChange((_event, session) => {
-        if (!isMounted) return;
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          fetchProfile(session.user.id);
-        } else {
-          setProfile(null);
-          setIsLoading(false);
-        }
-      });
-      subscription = res.data.subscription;
-    } catch (err) {
-      console.warn("Auth state change subscription warning:", err);
+    if (typeof window !== "undefined") {
+      try {
+        const res = supabase.auth.onAuthStateChange((_event, session) => {
+          if (!isMounted) return;
+          setSession(session);
+          setUser(session?.user ?? null);
+          if (session?.user) {
+            fetchProfile(session.user.id);
+          } else {
+            setProfile(null);
+            setIsLoading(false);
+          }
+        });
+        subscription = res.data.subscription;
+      } catch (err) {
+        console.warn("Auth state change subscription warning:", err);
+        setIsLoading(false);
+      }
+    } else {
       setIsLoading(false);
     }
 
