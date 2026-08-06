@@ -32,13 +32,13 @@ export const SESSIONS = ["Asian", "London", "New York"] as const;
 
 export const trades: Trade[] = [];
 
-export const money = (n: number, currency = "$") =>
-  `${n < 0 ? "-" : ""}${currency}${Math.abs(n).toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+export const money = (n: number, currency = "₹") =>
+  `${n < 0 ? "-" : ""}${currency}${Math.abs(n).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
 
 export const pct = (n: number) => `${n.toFixed(1)}%`;
 
 const ACCOUNT = 10000;
-export const pnlUsd = (t: Trade) => Math.round((t.pnl / 100) * ACCOUNT);
+export const pnlUsd = (t: Trade) => Math.round(t.pnl || 0);
 
 export function streaks(list: Trade[]) {
   let win = 0,

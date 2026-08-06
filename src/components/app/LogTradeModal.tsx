@@ -13,33 +13,36 @@ type LogTradeModalProps = {
 };
 
 export function LogTradeModal({ isOpen, onClose, onSave, initialTrade, nextTradeNo = 1 }: LogTradeModalProps) {
-  // 1. Pair: Free text input manually typed
+  // 1. Pair: Free text input
   const [pair, setPair] = useState("");
   // 2. Trade No: Automatic
   const [tradeNo, setTradeNo] = useState<number>(nextTradeNo);
-  // 3. Side: Keep existing select
+  // 3. Side
   const [side, setSide] = useState<"Buy" | "Sell">("Buy");
   const [session, setSession] = useState<"Asian" | "London" | "New York">("London");
-  const [entryPrice, setEntryPrice] = useState("");
-  const [exitPrice, setExitPrice] = useState("");
-  // 4. Add Entry Time & Exit Time
+  
+  // REMOVED Entry Price & Exit Price per user request!
+  // ADDED Result Amount in Rupees (₹)
+  const [resultAmount, setResultAmount] = useState("");
+  
+  // 4. Entry Time & Exit Time
   const [entryTime, setEntryTime] = useState("");
   const [exitTime, setExitTime] = useState("");
-  // 5. Add Lots
+  // 5. Lots
   const [lots, setLots] = useState("");
-  // 6. Add Result (Win or Loss manually selected)
+  // 6. Result (Win or Loss)
   const [result, setResult] = useState<"Win" | "Loss">("Win");
-  // 7. RRR: Convert into free text input
+  // 7. RRR: Free text
   const [rrr, setRrr] = useState("");
   const [riskPct, setRiskPct] = useState("1.0");
-  // 8. Set-up: Convert to free text input
+  // 8. Set-up: Free text
   const [setup, setSetup] = useState("");
   const [confirmation, setConfirmation] = useState("");
   const [notes, setNotes] = useState("");
   const [tags, setTags] = useState("");
   // 10. Date
   const [date, setDate] = useState("");
-  // 11. Trade Rating: Star rating system
+  // 11. Trade Rating: Stars
   const [rating, setRating] = useState<number>(5);
   // 12. Reason for Taking Trade
   const [reason, setReason] = useState("");
@@ -49,7 +52,6 @@ export function LogTradeModal({ isOpen, onClose, onSave, initialTrade, nextTrade
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Initialize values when modal opens or initialTrade changes
   useEffect(() => {
     if (isOpen) {
       if (initialTrade) {
@@ -57,8 +59,7 @@ export function LogTradeModal({ isOpen, onClose, onSave, initialTrade, nextTrade
         setTradeNo(initialTrade.tradeNo || nextTradeNo);
         setSide(initialTrade.side || "Buy");
         setSession(initialTrade.session || "London");
-        setEntryPrice(String(initialTrade.entryPrice || ""));
-        setExitPrice(String(initialTrade.exitPrice || ""));
+        setResultAmount(String(initialTrade.pnl ? Math.abs(initialTrade.pnl) : ""));
         setEntryTime(initialTrade.entryTime || "12:00");
         setExitTime(initialTrade.exitTime || "13:00");
         setLots(initialTrade.lots || "");
@@ -78,8 +79,7 @@ export function LogTradeModal({ isOpen, onClose, onSave, initialTrade, nextTrade
         setTradeNo(nextTradeNo);
         setSide("Buy");
         setSession("London");
-        setEntryPrice("");
-        setExitPrice("");
+        setResultAmount("");
         setEntryTime(new Date().toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit" }));
         setExitTime(new Date().toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit" }));
         setLots("");
@@ -106,13 +106,9 @@ export function LogTradeModal({ isOpen, onClose, onSave, initialTrade, nextTrade
     setIsSubmitting(true);
 
     try {
-      const entryP = parseFloat(entryPrice) || 0;
-      const exitP = parseFloat(exitPrice) || 0;
+      const pnlValue = parseFloat(resultAmount) || 0;
+      const finalPnl = result === "Loss" ? -Math.abs(pnlValue) : Math.abs(pnlValue);
       const risk = parseFloat(riskPct) || 1.0;
-      
-      // Calculate PnL multiplier dynamically: Win uses RRR, Loss uses 1.0 risk
-      const rrrMultiplier = parseFloat(rrr) || 1.0;
-      const pnl = result === "Win" ? Math.round(risk * rrrMultiplier * 100) / 100 : -risk;
 
       const tradePayload: Partial<Trade> = {
         id: initialTrade?.id,
@@ -123,12 +119,12 @@ export function LogTradeModal({ isOpen, onClose, onSave, initialTrade, nextTrade
         session,
         entryTime,
         exitTime,
-        entryPrice: entryP,
-        exitPrice: exitP,
+        entryPrice: 0,
+        exitPrice: 0,
         result,
         rrr,
         riskPct: risk,
-        pnl,
+        pnl: finalPnl,
         setup: setup.trim(),
         confirmation,
         notes,
@@ -199,15 +195,19 @@ export function LogTradeModal({ isOpen, onClose, onSave, initialTrade, nextTrade
             </div>
           </div>
 
-          {/* Pricing Row: Entry, Exit, Lots, Risk */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Entry Price</label>
-              <input type="number" step="any" required className={field} value={entryPrice} onChange={(e) => setEntryPrice(e.target.value)} />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Exit Price</label>
-              <input type="number" step="any" required className={field} value={exitPrice} onChange={(e) => setExitPrice(e.target.value)} />
+          {/* Result Amount in Rupees (₹) replaces Entry/Exit price */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div className="col-span-2 sm:col-span-1">
+              <label className="block text-xs font-semibold text-primary mb-1">Result Amount (₹ Rupees)</label>
+              <input
+                type="number"
+                step="any"
+                required
+                placeholder="e.g. 5000 or -1500"
+                className={`${field} border-primary/50 bg-primary/5 font-semibold text-foreground`}
+                value={resultAmount}
+                onChange={(e) => setResultAmount(e.target.value)}
+              />
             </div>
             <div>
               <label className="block text-xs font-medium text-muted-foreground mb-1">Lot Size (Lots)</label>
@@ -230,7 +230,7 @@ export function LogTradeModal({ isOpen, onClose, onSave, initialTrade, nextTrade
               <input type="time" required className={field} value={exitTime} onChange={(e) => setExitTime(e.target.value)} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Result</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Result Status</label>
               <select className={selectStyle} value={result} onChange={(e) => setResult(e.target.value as "Win" | "Loss")}>
                 <option value="Win">Win</option>
                 <option value="Loss">Loss</option>
@@ -330,7 +330,7 @@ export function LogTradeModal({ isOpen, onClose, onSave, initialTrade, nextTrade
 
           {/* Image Upload */}
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">Chart Screenshot (Supabase Storage)</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">Chart Screenshot (Storage Upload)</label>
             <div className="flex items-center gap-3">
               <label className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-card/40 p-3 text-xs text-muted-foreground hover:border-primary/60 cursor-pointer">
                 <Upload className="size-4 text-primary" />

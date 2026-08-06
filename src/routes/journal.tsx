@@ -84,6 +84,13 @@ function Journal() {
 
   useEffect(() => {
     loadTrades();
+    if (typeof window !== "undefined") {
+      const searchParams = new URLSearchParams(window.location.search);
+      if (searchParams.get("openModal") === "true") {
+        setIsLogModalOpen(true);
+        window.history.replaceState({}, "", window.location.pathname);
+      }
+    }
   }, []);
 
   const loadTrades = async () => {
@@ -275,10 +282,10 @@ function Journal() {
             <div className="mt-4 grid grid-cols-2 gap-2 text-xs sm:grid-cols-3">
               {[
                 ["Entry Time", open.entryTime], ["Exit Time", open.exitTime],
-                ["Entry Price", String(open.entryPrice)], ["Exit Price", String(open.exitPrice)],
+                ["Result Amount (₹)", `₹${Math.abs(open.pnl).toLocaleString("en-IN")}`],
                 ["Lots Size", open.lots || "—"], ["RRR", open.rrr],
                 ["Risk", `${open.riskPct}%`], ["Setup", open.setup],
-                ["Confirmation", open.confirmation || "—"], ["PnL", money(pnlUsd(open))],
+                ["Confirmation", open.confirmation || "—"], ["Result Status", open.result],
                 ["Rating", "⭐".repeat(open.rating || 5)],
               ].map(([k, v]) => (
                 <div key={k} className="rounded-xl bg-muted/40 p-2.5"><p className="text-muted-foreground">{k}</p><p className="font-medium">{v}</p></div>
