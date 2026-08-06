@@ -2,20 +2,28 @@ import { createClient } from "@supabase/supabase-js";
 
 const isPlaceholderValue = (value: string) => !value || /placeholder|example/i.test(value);
 
-// Direct, guard-free assignments to ensure Vite's macro replacement engine 
-// directly replaces these strings with actual values at build-time.
+// Resolves Supabase credentials using direct expressions. Supports both
+// correct spelling (SUPABASE) and common dashboard typo variations (SUPABACE).
 export const supabaseUrl =
   import.meta.env.VITE_SUPABASE_URL ||
+  import.meta.env.VITE_SUPABACE_URL ||
   import.meta.env.SUPABASE_URL ||
+  import.meta.env.SUPABACE_URL ||
   process.env.SUPABASE_URL ||
+  process.env.SUPABACE_URL ||
   process.env.VITE_SUPABASE_URL ||
+  process.env.VITE_SUPABACE_URL ||
   "";
 
 export const supabaseAnonKey =
   import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  import.meta.env.VITE_SUPABACE_ANON_KEY ||
   import.meta.env.SUPABASE_ANON_KEY ||
+  import.meta.env.SUPABACE_ANON_KEY ||
   process.env.SUPABASE_ANON_KEY ||
+  process.env.SUPABACE_ANON_KEY ||
   process.env.VITE_SUPABASE_ANON_KEY ||
+  process.env.VITE_SUPABACE_ANON_KEY ||
   "";
 
 const isBrowser = typeof window !== "undefined";
