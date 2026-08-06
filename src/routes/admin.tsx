@@ -39,6 +39,12 @@ function AdminPage() {
   useEffect(() => {
     if (isLoading) return;
 
+    if (!user) {
+      toast.error("Please login first to access the Admin Dashboard.");
+      navigate({ to: "/login" });
+      return;
+    }
+
     if (!isAdmin && !isOwner) {
       toast.error("Unauthorized: Owner Admin access only.");
       navigate({ to: "/" });
@@ -47,7 +53,7 @@ function AdminPage() {
 
     fetchUsers();
     fetchSettings();
-  }, [isLoading, isAdmin, isOwner]);
+  }, [isLoading, user, isAdmin, isOwner]);
 
   const fetchUsers = async () => {
     setIsFetchingUsers(true);
@@ -200,6 +206,32 @@ function AdminPage() {
   const totalUsers = usersList.length;
   const pendingCount = usersList.filter((u) => u.status === "pending").length;
   const approvedCount = usersList.filter((u) => u.status === "approved" || u.is_owner).length;
+
+  if (isLoading) {
+    return (
+      <AppShell title="Admin Dashboard">
+        <div className="flex min-h-[60vh] flex-col items-center justify-center text-center">
+          <div className="size-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <p className="mt-4 text-sm text-muted-foreground">Loading admin dashboard…</p>
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (!user) {
+    return (
+      <AppShell title="Login Required">
+        <div className="flex min-h-[60vh] flex-col items-center justify-center text-center">
+          <ShieldAlert className="size-16 text-accent" />
+          <h1 className="mt-4 font-display text-2xl font-bold">Login Required</h1>
+          <p className="mt-2 text-sm text-muted-foreground">Please login with your Owner email to access the Admin Dashboard.</p>
+          <a href="/login" className="mt-4 rounded-xl bg-gradient-to-r from-primary to-accent px-6 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 glow-primary">
+            Go to Login
+          </a>
+        </div>
+      </AppShell>
+    );
+  }
 
   if (!isAdmin && !isOwner) {
     return (
