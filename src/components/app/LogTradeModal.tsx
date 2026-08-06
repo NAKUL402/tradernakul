@@ -1,31 +1,103 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { PAIRS, SETUPS, SESSIONS, type Trade } from "@/lib/trades";
+import { type Trade } from "@/lib/trades";
 import { field, primaryBtn } from "./AuthLayout";
-import { Upload, X } from "lucide-react";
+import { Upload, X, Star } from "lucide-react";
 
 type LogTradeModalProps = {
   isOpen: boolean;
   onClose: () => void;
   onSave: (trade: Partial<Trade>, imageFile?: File) => Promise<void>;
   initialTrade?: Trade | null;
+  nextTradeNo?: number;
 };
 
-export function LogTradeModal({ isOpen, onClose, onSave, initialTrade }: LogTradeModalProps) {
-  const [pair, setPair] = useState(initialTrade?.pair || PAIRS[0]!);
-  const [side, setSide] = useState<"Buy" | "Sell">(initialTrade?.side || "Buy");
-  const [session, setSession] = useState<"Asian" | "London" | "New York">(initialTrade?.session || "London");
-  const [entryPrice, setEntryPrice] = useState(String(initialTrade?.entryPrice || 2420.5));
-  const [exitPrice, setExitPrice] = useState(String(initialTrade?.exitPrice || 2445.0));
-  const [rrr, setRrr] = useState(String(initialTrade?.rrr || 2.5));
-  const [riskPct, setRiskPct] = useState(String(initialTrade?.riskPct || 1.0));
-  const [setup, setSetup] = useState(initialTrade?.setup || SETUPS[0]!);
-  const [confirmation, setConfirmation] = useState(initialTrade?.confirmation || "CHoCH");
-  const [notes, setNotes] = useState(initialTrade?.notes || "");
-  const [tags, setTags] = useState(Array.isArray(initialTrade?.tags) ? initialTrade.tags.join(", ") : "A+ Setup, Patience");
-  const [date, setDate] = useState(initialTrade?.date || new Date().toISOString().slice(0, 10));
+export function LogTradeModal({ isOpen, onClose, onSave, initialTrade, nextTradeNo = 1 }: LogTradeModalProps) {
+  // 1. Pair: Free text input manually typed
+  const [pair, setPair] = useState("");
+  // 2. Trade No: Automatic
+  const [tradeNo, setTradeNo] = useState<number>(nextTradeNo);
+  // 3. Side: Keep existing select
+  const [side, setSide] = useState<"Buy" | "Sell">("Buy");
+  const [session, setSession] = useState<"Asian" | "London" | "New York">("London");
+  const [entryPrice, setEntryPrice] = useState("");
+  const [exitPrice, setExitPrice] = useState("");
+  // 4. Add Entry Time & Exit Time
+  const [entryTime, setEntryTime] = useState("");
+  const [exitTime, setExitTime] = useState("");
+  // 5. Add Lots
+  const [lots, setLots] = useState("");
+  // 6. Add Result (Win or Loss manually selected)
+  const [result, setResult] = useState<"Win" | "Loss">("Win");
+  // 7. RRR: Convert into free text input
+  const [rrr, setRrr] = useState("");
+  const [riskPct, setRiskPct] = useState("1.0");
+  // 8. Set-up: Convert to free text input
+  const [setup, setSetup] = useState("");
+  const [confirmation, setConfirmation] = useState("");
+  const [notes, setNotes] = useState("");
+  const [tags, setTags] = useState("");
+  // 10. Date
+  const [date, setDate] = useState("");
+  // 11. Trade Rating: Star rating system
+  const [rating, setRating] = useState<number>(5);
+  // 12. Reason for Taking Trade
+  const [reason, setReason] = useState("");
+  // 9. Mistakes
+  const [mistakes, setMistakes] = useState("");
+  
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Initialize values when modal opens or initialTrade changes
+  useEffect(() => {
+    if (isOpen) {
+      if (initialTrade) {
+        setPair(initialTrade.pair || "");
+        setTradeNo(initialTrade.tradeNo || nextTradeNo);
+        setSide(initialTrade.side || "Buy");
+        setSession(initialTrade.session || "London");
+        setEntryPrice(String(initialTrade.entryPrice || ""));
+        setExitPrice(String(initialTrade.exitPrice || ""));
+        setEntryTime(initialTrade.entryTime || "12:00");
+        setExitTime(initialTrade.exitTime || "13:00");
+        setLots(initialTrade.lots || "");
+        setResult(initialTrade.result || "Win");
+        setRrr(String(initialTrade.rrr || ""));
+        setRiskPct(String(initialTrade.riskPct || "1.0"));
+        setSetup(initialTrade.setup || "");
+        setConfirmation(initialTrade.confirmation || "");
+        setNotes(initialTrade.notes || "");
+        setTags(Array.isArray(initialTrade.tags) ? initialTrade.tags.join(", ") : "");
+        setDate(initialTrade.date || new Date().toISOString().slice(0, 10));
+        setRating(initialTrade.rating || 5);
+        setReason(initialTrade.reason || "");
+        setMistakes(initialTrade.mistakes || "");
+      } else {
+        setPair("");
+        setTradeNo(nextTradeNo);
+        setSide("Buy");
+        setSession("London");
+        setEntryPrice("");
+        setExitPrice("");
+        setEntryTime(new Date().toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit" }));
+        setExitTime(new Date().toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit" }));
+        setLots("");
+        setResult("Win");
+        setRrr("");
+        setRiskPct("1.0");
+        setSetup("");
+        setConfirmation("");
+        setNotes("");
+        setTags("A+ Setup, Patience");
+        setDate(new Date().toISOString().slice(0, 10));
+        setRating(5);
+        setReason("");
+        setMistakes("");
+      }
+      setImageFile(null);
+    }
+  }, [isOpen, initialTrade, nextTradeNo]);
 
   if (!isOpen) return null;
 
@@ -37,30 +109,35 @@ export function LogTradeModal({ isOpen, onClose, onSave, initialTrade }: LogTrad
       const entryP = parseFloat(entryPrice) || 0;
       const exitP = parseFloat(exitPrice) || 0;
       const risk = parseFloat(riskPct) || 1.0;
-      const ratio = parseFloat(rrr) || 1.0;
       
-      const win = side === "Buy" ? exitP >= entryP : exitP <= entryP;
-      const pnl = win ? Math.round(risk * ratio * 100) / 100 : -risk;
+      // Calculate PnL multiplier dynamically: Win uses RRR, Loss uses 1.0 risk
+      const rrrMultiplier = parseFloat(rrr) || 1.0;
+      const pnl = result === "Win" ? Math.round(risk * rrrMultiplier * 100) / 100 : -risk;
 
       const tradePayload: Partial<Trade> = {
         id: initialTrade?.id,
+        tradeNo,
         date,
-        pair,
+        pair: pair.toUpperCase().trim(),
         side,
         session,
-        entryTime: initialTrade?.entryTime || "14:30",
-        exitTime: initialTrade?.exitTime || "15:45",
+        entryTime,
+        exitTime,
         entryPrice: entryP,
         exitPrice: exitP,
-        result: win ? "Win" : "Loss",
-        rrr: ratio,
+        result,
+        rrr,
         riskPct: risk,
         pnl,
-        setup,
+        setup: setup.trim(),
         confirmation,
         notes,
         tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
         screenshot: initialTrade?.screenshot || "chart-1",
+        lots: lots.trim(),
+        mistakes: mistakes.trim(),
+        rating,
+        reason: reason.trim(),
       };
 
       await onSave(tradePayload, imageFile || undefined);
@@ -81,7 +158,9 @@ export function LogTradeModal({ isOpen, onClose, onSave, initialTrade }: LogTrad
       <div className="glass max-h-[90vh] w-full max-w-xl animate-rise overflow-y-auto rounded-3xl p-6" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-border/60 pb-4">
           <div>
-            <h2 className="font-display text-xl font-semibold">{initialTrade ? "Edit Trade" : "Log New Trade"}</h2>
+            <h2 className="font-display text-xl font-semibold">
+              {initialTrade ? "Edit Trade" : "Log New Trade"} (No. #{tradeNo})
+            </h2>
             <p className="text-xs text-muted-foreground">Record entry, setup, risk and chart screenshots.</p>
           </div>
           <button onClick={onClose} className="rounded-lg p-1.5 text-muted-foreground hover:text-foreground">
@@ -90,12 +169,18 @@ export function LogTradeModal({ isOpen, onClose, onSave, initialTrade }: LogTrad
         </div>
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+          {/* Header Row: Pair, Side, Session */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Pair</label>
-              <select className={selectStyle} value={pair} onChange={(e) => setPair(e.target.value)}>
-                {PAIRS.map((p) => <option key={p}>{p}</option>)}
-              </select>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Pair (Manual Type)</label>
+              <input
+                type="text"
+                placeholder="e.g. GBPUSD"
+                required
+                className={field}
+                value={pair}
+                onChange={(e) => setPair(e.target.value)}
+              />
             </div>
             <div>
               <label className="block text-xs font-medium text-muted-foreground mb-1">Side</label>
@@ -107,11 +192,14 @@ export function LogTradeModal({ isOpen, onClose, onSave, initialTrade }: LogTrad
             <div>
               <label className="block text-xs font-medium text-muted-foreground mb-1">Session</label>
               <select className={selectStyle} value={session} onChange={(e) => setSession(e.target.value as "Asian" | "London" | "New York")}>
-                {SESSIONS.map((s) => <option key={s}>{s}</option>)}
+                <option value="London">London</option>
+                <option value="New York">New York</option>
+                <option value="Asian">Asian</option>
               </select>
             </div>
           </div>
 
+          {/* Pricing Row: Entry, Exit, Lots, Risk */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div>
               <label className="block text-xs font-medium text-muted-foreground mb-1">Entry Price</label>
@@ -122,40 +210,117 @@ export function LogTradeModal({ isOpen, onClose, onSave, initialTrade }: LogTrad
               <input type="number" step="any" required className={field} value={exitPrice} onChange={(e) => setExitPrice(e.target.value)} />
             </div>
             <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Lot Size (Lots)</label>
+              <input type="text" placeholder="e.g. 0.5" className={field} value={lots} onChange={(e) => setLots(e.target.value)} />
+            </div>
+            <div>
               <label className="block text-xs font-medium text-muted-foreground mb-1">Risk %</label>
               <input type="number" step="0.1" required className={field} value={riskPct} onChange={(e) => setRiskPct(e.target.value)} />
             </div>
+          </div>
+
+          {/* Times and Results Row */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">RRR (1:X)</label>
-              <input type="number" step="0.1" required className={field} value={rrr} onChange={(e) => setRrr(e.target.value)} />
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Entry Time</label>
+              <input type="time" required className={field} value={entryTime} onChange={(e) => setEntryTime(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Exit Time</label>
+              <input type="time" required className={field} value={exitTime} onChange={(e) => setExitTime(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Result</label>
+              <select className={selectStyle} value={result} onChange={(e) => setResult(e.target.value as "Win" | "Loss")}>
+                <option value="Win">Win</option>
+                <option value="Loss">Loss</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">RRR (Free text)</label>
+              <input type="text" placeholder="e.g. 1:3" required className={field} value={rrr} onChange={(e) => setRrr(e.target.value)} />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Setup</label>
-              <select className={selectStyle} value={setup} onChange={(e) => setSetup(e.target.value)}>
-                {SETUPS.map((s) => <option key={s}>{s}</option>)}
-              </select>
+          {/* Setup, Date, Rating Row */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div className="col-span-1">
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Set-up (Manual Type)</label>
+              <input
+                type="text"
+                placeholder="e.g. Liquidity Sweep"
+                required
+                className={field}
+                value={setup}
+                onChange={(e) => setSetup(e.target.value)}
+              />
             </div>
             <div>
               <label className="block text-xs font-medium text-muted-foreground mb-1">Date</label>
               <input type="date" required className={field} value={date} onChange={(e) => setDate(e.target.value)} />
             </div>
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Trade Rating</label>
+              <div className="flex h-[42px] items-center gap-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setRating(star)}
+                    className="p-0.5 text-muted-foreground hover:scale-110 transition-transform"
+                  >
+                    <Star
+                      className={`size-5 ${
+                        star <= rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground/40"
+                      }`}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">Confirmation & Tags</label>
-            <div className="grid grid-cols-2 gap-3">
+          {/* Confirmations & Tags */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Confirmation</label>
               <input placeholder="Confirmation (e.g. CHoCH)" className={field} value={confirmation} onChange={(e) => setConfirmation(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Tags</label>
               <input placeholder="Tags (comma separated)" className={field} value={tags} onChange={(e) => setTags(e.target.value)} />
             </div>
           </div>
 
+          {/* Reason for Taking Trade */}
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">Reason for Taking Trade</label>
+            <input
+              type="text"
+              placeholder="e.g. Strong H4 support retest + dynamic liquidity sweep"
+              className={field}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+            />
+          </div>
+
+          {/* Mistakes Section */}
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">Mistakes</label>
+            <input
+              type="text"
+              placeholder="e.g. Entered 5 mins early before candle closure"
+              className={field}
+              value={mistakes}
+              onChange={(e) => setMistakes(e.target.value)}
+            />
+          </div>
+
+          {/* Notes */}
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-1">Trade Notes & Rules Followed</label>
             <textarea
-              rows={3}
+              rows={2}
               placeholder="Plan ke according entry liya, TP tak patience rakha..."
               className="w-full rounded-xl border border-border bg-card/50 p-3 text-sm outline-none focus:border-primary/60 focus:ring-2 focus:ring-ring/40"
               value={notes}
@@ -163,6 +328,7 @@ export function LogTradeModal({ isOpen, onClose, onSave, initialTrade }: LogTrad
             />
           </div>
 
+          {/* Image Upload */}
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-1">Chart Screenshot (Supabase Storage)</label>
             <div className="flex items-center gap-3">

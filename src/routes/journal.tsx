@@ -33,14 +33,16 @@ function TradeCard({ t, onOpen }: { t: Trade; onOpen: () => void }) {
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="font-display text-base font-semibold">{t.pair}</p>
+          <p className="font-display text-base font-semibold">
+            {t.pair} {t.tradeNo ? `#${t.tradeNo}` : ""}
+          </p>
           <p className="text-xs text-muted-foreground">{t.date} · {t.session}</p>
         </div>
         <Badge tone={t.result === "Win" ? "win" : "loss"}>{t.result}</Badge>
       </div>
       <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
         <div className="rounded-xl bg-muted/40 p-2"><p className="text-muted-foreground">Side</p><p className="font-medium">{t.side}</p></div>
-        <div className="rounded-xl bg-muted/40 p-2"><p className="text-muted-foreground">RRR</p><p className="font-medium">1:{t.rrr}</p></div>
+        <div className="rounded-xl bg-muted/40 p-2"><p className="text-muted-foreground">RRR</p><p className="font-medium">{t.rrr}</p></div>
         <div className="rounded-xl bg-muted/40 p-2"><p className="text-muted-foreground">Risk</p><p className="font-medium">{t.riskPct}%</p></div>
       </div>
       <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
@@ -199,7 +201,9 @@ function Journal() {
           <div className="glass max-h-[85vh] w-full max-w-lg animate-rise overflow-y-auto rounded-t-3xl p-5 sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-start justify-between">
               <div>
-                <h3 className="font-display text-lg font-semibold">{open.pair} · {open.side}</h3>
+                <h3 className="font-display text-lg font-semibold">
+                  {open.pair} · {open.side} {open.tradeNo ? `(#${open.tradeNo})` : ""}
+                </h3>
                 <p className="text-xs text-muted-foreground">{open.date} · {open.session} session</p>
               </div>
               <div className="flex items-center gap-1">
@@ -272,14 +276,39 @@ function Journal() {
               {[
                 ["Entry Time", open.entryTime], ["Exit Time", open.exitTime],
                 ["Entry Price", String(open.entryPrice)], ["Exit Price", String(open.exitPrice)],
-                ["RRR", `1:${open.rrr}`], ["Risk", `${open.riskPct}%`],
-                ["Setup", open.setup], ["Confirmation", open.confirmation], ["PnL", money(pnlUsd(open))],
+                ["Lots Size", open.lots || "—"], ["RRR", open.rrr],
+                ["Risk", `${open.riskPct}%`], ["Setup", open.setup],
+                ["Confirmation", open.confirmation || "—"], ["PnL", money(pnlUsd(open))],
+                ["Rating", "⭐".repeat(open.rating || 5)],
               ].map(([k, v]) => (
                 <div key={k} className="rounded-xl bg-muted/40 p-2.5"><p className="text-muted-foreground">{k}</p><p className="font-medium">{v}</p></div>
               ))}
             </div>
-            <p className="mt-4 text-sm text-muted-foreground">{open.notes}</p>
-            <div className="mt-3 flex flex-wrap gap-1.5">{(open.tags || []).map((t) => <Badge key={t}>{t}</Badge>)}</div>
+
+            {open.reason && (
+              <div className="mt-4 rounded-xl bg-muted/20 p-3 text-xs">
+                <p className="font-semibold text-muted-foreground">Reason for taking trade:</p>
+                <p className="mt-1 text-foreground leading-normal">{open.reason}</p>
+              </div>
+            )}
+
+            {open.mistakes && (
+              <div className="mt-3 rounded-xl border border-destructive/20 bg-destructive/5 p-3 text-xs animate-rise">
+                <p className="font-semibold text-destructive/80">Mistakes recorded:</p>
+                <p className="mt-1 text-foreground leading-normal">{open.mistakes}</p>
+              </div>
+            )}
+
+            {open.notes && (
+              <div className="mt-3 rounded-xl bg-muted/20 p-3 text-xs">
+                <p className="font-semibold text-muted-foreground">Trade Notes & Rules Followed:</p>
+                <p className="mt-1 text-muted-foreground leading-normal">{open.notes}</p>
+              </div>
+            )}
+
+            <div className="mt-4 flex flex-wrap gap-1.5">
+              {(open.tags || []).map((t) => <Badge key={t}>{t}</Badge>)}
+            </div>
           </div>
         </div>
       )}
@@ -290,6 +319,7 @@ function Journal() {
         onClose={() => setIsLogModalOpen(false)}
         onSave={handleSaveTrade}
         initialTrade={editingTrade}
+        nextTradeNo={allTrades.length + 1}
       />
     </AppShell>
   );
