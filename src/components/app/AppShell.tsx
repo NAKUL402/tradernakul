@@ -36,12 +36,18 @@ function Brand({ compact }: { compact?: boolean }) {
 }
 
 import { Gatekeeper } from "@/components/app/Gatekeeper";
+import { useEffect } from "react";
+import { initThemeEngine } from "@/lib/theme-service";
 import { useAuth } from "@/lib/auth-context";
 
 export function AppShell({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { user, profile } = useAuth();
+
+  useEffect(() => {
+    initThemeEngine();
+  }, []);
 
   const name = profile?.full_name || user?.user_metadata?.full_name || user?.user_metadata?.name || "TN";
   const initials = name

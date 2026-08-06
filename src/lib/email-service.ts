@@ -14,10 +14,7 @@ export const sendOTPEmail = createServerFn("POST", async ({ email, otp }: { emai
   }
 
   try {
-    // Dynamic import Node-only nodemailer package strictly at serverless runtime
     const nodemailer = (await import("nodemailer")).default;
-
-    // Create transporter using SMTP credentials
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -51,6 +48,80 @@ export const sendOTPEmail = createServerFn("POST", async ({ email, otp }: { emai
       success: false, 
       mode: "error", 
       error: error instanceof Error ? error.message : String(error) 
+    };
+  }
+});
+
+export const sendMassEmailBroadcaster = createServerFn("POST", async ({
+  recipients,
+  subject,
+  bodyTitle,
+  bodyText,
+  occasionType,
+}: {
+  recipients: string[];
+  subject: string;
+  bodyTitle: string;
+  bodyText: string;
+  occasionType?: "announcement" | "festival" | "birthday" | "market_update";
+}) => {
+  const user = process.env.EMAIL_USER || "";
+  const pass = process.env.EMAIL_PASS || "";
+
+  if (!user || !pass) {
+    console.warn("[SMTP Config Missing] EMAIL_USER and EMAIL_PASS environment variables are not set in Vercel.");
+    return {
+      success: false,
+      mode: "missing_config",
+      message: "SMTP email credentials are not configured in Vercel. Set EMAIL_USER and EMAIL_PASS environment variables.",
+    };
+  }
+
+  try {
+    const nodemailer = (await import("nodemailer")).default;
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: user,
+        pass: pass,
+      },
+    });
+
+    const occasionBanner = occasionType === "festival" 
+      ? "🎉 Festival & Season Special Wish" 
+      : occasionType === "birthday" 
+      ? "🎂 Happy Birthday Wishes from TraderNakul AI!" 
+      : "📢 Member Announcement";
+
+    const mailOptions = {
+      from: `"TraderNakul AI Command Center" <${user}>`,
+      to: recipients.join(", "),
+      subject: subject,
+      html: `
+        <div style="font-family: sans-serif; padding: 30px; background-color: #0b0c16; color: #ffffff; border-radius: 16px; max-width: 550px; margin: auto; border: 1px solid rgba(255,255,255,0.1);">
+          <div style="text-align: center; margin-bottom: 20px;">
+            <span style="background-color: #4338ca; color: #e0e7ff; font-size: 11px; padding: 4px 10px; border-radius: 20px; font-weight: bold;">${occasionBanner}</span>
+            <h1 style="color: #6366f1; margin-top: 15px; font-size: 26px;">TraderNakul AI</h1>
+          </div>
+          <div style="background-color: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px;">
+            <h2 style="color: #a5b4fc; margin-top: 0; font-size: 18px;">${bodyTitle}</h2>
+            <div style="font-size: 14px; color: #cbd5e1; line-height: 1.6; white-space: pre-wrap;">${bodyText}</div>
+          </div>
+          <div style="margin-top: 25px; text-align: center; font-size: 11px; color: #64748b;">
+            Sent with ❤️ from TraderNakul AI Trading Command Center.
+          </div>
+        </div>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+    return { success: true, mode: "smtp" };
+  } catch (error) {
+    console.error("[SMTP Mass Broadcaster Error]:", error);
+    return {
+      success: false,
+      mode: "error",
+      error: error instanceof Error ? error.message : String(error),
     };
   }
 });
