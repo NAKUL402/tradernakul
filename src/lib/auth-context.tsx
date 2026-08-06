@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { User, Session } from "@supabase/supabase-js";
-import { createDemoProfile, isSupabaseConfigured, supabase, type Profile } from "./supabase";
+import { isSupabaseConfigured, supabase, type Profile } from "./supabase";
 
 type AuthContextType = {
   user: User | null;
@@ -81,25 +81,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const isLoggedOut = localStorage.getItem("tradernakul_logged_out") === "true";
-
       if (!isSupabaseConfigured) {
-        if (isLoggedOut) {
-          setIsLoading(false);
-          return;
-        }
-        const demoUser = createDemoProfile(
-          "nakultrader007@gmail.com",
-          "Nakul (Owner)",
-          "admin",
-          true,
-        );
-        if (isMounted) {
-          setUser({ id: demoUser.id, email: demoUser.email, user_metadata: { full_name: demoUser.full_name } } as User);
-          setSession({ access_token: "demo-session", user: { id: demoUser.id, email: demoUser.email } } as Session);
-          setProfile(demoUser);
-          setIsLoading(false);
-        }
+        console.warn("Supabase is not configured yet. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY env variables.");
+        if (isMounted) setIsLoading(false);
         return;
       }
 
@@ -161,48 +145,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("tradernakul_logged_out");
-    }
-
     if (!isSupabaseConfigured) {
-      const normalizedEmail = email.trim().toLowerCase();
-      const isOwnerEmail = ownerEmails.includes(normalizedEmail);
-      
-      // Allow testing signin locally for owners with any password, or any test users
-      const demoUser = createDemoProfile(
-        normalizedEmail,
-        isOwnerEmail ? "Nakul (Owner)" : "Trader User",
-        isOwnerEmail ? "admin" : "user",
-        isOwnerEmail,
-      );
-
-      // Set access approval simulation
-      if (normalizedEmail.includes("pending")) {
-        demoUser.status = "pending";
-      } else if (normalizedEmail.includes("reject")) {
-        demoUser.status = "rejected";
-      } else if (normalizedEmail.includes("suspend")) {
-        demoUser.status = "suspended";
-      } else {
-        demoUser.status = "approved";
-      }
-
-      if (demoUser.status !== "approved" && !demoUser.is_owner) {
-        // Trigger approval block custom event
-        setTimeout(() => {
-          const event = new CustomEvent("auth_approval_blocked", { 
-            detail: { status: demoUser.status } 
-          });
-          window.dispatchEvent(event);
-        }, 100);
-        throw new Error(`Access blocked: status is ${demoUser.status.toUpperCase()}`);
-      }
-
-      setUser({ id: demoUser.id, email: demoUser.email, user_metadata: { full_name: demoUser.full_name } } as User);
-      setSession({ access_token: "demo-session", user: { id: demoUser.id, email: demoUser.email } } as Session);
-      setProfile(demoUser);
-      return;
+      throw new Error("Supabase is not configured. Setup environment variables in Vercel.");
     }
 
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -222,9 +166,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("tradernakul_logged_out", "true");
-    }
     try {
       if (isSupabaseConfigured) {
         await supabase.auth.signOut();

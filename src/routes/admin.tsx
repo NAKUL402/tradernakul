@@ -5,7 +5,6 @@ import { AppShell } from "@/components/app/AppShell";
 import { Badge, Panel, StatCard } from "@/components/app/ui-kit";
 import { useAuth } from "@/lib/auth-context";
 import { supabase, type Profile } from "@/lib/supabase";
-import { trades } from "@/lib/trades";
 import {
   CheckCircle2, Clock, Megaphone,
   Save, ShieldCheck, ShieldAlert, Users, XCircle, Zap, Activity, Trash2, Ban
@@ -22,11 +21,12 @@ export const Route = createFileRoute("/admin")({
 });
 
 function AdminPage() {
-  const { user, profile, isAdmin, isOwner, isLoading } = useAuth();
+  const { user, isAdmin, isOwner, isLoading } = useAuth();
   const navigate = useNavigate();
   const [usersList, setUsersList] = useState<Profile[]>([]);
   const [filter, setFilter] = useState<"all" | "pending" | "approved" | "rejected" | "suspended">("all");
   const [isFetchingUsers, setIsFetchingUsers] = useState(true);
+  const [totalDbTrades, setTotalDbTrades] = useState(0);
 
   // Site Controls State
   const [banner, setBanner] = useState("Welcome to TraderNakul — Professional AI Trading Journal");
@@ -63,59 +63,24 @@ function AdminPage() {
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (!error && data) {
+      if (error) {
+        toast.error(`Error loading users: ${error.message}`);
+        setUsersList([]);
+      } else if (data) {
         setUsersList(data as Profile[]);
-      } else {
-        // Fallback demo user profiles if DB connection is pending setup
-        setUsersList([
-          {
-            id: user?.id || "owner-id",
-            email: user?.email || "tradernakul@gmail.com",
-            full_name: profile?.full_name || "Nakul (Owner)",
-            avatar_url: profile?.avatar_url || null,
-            role: "admin",
-            status: "approved",
-            is_owner: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-          {
-            id: "user-2",
-            email: "trader.alex@gmail.com",
-            full_name: "Alex Rivera",
-            avatar_url: null,
-            role: "user",
-            status: "pending",
-            is_owner: false,
-            created_at: new Date(Date.now() - 3600000 * 4).toISOString(),
-            updated_at: new Date(Date.now() - 3600000 * 4).toISOString(),
-          },
-          {
-            id: "user-3",
-            email: "priya.forex@gmail.com",
-            full_name: "Priya Sharma",
-            avatar_url: null,
-            role: "user",
-            status: "pending",
-            is_owner: false,
-            created_at: new Date(Date.now() - 3600000 * 12).toISOString(),
-            updated_at: new Date(Date.now() - 3600000 * 12).toISOString(),
-          },
-          {
-            id: "user-4",
-            email: "dev.user@gmail.com",
-            full_name: "Dev Patel",
-            avatar_url: null,
-            role: "user",
-            status: "suspended",
-            is_owner: false,
-            created_at: new Date(Date.now() - 3600000 * 48).toISOString(),
-            updated_at: new Date(Date.now() - 3600000 * 48).toISOString(),
-          },
-        ]);
+      }
+
+      // Fetch live trades count directly from database
+      const { count, error: countError } = await supabase
+        .from("trades")
+        .select("*", { count: "exact", head: true });
+
+      if (!countError && count !== null) {
+        setTotalDbTrades(count);
       }
     } catch (err) {
       console.error("Error fetching users:", err);
+      toast.error("Network error fetching user details.");
     } finally {
       setIsFetchingUsers(false);
     }
@@ -149,31 +114,24 @@ function AdminPage() {
     }
 
     try {
-      const isPlaceholder = !import.meta.env.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL.includes("placeholder");
-      if (!isPlaceholder && !targetId.startsWith("user-")) {
-        const { error } = await supabase
-          .from("profiles")
-          .update({ status: newStatus, updated_at: new Date().toISOString() })
-          .eq("id", targetId);
+      const { error } = await supabase
+        .from("profiles")
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq("id", targetId);
 
-        if (error) {
-          toast.error(`Failed to update status in DB: ${error.message}`);
-          return;
-        }
+      if (error) {
+        toast.error(`Failed to update status in DB: ${error.message}`);
+        return;
       }
 
       setUsersList((prev) =>
         prev.map((u) => (u.id === targetId ? { ...u, status: newStatus } : u))
       );
 
-      toast.success(`User access set to ${newStatus.toUpperCase()}${targetId.startsWith("user-") ? " (Demo Sim)" : ""}`);
+      toast.success(`User access set to ${newStatus.toUpperCase()}`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Network error";
-      console.warn("Database status update warning, falling back to local simulation:", msg);
-      setUsersList((prev) =>
-        prev.map((u) => (u.id === targetId ? { ...u, status: newStatus } : u))
-      );
-      toast.success(`User access set to ${newStatus.toUpperCase()} (Demo Sim)`);
+      toast.error(`Error updating status: ${msg}`);
     }
   };
 
@@ -189,26 +147,21 @@ function AdminPage() {
     }
 
     try {
-      const isPlaceholder = !import.meta.env.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL.includes("placeholder");
-      if (!isPlaceholder && !targetId.startsWith("user-")) {
-        const { error } = await supabase
-          .from("profiles")
-          .delete()
-          .eq("id", targetId);
+      const { error } = await supabase
+        .from("profiles")
+        .delete()
+        .eq("id", targetId);
 
-        if (error) {
-          toast.error(`Failed to delete user in DB: ${error.message}`);
-          return;
-        }
+      if (error) {
+        toast.error(`Failed to delete user in DB: ${error.message}`);
+        return;
       }
 
       setUsersList((prev) => prev.filter((u) => u.id !== targetId));
-      toast.success(`User profile deleted successfully${targetId.startsWith("user-") ? " (Demo Sim)" : ""}`);
+      toast.success("User profile deleted successfully");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Network error";
-      console.warn("Database delete warning, falling back to local simulation:", msg);
-      setUsersList((prev) => prev.filter((u) => u.id !== targetId));
-      toast.success("User profile deleted successfully (Demo Sim)");
+      toast.error(`Error deleting user: ${msg}`);
     }
   };
 
@@ -294,7 +247,7 @@ function AdminPage() {
         <StatCard label="Total Users" value={String(totalUsers)} icon={<Users className="size-4" />} />
         <StatCard label="Pending Approval" value={String(pendingCount)} icon={<Clock className="size-4" />} accent="accent" />
         <StatCard label="Approved Traders" value={String(approvedCount)} icon={<CheckCircle2 className="size-4" />} accent="success" />
-        <StatCard label="Total Logged Trades" value={String(trades.length)} icon={<Activity className="size-4" />} />
+        <StatCard label="Total Logged Trades" value={String(totalDbTrades)} icon={<Activity className="size-4" />} />
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
@@ -374,7 +327,7 @@ function AdminPage() {
                               <button
                                 onClick={() => updateUserStatus(u.id, "approved")}
                                 title="Approve user access"
-                                className="flex items-center gap-1 rounded-lg bg-[oklch(0.72_0.19_155)]/20 px-2 py-1 text-xs font-semibold text-[oklch(0.8_0.17_155)] hover:bg-[oklch(0.72_0.19_155)]/30"
+                                className="flex items-center gap-1 rounded-lg bg-[oklch(0.72_0.19_155)]/20 px-2.5 py-1 text-xs font-semibold text-[oklch(0.8_0.17_155)] hover:bg-[oklch(0.72_0.19_155)]/30"
                               >
                                 <CheckCircle2 className="size-3" /> Approve
                               </button>

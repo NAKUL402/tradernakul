@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app/AppShell";
 import { Badge, Panel } from "@/components/app/ui-kit";
-import { fetchUserTrades, trades as defaultMockTrades, type Trade } from "@/lib/trades";
+import { fetchUserTrades, type Trade } from "@/lib/trades";
 import { analyzeTradeDataWithAI } from "@/lib/ai-coach-service";
 import { AlertTriangle, Brain, CheckCircle2, Crown, Shield, Sparkles, Target } from "lucide-react";
 
@@ -48,7 +48,7 @@ function List({ items, tone }: { items: string[]; tone: "good" | "bad" }) {
 }
 
 function Coach() {
-  const [userTrades, setUserTrades] = useState<Trade[]>(defaultMockTrades);
+  const [userTrades, setUserTrades] = useState<Trade[]>([]);
 
   useEffect(() => {
     fetchUserTrades().then((data) => setUserTrades(data));

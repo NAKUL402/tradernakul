@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app/AppShell";
 import { Panel, StatCard, Badge } from "@/components/app/ui-kit";
 import { BarsChart, EquityChart, WinLossPie } from "@/components/app/charts";
-import { equityCurve, fetchUserTrades, monthly, money, pct, pnlUsd, stats, trades as defaultMockTrades, type Trade } from "@/lib/trades";
+import { equityCurve, fetchUserTrades, monthly, money, pct, pnlUsd, stats, type Trade } from "@/lib/trades";
 import { Activity, Flame, Percent, Scale, Snowflake, Target, TrendingDown, TrendingUp, Trophy, Wallet } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -19,7 +19,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Dashboard() {
-  const [userTrades, setUserTrades] = useState<Trade[]>(defaultMockTrades);
+  const [userTrades, setUserTrades] = useState<Trade[]>([]);
 
   useEffect(() => {
     fetchUserTrades().then((data) => setUserTrades(data));

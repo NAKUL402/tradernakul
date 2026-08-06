@@ -5,7 +5,7 @@ import { Badge, EmptyState, Panel } from "@/components/app/ui-kit";
 import { LogTradeModal } from "@/components/app/LogTradeModal";
 import { useAuth } from "@/lib/auth-context";
 import {
-  PAIRS, SETUPS, money, pnlUsd, trades as defaultMockTrades, type Trade,
+  PAIRS, SETUPS, money, pnlUsd, type Trade,
   fetchUserTrades, saveTradeToSupabase, deleteTradeFromSupabase
 } from "@/lib/trades";
 import { Clock, ImageIcon, Plus, Search, SlidersHorizontal, Trash2, Edit3, X } from "lucide-react";
@@ -64,7 +64,7 @@ function TradeCard({ t, onOpen }: { t: Trade; onOpen: () => void }) {
 
 function Journal() {
   const { user } = useAuth();
-  const [allTrades, setAllTrades] = useState<Trade[]>(defaultMockTrades);
+  const [allTrades, setAllTrades] = useState<Trade[]>([]);
   const [q, setQ] = useState("");
   const [pair, setPair] = useState("All");
   const [result, setResult] = useState("All");

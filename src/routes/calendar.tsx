@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app/AppShell";
 import { Badge, Panel } from "@/components/app/ui-kit";
-import { fetchUserTrades, money, pnlUsd, trades as defaultMockTrades, type Trade } from "@/lib/trades";
+import { fetchUserTrades, money, pnlUsd, type Trade } from "@/lib/trades";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -19,7 +19,7 @@ export const Route = createFileRoute("/calendar")({
 });
 
 function CalendarPage() {
-  const [userTrades, setUserTrades] = useState<Trade[]>(defaultMockTrades);
+  const [userTrades, setUserTrades] = useState<Trade[]>([]);
   const [offset, setOffset] = useState(0);
 
   useEffect(() => {

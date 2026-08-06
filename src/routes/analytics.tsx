@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app/AppShell";
 import { Badge, Panel, StatCard } from "@/components/app/ui-kit";
 import { BarsChart, DrawdownChart, TrendChart } from "@/components/app/charts";
-import { DOW, equityCurve, fetchUserTrades, groupStats, money, monthly, pct, stats, trades as defaultMockTrades, type Trade } from "@/lib/trades";
+import { DOW, equityCurve, fetchUserTrades, groupStats, money, monthly, pct, stats, type Trade } from "@/lib/trades";
 
 export const Route = createFileRoute("/analytics")({
   head: () => ({
@@ -19,20 +19,25 @@ export const Route = createFileRoute("/analytics")({
 
 function Table({ rows }: { rows: { name: string; trades: number; winRate: number; pnl: number }[] }) {
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[420px] text-sm">
+    <div className="overflow-x-auto text-xs sm:text-sm">
+      <table className="w-full min-w-[320px]">
         <thead>
-          <tr className="text-left text-[11px] uppercase tracking-wide text-muted-foreground">
-            {["Name", "Trades", "Win Rate", "PnL"].map((h) => <th key={h} className="pb-2 font-medium">{h}</th>)}
+          <tr className="border-b border-border/60 text-left text-[11px] uppercase tracking-wide text-muted-foreground">
+            <th className="pb-2 font-medium">Name</th>
+            <th className="pb-2 font-medium">Trades</th>
+            <th className="pb-2 font-medium">Win Rate</th>
+            <th className="pb-2 font-medium text-right">PnL</th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((r) => (
-            <tr key={r.name} className="border-t border-border/60">
-              <td className="py-2.5 font-medium">{r.name}</td>
-              <td className="py-2.5 text-muted-foreground">{r.trades}</td>
-              <td className="py-2.5"><Badge tone={r.winRate >= 50 ? "win" : "loss"}>{pct(r.winRate)}</Badge></td>
-              <td className={`py-2.5 font-semibold ${r.pnl >= 0 ? "text-[oklch(0.72_0.19_155)]" : "text-destructive"}`}>{money(r.pnl)}</td>
+          {rows.map((row) => (
+            <tr key={row.name} className="border-b border-border/40 transition hover:bg-muted/10">
+              <td className="py-2.5 font-medium">{row.name}</td>
+              <td className="py-2.5 text-muted-foreground">{row.trades}</td>
+              <td className="py-2.5 text-muted-foreground">{pct(row.winRate)}</td>
+              <td className={`py-2.5 text-right font-semibold ${row.pnl >= 0 ? "text-[oklch(0.72_0.19_155)]" : "text-destructive"}`}>
+                {money(row.pnl)}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -42,7 +47,7 @@ function Table({ rows }: { rows: { name: string; trades: number; winRate: number
 }
 
 function Analytics() {
-  const [userTrades, setUserTrades] = useState<Trade[]>(defaultMockTrades);
+  const [userTrades, setUserTrades] = useState<Trade[]>([]);
 
   useEffect(() => {
     fetchUserTrades().then((data) => setUserTrades(data));

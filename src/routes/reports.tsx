@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app/AppShell";
 import { Badge, Panel } from "@/components/app/ui-kit";
 import { BarsChart, TrendChart } from "@/components/app/charts";
-import { fetchUserTrades, money, monthly, pct, stats, trades as defaultMockTrades, type Trade } from "@/lib/trades";
+import { fetchUserTrades, money, monthly, pct, stats, type Trade } from "@/lib/trades";
 import { Download, FileText } from "lucide-react";
 
 export const Route = createFileRoute("/reports")({
@@ -19,7 +19,7 @@ export const Route = createFileRoute("/reports")({
 });
 
 function Reports() {
-  const [userTrades, setUserTrades] = useState<Trade[]>(defaultMockTrades);
+  const [userTrades, setUserTrades] = useState<Trade[]>([]);
 
   useEffect(() => {
     fetchUserTrades().then((data) => setUserTrades(data));
