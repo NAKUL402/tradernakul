@@ -2,26 +2,46 @@ import { createClient } from "@supabase/supabase-js";
 
 const isPlaceholderValue = (value: string) => !value || /placeholder|example/i.test(value);
 
-// Robust environment variable resolver supporting both client-side Vite (VITE_ prefix)
-// and Node/Vercel server environments (standard SUPABASE_ prefix)
-const getEnv = (key: string): string => {
-  // 1. Check client-side Vite import.meta.env
-  if (typeof window !== "undefined" && import.meta.env) {
-    const val = import.meta.env[key] || import.meta.env[`VITE_${key}`];
-    if (val && typeof val === "string") return val;
-  }
+// Direct literal evaluation to ensure Vite static string replacements 
+// (e.g. process.env.SUPABASE_URL) match and compile correctly at build time.
+const getSupabaseUrl = (): string => {
+  try {
+    if (typeof import.meta.env !== "undefined") {
+      const val = import.meta.env.VITE_SUPABASE_URL || import.meta.env.SUPABASE_URL;
+      if (val && typeof val === "string") return val;
+    }
+  } catch {}
   
-  // 2. Check process.env (injected by Vite or present in Node runtime)
-  if (typeof process !== "undefined" && process.env) {
-    const val = process.env[key] || process.env[`VITE_${key}`];
-    if (val && typeof val === "string") return val;
-  }
+  try {
+    if (typeof process !== "undefined" && process.env) {
+      const val = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+      if (val && typeof val === "string") return val;
+    }
+  } catch {}
   
   return "";
 };
 
-const supabaseUrl = getEnv("SUPABASE_URL") || getEnv("VITE_SUPABASE_URL");
-const supabaseAnonKey = getEnv("SUPABASE_ANON_KEY") || getEnv("VITE_SUPABASE_ANON_KEY");
+const getSupabaseAnonKey = (): string => {
+  try {
+    if (typeof import.meta.env !== "undefined") {
+      const val = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.SUPABASE_ANON_KEY;
+      if (val && typeof val === "string") return val;
+    }
+  } catch {}
+  
+  try {
+    if (typeof process !== "undefined" && process.env) {
+      const val = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+      if (val && typeof val === "string") return val;
+    }
+  } catch {}
+  
+  return "";
+};
+
+const supabaseUrl = getSupabaseUrl();
+const supabaseAnonKey = getSupabaseAnonKey();
 const isBrowser = typeof window !== "undefined";
 
 export const isSupabaseConfigured = Boolean(
