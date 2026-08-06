@@ -29,7 +29,7 @@ export function analyzeTradeDataWithAI(userTrades: Trade[]): AICoachAnalysis {
       topMistakes: ["No trades logged yet. Start entering your trade history."],
       topStrengths: ["System ready for trade analysis."],
       improvementPlan: ["Week 1: Log at least 5 trades with entry/exit prices and screenshots."],
-      psychologyText: "Log your trades consistently to build your psychology profile.",
+      psychologyText: "Patience is not waiting; patience is actively refusing low-probability setups. Log your trades to build your psychology profile.",
       riskReviewText: "Ensure fixed risk percentage (1-2%) per trade.",
       finalVerdict: "Ready to analyze your trading edge as soon as you log entries.",
     };
@@ -37,7 +37,6 @@ export function analyzeTradeDataWithAI(userTrades: Trade[]): AICoachAnalysis {
 
   const s = stats(userTrades);
   const str = streaks(userTrades);
-  const byPair = groupStats(userTrades, (t) => t.pair);
   const bySetup = groupStats(userTrades, (t) => t.setup);
 
   const qualityScore = Math.min(99, Math.max(30, Math.round(s.winRate * 0.7 + s.avgRRR * 12)));
@@ -87,7 +86,44 @@ export function analyzeTradeDataWithAI(userTrades: Trade[]): AICoachAnalysis {
     "Week 4: Har entry ke saath chart screenshot + emotion note upload karo.",
   ];
 
-  const psychologyText = `Aapka win rate ${s.winRate.toFixed(1)}% hai. Data batata hai ki win streak (${str.winStreak}) ke baad overconfidence aur loss streak (${str.lossStreak}) ke baad revenge trading sabse bada risk factors hain. Loss ke baad 30 minute ka forced break lena aapke net PnL ko boost kar sakta hai.`;
+  // 20 Elite Psychology Principles
+  const principles = [
+    "The market rewards execution, not prediction. Stop guessing and start executing.",
+    "Every impulsive trade is a loan taken from your future profits. It must be repaid with interest.",
+    "Patience is not waiting; patience is actively refusing low-probability setups.",
+    "Your stop loss is the cost of doing business. Your inability to accept it is the cost of ruin.",
+    "A profitable trader protects capital first, opportunities second. Survival is the only edge.",
+    "The market owes you absolutely nothing. Every entry must justify its place on your ledger.",
+    "Discipline is what remains when emotions become too expensive. Trade like a machine.",
+    "One undisciplined trade can erase weeks of perfect execution. Consistency is fragile.",
+    "Winning traders think in terms of probability, not certainty. Every trade is just one of many.",
+    "If you cannot follow your plan, you do not have a trading system. You have a gambling habit.",
+    "Confidence comes from repeating a validated process, not from wishing for a positive outcome.",
+    "Accepting a loss is an active decision. Holding a losing trade is a passive surrender.",
+    "The market is not against you. Your refusal to accept reality is your only enemy.",
+    "An elite trader is comfortable with missing moves. FOMO is a retail trap.",
+    "Drawdowns are not failures; they are the price you pay to play a statistical game.",
+    "Revenge trading is an emotional attempt to control a market that cannot be controlled.",
+    "Your win rate is irrelevant if your average loss is larger than your average win.",
+    "Trading is not about being right. It is about making decisions under uncertainty.",
+    "If you feel excited or devastated by a single trade, your position sizing is too large.",
+    "Elite execution is boring. If your trading feels like a thriller, you are doing it wrong."
+  ];
+
+  let selectedPrinciple = principles[0]!;
+
+  if (str.lossStreak >= 2) {
+    selectedPrinciple = principles[15]!; // Revenge / control
+  } else if (str.winStreak >= 2) {
+    selectedPrinciple = principles[7]!; // Consistency is fragile / overconfidence
+  } else if (s.winRate < 45) {
+    selectedPrinciple = principles[2]!; // Patience / refusing setups
+  } else {
+    // Rotate based on trade count hash
+    selectedPrinciple = principles[userTrades.length % principles.length]!;
+  }
+
+  const psychologyText = `${selectedPrinciple} Aapka win rate ${s.winRate.toFixed(1)}% hai. Streak performance ko bypass karke risk controls follow karo.`;
 
   const riskReviewText = `Profit Factor ${s.profitFactor.toFixed(2)} aur average RRR 1:${s.avgRRR.toFixed(2)} hai. Capital protection primary goal honi chahiye. Position sizing auto-calculator use karo.`;
 
