@@ -55,21 +55,91 @@ export function streaks(list: Trade[]) {
 }
 
 export function groupStats(list: Trade[], key: (t: Trade) => string) {
-  const groups: Record<string, { win: number; loss: number; pnl: number }> = {};
-  list.forEach((t) => {
+  const map = new Map<string, { name: string; trades: number; wins: number; pnl: number }>();
+  for (const t of list) {
     const k = key(t);
-    if (!groups[k]) groups[k] = { win: 0, loss: 0, pnl: 0 };
-    if (t.result === "Win") groups[k].win++;
-    else groups[k].loss++;
-    groups[k].pnl += pnlUsd(t);
-  });
-  return Object.entries(groups).map(([name, stats]) => ({
-    name,
-    trades: stats.win + stats.loss,
-    winRate: stats.win + stats.loss > 0 ? stats.win / (stats.win + stats.loss) : 0,
-    pnl: stats.pnl,
-  }));
+    const cur = map.get(k) ?? { name: k, trades: 0, wins: 0, pnl: 0 };
+    cur.trades++;
+    if (t.result === "Win") cur.wins++;
+    cur.pnl += pnlUsd(t);
+    map.set(k, cur);
+  }
+  return [...map.values()].map((g) => ({ ...g, winRate: (g.wins / g.trades) * 100 }));
 }
+
+export function stats(list: Trade[] = []) {
+  if (!list || list.length === 0) {
+    return {
+      total: 0,
+      winRate: 0,
+      avgRRR: 0,
+      profitFactor: 0,
+      winStreak: 0,
+      lossStreak: 0,
+      bestPair: { name: "N/A", trades: 0, wins: 0, pnl: 0, winRate: 0 },
+      worstPair: { name: "N/A", trades: 0, wins: 0, pnl: 0, winRate: 0 },
+      net: 0,
+      monthlyPnl: 0,
+      weeklyPnl: 0,
+      avgWin: 0,
+      avgLoss: 0,
+      wins: 0,
+      losses: 0,
+    };
+  }
+  const wins = list.filter((t) => t.result === "Win");
+  const losses = list.filter((t) => t.result === "Loss");
+  const gross = wins.reduce((s, t) => s + pnlUsd(t), 0);
+  const grossLoss = Math.abs(losses.reduce((s, t) => s + pnlUsd(t), 0));
+  const byPair = groupStats(list, (t) => t.pair).sort((a, b) => b.pnl - a.pnl);
+  const s = streaks(list);
+  const net = gross - grossLoss;
+  const month = new Date().toISOString().slice(0, 7);
+  return {
+    total: list.length,
+    winRate: (wins.length / list.length) * 100,
+    avgRRR: list.reduce((sum, t) => sum + (parseFloat(t.rrr) || 0), 0) / list.length,
+    profitFactor: grossLoss === 0 ? gross : gross / grossLoss,
+    winStreak: s.win,
+    lossStreak: s.loss,
+    bestPair: byPair[0] ?? { name: "N/A", trades: 0, wins: 0, pnl: 0, winRate: 0 },
+    worstPair: byPair[byPair.length - 1] ?? { name: "N/A", trades: 0, wins: 0, pnl: 0, winRate: 0 },
+    net,
+    monthlyPnl: list.filter((t) => t.date.startsWith(month)).reduce((s2, t) => s2 + pnlUsd(t), 0),
+    weeklyPnl: list.slice(-8).reduce((s2, t) => s2 + pnlUsd(t), 0),
+    avgWin: gross / Math.max(wins.length, 1),
+    avgLoss: grossLoss / Math.max(losses.length, 1),
+    wins: wins.length,
+    losses: losses.length,
+  };
+}
+
+export function equityCurve(list: Trade[] = []) {
+  let eq = ACCOUNT;
+  let peak = ACCOUNT;
+  return list.map((t, i) => {
+    eq += pnlUsd(t);
+    peak = Math.max(peak, eq);
+    return {
+      i: i + 1,
+      date: t.date,
+      equity: Math.round(eq),
+      drawdown: Math.round(((eq - peak) / peak) * 1000) / 10,
+    };
+  });
+}
+
+export function monthly(list: Trade[] = []) {
+  const g = groupStats(list, (t) => t.date.slice(0, 7));
+  return g
+    .sort((a, b) => (a.name < b.name ? -1 : 1))
+    .map((m) => ({
+      ...m,
+      label: new Date(`${m.name}-01T00:00:00Z`).toLocaleString("en-US", { month: "short" }),
+    }));
+}
+
+export const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export async function fetchUserTrades(): Promise<Trade[]> {
   try {
