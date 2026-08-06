@@ -4,14 +4,14 @@ const isPlaceholderValue = (value: string) => !value || /placeholder|example/i.t
 
 // Direct, guard-free assignments to ensure Vite's macro replacement engine 
 // directly replaces these strings with actual values at build-time.
-const supabaseUrl =
+export const supabaseUrl =
   import.meta.env.VITE_SUPABASE_URL ||
   import.meta.env.SUPABASE_URL ||
   process.env.SUPABASE_URL ||
   process.env.VITE_SUPABASE_URL ||
   "";
 
-const supabaseAnonKey =
+export const supabaseAnonKey =
   import.meta.env.VITE_SUPABASE_ANON_KEY ||
   import.meta.env.SUPABASE_ANON_KEY ||
   process.env.SUPABASE_ANON_KEY ||
