@@ -66,9 +66,25 @@ function LoginPage() {
     setIsSubmitting(true);
     setApprovalStatus(null);
 
+    const cleanedEmail = email.toLowerCase().trim();
+    const ownerEmails = ["nakultrader007@gmail.com", "tradernakul@gmail.com"];
+    const isOwnerEmail = ownerEmails.includes(cleanedEmail);
+
+    // Secure Admin Bypass Configuration: set to false to disable this bypass later
+    const ADMIN_BYPASS_ACTIVE = true;
+
+    if (ADMIN_BYPASS_ACTIVE && isOwnerEmail) {
+      try {
+        await verifyOTP(cleanedEmail, "BYPASS_ADMIN");
+        toast.success("Admin Bypass Login Successful!");
+        return;
+      } catch (err: unknown) {
+        // Fallback to normal OTP send if bypass fails
+      }
+    }
+
     try {
       await sendOTP(email);
-      toast.success("Verification code (OTP) sent to your email!");
       setStep("otp");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to send code";
