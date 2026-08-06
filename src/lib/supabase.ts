@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { createServerFn } from "@tanstack/react-start";
 
 const isPlaceholderValue = (value: string) => !value || /placeholder|example/i.test(value);
 
@@ -24,15 +25,16 @@ export const isSupabaseConfigured = Boolean(
   supabaseUrl && supabaseAnonKey && !isPlaceholderValue(supabaseUrl) && !isPlaceholderValue(supabaseAnonKey),
 );
 
-// Diagnostic logs (completely secure: only outputs string lengths and patterns)
-if (isBrowser) {
-  console.log("=== SUPABASE DIAGNOSTIC CONFIG ===");
-  console.log("URL length:", (supabaseUrl || "").length);
-  console.log("Key length:", (supabaseAnonKey || "").length);
-  console.log("Is Configured:", isSupabaseConfigured);
-  console.log("URL Prefix:", (supabaseUrl || "").slice(0, 12));
-  console.log("==================================");
-}
+// Server Function to safely query Vercel serverless runtime environment
+export const getServerEnvDiagnostics = createServerFn("GET", async () => {
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";
+  const key = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || "";
+  return {
+    serverUrlLength: url.length,
+    serverKeyLength: key.length,
+    serverUrlStart: url.slice(0, 15),
+  };
+});
 
 const clientUrl = isSupabaseConfigured ? supabaseUrl : "https://placeholder.supabase.co";
 const clientKey = isSupabaseConfigured ? supabaseAnonKey : "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsYWNlaG9sZGVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE2MDAwMDAwMDAsImV4cCI6MjAwMDAwMDAwMH0.placeholder";
