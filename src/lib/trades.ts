@@ -196,9 +196,37 @@ export function monthly(list: Trade[] = trades) {
 
 export const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-import { supabase } from "./supabase";
+import { isSupabaseConfigured, readDemoTrades, supabase, writeDemoTrades } from "./supabase";
+
+function normalizeTradeRecord(record: Record<string, unknown>): Trade {
+  return {
+    id: String(record.id ?? ""),
+    date: String(record.date ?? ""),
+    pair: String(record.pair ?? "XAUUSD"),
+    side: (record.side as Trade["side"]) ?? "Buy",
+    session: (record.session as Trade["session"]) ?? "London",
+    entryTime: String(record.entryTime ?? record.entry_time ?? "12:00"),
+    exitTime: String(record.exitTime ?? record.exit_time ?? "13:00"),
+    entryPrice: Number(record.entryPrice ?? record.entry_price ?? 0),
+    exitPrice: Number(record.exitPrice ?? record.exit_price ?? 0),
+    result: (record.result as Trade["result"]) ?? "Win",
+    rrr: Number(record.rrr ?? 0),
+    riskPct: Number(record.riskPct ?? record.risk_pct ?? 0),
+    pnl: Number(record.pnl ?? 0),
+    setup: String(record.setup ?? ""),
+    confirmation: String(record.confirmation ?? ""),
+    notes: String(record.notes ?? ""),
+    screenshot: String(record.screenshot ?? record.screenshot_url ?? "chart-1"),
+    tags: Array.isArray(record.tags) ? record.tags.map((tag) => String(tag)) : [],
+  };
+}
 
 export async function fetchUserTrades(): Promise<Trade[]> {
+  if (!isSupabaseConfigured) {
+    const demoTrades = readDemoTrades();
+    return demoTrades.length > 0 ? demoTrades.map((record) => normalizeTradeRecord(record as Record<string, unknown>)) : trades;
+  }
+
   try {
     const { data, error } = await supabase
       .from("trades")
@@ -234,6 +262,36 @@ export async function fetchUserTrades(): Promise<Trade[]> {
 }
 
 export async function saveTradeToSupabase(tradePayload: Partial<Trade>, userId: string, imageFile?: File): Promise<void> {
+  if (!isSupabaseConfigured) {
+    const existing = readDemoTrades() as Record<string, unknown>[];
+    const nextTrade: Trade = {
+      id: tradePayload.id && !tradePayload.id.startsWith("T-") ? tradePayload.id : `demo-${Date.now()}`,
+      date: tradePayload.date || new Date().toISOString().slice(0, 10),
+      pair: tradePayload.pair || "XAUUSD",
+      side: tradePayload.side || "Buy",
+      session: tradePayload.session || "London",
+      entryTime: tradePayload.entryTime || "12:00",
+      exitTime: tradePayload.exitTime || "13:00",
+      entryPrice: tradePayload.entryPrice || 0,
+      exitPrice: tradePayload.exitPrice || 0,
+      result: tradePayload.result || "Win",
+      rrr: tradePayload.rrr || 1,
+      riskPct: tradePayload.riskPct || 1,
+      pnl: tradePayload.pnl || 0,
+      setup: tradePayload.setup || "",
+      confirmation: tradePayload.confirmation || "",
+      notes: tradePayload.notes || "",
+      screenshot: tradePayload.screenshot || "chart-1",
+      tags: tradePayload.tags || [],
+    };
+
+    const next = tradePayload.id && !tradePayload.id.startsWith("T-")
+      ? existing.map((item) => (String(item.id) === String(tradePayload.id) ? nextTrade : (item as Trade)))
+      : [...existing, nextTrade];
+    writeDemoTrades(next);
+    return;
+  }
+
   let screenshotUrl = tradePayload.screenshot || "chart-1";
 
   if (imageFile) {
@@ -283,6 +341,13 @@ export async function saveTradeToSupabase(tradePayload: Partial<Trade>, userId: 
 
 export async function deleteTradeFromSupabase(tradeId: string): Promise<void> {
   if (tradeId.startsWith("T-")) return; // Demo trade
+
+  if (!isSupabaseConfigured) {
+    const existing = readDemoTrades() as Record<string, unknown>[];
+    writeDemoTrades(existing.filter((item) => String(item.id) !== tradeId));
+    return;
+  }
+
   const { error } = await supabase.from("trades").delete().eq("id", tradeId);
   if (error) throw error;
 }
