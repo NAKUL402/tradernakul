@@ -28,7 +28,7 @@ export type Profile = {
   full_name: string | null;
   avatar_url: string | null;
   role: "admin" | "user";
-  status: "pending" | "approved" | "rejected";
+  status: "pending" | "approved" | "rejected" | "suspended";
   is_owner: boolean;
   subscription_plan?: "free" | "pro" | "enterprise";
   subscription_status?: "active" | "past_due" | "canceled" | "trialing";
@@ -47,7 +47,7 @@ export function createDemoProfile(email: string, fullName?: string, role: Profil
     full_name: displayName,
     avatar_url: null,
     role,
-    status: isOwner ? "approved" : "approved",
+    status: isOwner ? "approved" : "pending",
     is_owner: isOwner,
     created_at: now,
     updated_at: now,

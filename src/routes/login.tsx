@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
-import { AuthLayout, GoogleButton, field, primaryBtn } from "@/components/app/AuthLayout";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
@@ -16,15 +16,54 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
+const field =
+  "w-full rounded-xl border border-border bg-card/50 px-4 py-3 text-sm outline-none transition placeholder:text-muted-foreground focus:border-primary/60 focus:ring-2 focus:ring-ring/40";
+
+const primaryBtn =
+  "flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-accent px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90 active:scale-[0.99] glow-primary disabled:opacity-50";
+
 function LoginPage() {
   const navigate = useNavigate();
+  const { user, isApproved } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [approvalStatus, setApprovalStatus] = useState<"pending" | "rejected" | "suspended" | null>(null);
+
+  useEffect(() => {
+    // Listen for custom approval block events from AuthContext
+    const handleApprovalBlocked = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const status = customEvent.detail?.status;
+      if (status) {
+        setApprovalStatus(status);
+        if (status === "pending") {
+          toast.info("Access pending: Your request is awaiting administrator approval.");
+        } else if (status === "rejected") {
+          toast.error("Access denied: Your request has been rejected.");
+        } else if (status === "suspended") {
+          toast.error("Account suspended: Please contact the administrator.");
+        }
+      }
+    };
+
+    window.addEventListener("auth_approval_blocked", handleApprovalBlocked);
+    return () => {
+      window.removeEventListener("auth_approval_blocked", handleApprovalBlocked);
+    };
+  }, []);
+
+  // Redirect if already logged in and approved
+  useEffect(() => {
+    if (user && isApproved) {
+      navigate({ to: "/" });
+    }
+  }, [user, isApproved, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setApprovalStatus(null);
 
     try {
       const { error } = await supabase.auth.signInWithPassword({
@@ -37,8 +76,7 @@ function LoginPage() {
         return;
       }
 
-      toast.success("Logged in successfully — welcome back!");
-      navigate({ to: "/" });
+      toast.success("Welcome back!");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to log in";
       toast.error(msg);
@@ -48,48 +86,75 @@ function LoginPage() {
   };
 
   return (
-    <AuthLayout
-      title="Welcome back"
-      subtitle="Apne trades ka analysis continue karo."
-      footer={<>New here? <Link to="/signup" className="font-medium text-primary hover:underline">Create an account</Link></>}
-    >
-      <form className="space-y-4" onSubmit={handleSubmit}>
-        <input
-          type="email"
-          required
-          placeholder="Email address"
-          className={field}
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <input
-          type="password"
-          required
-          placeholder="Password"
-          className={field}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <div className="flex items-center justify-between text-xs">
-          <label className="flex items-center gap-2 text-muted-foreground">
-            <input type="checkbox" className="accent-[var(--color-primary)]" /> Remember me
-          </label>
-          <button
-            type="button"
-            onClick={() => toast.info("Password reset link has been requested.")}
-            className="text-primary hover:underline"
-          >
-            Forgot password?
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10">
+      <div className="pointer-events-none absolute -left-32 top-0 size-[28rem] animate-float-slow rounded-full bg-primary/25 blur-[120px]" />
+      <div className="pointer-events-none absolute -right-24 bottom-0 size-[26rem] animate-float-slow rounded-full bg-accent/25 blur-[120px] [animation-delay:2s]" />
+      <div className="pointer-events-none absolute inset-0 opacity-[0.07] [background-image:linear-gradient(var(--color-border)_1px,transparent_1px),linear-gradient(90deg,var(--color-border)_1px,transparent_1px)] [background-size:44px_44px]" />
+
+      <div className="glass relative w-full max-w-md animate-rise rounded-3xl p-6 sm:p-8">
+        <Link to="/" className="flex items-center gap-3">
+          <span className="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-primary to-accent text-sm font-bold text-primary-foreground glow-primary">TJ</span>
+          <span>
+            <span className="block font-display text-sm font-semibold">Trading Journal AI</span>
+            <span className="block text-[11px] text-muted-foreground">Track. Analyze. Improve.</span>
+          </span>
+        </Link>
+
+        <h1 className="mt-7 font-display text-2xl font-semibold">Welcome back</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Log in to manage and analyze your trades.</p>
+
+        {approvalStatus && (
+          <div className="mt-5 rounded-2xl border border-primary/30 bg-primary/10 p-4 text-xs animate-rise">
+            {approvalStatus === "pending" && (
+              <p className="font-medium text-foreground leading-normal">
+                Your access request has been sent to the administrator. Please wait for approval.
+              </p>
+            )}
+            {approvalStatus === "rejected" && (
+              <p className="font-medium text-destructive leading-normal">
+                Your access request has been rejected by the administrator.
+              </p>
+            )}
+            {approvalStatus === "suspended" && (
+              <p className="font-medium text-destructive leading-normal">
+                Your account is currently suspended. Please contact the administrator.
+              </p>
+            )}
+          </div>
+        )}
+
+        <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+          <input
+            type="email"
+            required
+            placeholder="Email address"
+            className={field}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+          />
+          <input
+            type="password"
+            required
+            placeholder="Password"
+            className={field}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
+          />
+          
+          <button type="submit" disabled={isSubmitting} className={primaryBtn}>
+            {isSubmitting ? "Logging in…" : "Log in"}
           </button>
+        </form>
+
+        <div className="mt-6 text-center text-sm text-muted-foreground">
+          Don't have an account?{" "}
+          <Link to="/signup" className="font-medium text-primary hover:underline">
+            Sign up
+          </Link>
         </div>
-        <button type="submit" disabled={isSubmitting} className={primaryBtn}>
-          {isSubmitting ? "Logging in…" : "Log in"}
-        </button>
-      </form>
-      <div className="flex items-center gap-3 text-[11px] uppercase text-muted-foreground">
-        <span className="h-px flex-1 bg-border" />or<span className="h-px flex-1 bg-border" />
       </div>
-      <GoogleButton />
-    </AuthLayout>
+    </div>
   );
 }

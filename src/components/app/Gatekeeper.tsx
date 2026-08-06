@@ -3,9 +3,18 @@ import { AccessPending } from "./AccessPending";
 import { AccessDenied } from "./AccessDenied";
 import type { ReactNode } from "react";
 import { Loader2 } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
 
 export function Gatekeeper({ children }: { children: ReactNode }) {
-  const { user, profile, isLoading } = useAuth();
+  const { user, profile, isLoading, isApproved } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isLoading && (!user || !profile || !isApproved)) {
+      navigate({ to: "/login" });
+    }
+  }, [user, profile, isLoading, isApproved, navigate]);
 
   if (isLoading) {
     return (
@@ -18,15 +27,16 @@ export function Gatekeeper({ children }: { children: ReactNode }) {
     );
   }
 
-  // If user is not authenticated or profile is not loaded yet, allow fallback UI
-  // Note: if user is logged in:
-  if (user && profile) {
-    if (profile.status === "pending" && !profile.is_owner) {
-      return <AccessPending />;
-    }
-    if (profile.status === "rejected" && !profile.is_owner) {
-      return <AccessDenied />;
-    }
+  if (!user || !profile || !isApproved) {
+    return null; // Will redirect via useEffect
+  }
+
+  // Double check status rules
+  if (profile.status === "pending" && !profile.is_owner) {
+    return <AccessPending />;
+  }
+  if ((profile.status === "rejected" || profile.status === "suspended") && !profile.is_owner) {
+    return <AccessDenied />;
   }
 
   return <>{children}</>;

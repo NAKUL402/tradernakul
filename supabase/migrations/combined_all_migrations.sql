@@ -27,6 +27,7 @@ DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
 DROP POLICY IF EXISTS "Admins can view all profiles" ON public.profiles;
 DROP POLICY IF EXISTS "Admins can update user status" ON public.profiles;
 DROP POLICY IF EXISTS "Admins can update subscription plans" ON public.profiles;
+DROP POLICY IF EXISTS "Admins can delete user profiles" ON public.profiles;
 
 CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT TO authenticated USING (auth.uid() = id);
 CREATE POLICY "Admins can view all profiles" ON public.profiles FOR SELECT TO authenticated USING (
@@ -35,6 +36,9 @@ CREATE POLICY "Admins can view all profiles" ON public.profiles FOR SELECT TO au
 CREATE POLICY "Admins can update user status" ON public.profiles FOR UPDATE TO authenticated USING (
     EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (role = 'admin' OR is_owner = TRUE))
 ) WITH CHECK (
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (role = 'admin' OR is_owner = TRUE))
+);
+CREATE POLICY "Admins can delete user profiles" ON public.profiles FOR DELETE TO authenticated USING (
     EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (role = 'admin' OR is_owner = TRUE))
 );
 
@@ -84,7 +88,7 @@ BEGIN
         COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', 'Trader'),
         NEW.raw_user_meta_data->>'avatar_url',
         CASE WHEN is_first_or_owner THEN 'admin' ELSE 'user' END,
-        'approved',
+        CASE WHEN is_first_or_owner THEN 'approved' ELSE 'pending' END,
         is_first_or_owner,
         CASE WHEN is_first_or_owner THEN 'enterprise' ELSE 'free' END,
         'active'

@@ -8,7 +8,7 @@ import { supabase, type Profile } from "@/lib/supabase";
 import { trades } from "@/lib/trades";
 import {
   CheckCircle2, Clock, Megaphone,
-  Save, ShieldCheck, ShieldAlert, Users, XCircle, Zap, Activity
+  Save, ShieldCheck, ShieldAlert, Users, XCircle, Zap, Activity, Trash2, Ban
 } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
@@ -25,7 +25,7 @@ function AdminPage() {
   const { user, profile, isAdmin, isOwner, isLoading } = useAuth();
   const navigate = useNavigate();
   const [usersList, setUsersList] = useState<Profile[]>([]);
-  const [filter, setFilter] = useState<"all" | "pending" | "approved" | "rejected">("all");
+  const [filter, setFilter] = useState<"all" | "pending" | "approved" | "rejected" | "suspended">("all");
   const [isFetchingUsers, setIsFetchingUsers] = useState(true);
 
   // Site Controls State
@@ -107,7 +107,7 @@ function AdminPage() {
             full_name: "Dev Patel",
             avatar_url: null,
             role: "user",
-            status: "approved",
+            status: "suspended",
             is_owner: false,
             created_at: new Date(Date.now() - 3600000 * 48).toISOString(),
             updated_at: new Date(Date.now() - 3600000 * 48).toISOString(),
@@ -141,7 +141,7 @@ function AdminPage() {
     }
   };
 
-  const updateUserStatus = async (targetId: string, newStatus: "approved" | "rejected" | "pending") => {
+  const updateUserStatus = async (targetId: string, newStatus: "approved" | "rejected" | "pending" | "suspended") => {
     const targetUser = usersList.find((u) => u.id === targetId);
     if (targetUser?.is_owner) {
       toast.error("CRITICAL SECURITY: Owner profile cannot be modified.");
@@ -166,6 +166,36 @@ function AdminPage() {
       toast.success(`User access set to ${newStatus.toUpperCase()}`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Error updating user";
+      toast.error(msg);
+    }
+  };
+
+  const deleteUser = async (targetId: string) => {
+    const targetUser = usersList.find((u) => u.id === targetId);
+    if (targetUser?.is_owner) {
+      toast.error("CRITICAL SECURITY: Owner profile cannot be deleted.");
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to permanently delete user ${targetUser?.email}?`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .delete()
+        .eq("id", targetId);
+
+      if (error) {
+        toast.error(`Failed to delete user: ${error.message}`);
+        return;
+      }
+
+      setUsersList((prev) => prev.filter((u) => u.id !== targetId));
+      toast.success("User profile deleted successfully");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Error deleting user";
       toast.error(msg);
     }
   };
@@ -261,12 +291,12 @@ function AdminPage() {
           title="User Approval Management"
           className="lg:col-span-2"
           action={
-            <div className="flex rounded-xl border border-border p-1">
-              {(["all", "pending", "approved", "rejected"] as const).map((f) => (
+            <div className="flex rounded-xl border border-border p-1 overflow-x-auto max-w-[280px] sm:max-w-none">
+              {(["all", "pending", "approved", "rejected", "suspended"] as const).map((f) => (
                 <button
                   key={f}
                   onClick={() => setFilter(f)}
-                  className={`rounded-lg px-2.5 py-1 text-xs capitalize transition ${
+                  className={`rounded-lg px-2 py-1 text-[11px] capitalize transition ${
                     filter === f ? "bg-primary/20 text-primary font-semibold" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
@@ -282,14 +312,14 @@ function AdminPage() {
             <p className="py-8 text-center text-xs text-muted-foreground">No users matching filter "{filter}".</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[560px] text-sm">
+              <table className="w-full min-w-[620px] text-sm">
                 <thead>
                   <tr className="text-left text-[11px] uppercase tracking-wide text-muted-foreground">
                     <th className="pb-3 font-medium">User</th>
                     <th className="pb-3 font-medium">Role</th>
                     <th className="pb-3 font-medium">Status</th>
                     <th className="pb-3 font-medium">Signed Up</th>
-                    <th className="pb-3 font-medium text-right">Action</th>
+                    <th className="pb-3 font-medium text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -316,7 +346,7 @@ function AdminPage() {
                         )}
                       </td>
                       <td className="py-3">
-                        <Badge tone={u.status === "approved" || u.is_owner ? "win" : u.status === "pending" ? "primary" : "loss"}>
+                        <Badge tone={u.status === "approved" || u.is_owner ? "win" : u.status === "pending" ? "primary" : u.status === "suspended" ? "loss" : "muted"}>
                           {u.status}
                         </Badge>
                       </td>
@@ -327,34 +357,41 @@ function AdminPage() {
                         {u.is_owner ? (
                           <span className="text-[11px] text-muted-foreground italic">Protected</span>
                         ) : (
-                          <div className="flex items-center justify-end gap-1.5">
+                          <div className="flex items-center justify-end gap-1.5 flex-wrap">
                             {u.status !== "approved" && (
                               <button
                                 onClick={() => updateUserStatus(u.id, "approved")}
                                 title="Approve user access"
-                                className="flex items-center gap-1 rounded-lg bg-[oklch(0.72_0.19_155)]/20 px-2.5 py-1 text-xs font-semibold text-[oklch(0.8_0.17_155)] hover:bg-[oklch(0.72_0.19_155)]/30"
+                                className="flex items-center gap-1 rounded-lg bg-[oklch(0.72_0.19_155)]/20 px-2 py-1 text-xs font-semibold text-[oklch(0.8_0.17_155)] hover:bg-[oklch(0.72_0.19_155)]/30"
                               >
                                 <CheckCircle2 className="size-3" /> Approve
                               </button>
                             )}
-                            {u.status !== "rejected" && (
+                            {u.status !== "suspended" && u.status !== "rejected" && (
+                              <button
+                                onClick={() => updateUserStatus(u.id, "suspended")}
+                                title="Suspend user access"
+                                className="flex items-center gap-1 rounded-lg bg-red-500/20 px-2 py-1 text-xs font-semibold text-red-300 hover:bg-red-500/30"
+                              >
+                                <Ban className="size-3" /> Suspend
+                              </button>
+                            )}
+                            {u.status !== "rejected" && u.status !== "approved" && (
                               <button
                                 onClick={() => updateUserStatus(u.id, "rejected")}
                                 title="Reject user access"
-                                className="flex items-center gap-1 rounded-lg bg-destructive/20 px-2.5 py-1 text-xs font-semibold text-destructive hover:bg-destructive/30"
+                                className="flex items-center gap-1 rounded-lg bg-destructive/20 px-2 py-1 text-xs font-semibold text-destructive hover:bg-destructive/30"
                               >
                                 <XCircle className="size-3" /> Reject
                               </button>
                             )}
-                            {u.status === "approved" && (
-                              <button
-                                onClick={() => updateUserStatus(u.id, "pending")}
-                                title="Revoke access back to pending"
-                                className="flex items-center gap-1 rounded-lg bg-amber-500/20 px-2.5 py-1 text-xs font-semibold text-amber-300 hover:bg-amber-500/30"
-                              >
-                                Revoke
-                              </button>
-                            )}
+                            <button
+                              onClick={() => deleteUser(u.id)}
+                              title="Permanently Delete User"
+                              className="flex items-center gap-1 rounded-lg bg-destructive/10 p-1 text-xs font-semibold text-destructive hover:bg-destructive/25"
+                            >
+                              <Trash2 className="size-3.5" />
+                            </button>
                           </div>
                         )}
                       </td>
