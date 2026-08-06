@@ -11,6 +11,7 @@ type AuthContextType = {
   isAdmin: boolean;
   isOwner: boolean;
   signIn: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -165,6 +166,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const signInWithGoogle = async () => {
+    if (!isSupabaseConfigured) {
+      throw new Error("Supabase is not configured. Setup environment variables in Vercel.");
+    }
+
+    const siteUrl = 
+      import.meta.env.VITE_SITE_URL || 
+      process.env.SITE_URL || 
+      (typeof window !== "undefined" ? window.location.origin : "");
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${siteUrl}/login`,
+      },
+    });
+
+    if (error) {
+      throw error;
+    }
+  };
+
   const signOut = async () => {
     try {
       if (isSupabaseConfigured) {
@@ -192,6 +215,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAdmin,
         isOwner,
         signIn,
+        signInWithGoogle,
         signOut,
       }}
     >
