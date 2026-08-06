@@ -175,6 +175,11 @@ export function AppShell({ title, subtitle, children }: { title: string; subtitl
 
       <Link
         to="/journal?openModal=true"
+        onClick={() => {
+          if (typeof window !== "undefined" && window.location.pathname === "/journal") {
+            window.dispatchEvent(new CustomEvent("open_log_trade_modal"));
+          }
+        }}
         aria-label="Add trade"
         className="fixed bottom-24 right-5 z-40 grid size-14 place-items-center rounded-2xl bg-gradient-to-br from-primary to-accent text-primary-foreground glow-primary transition active:scale-95 lg:bottom-8"
       >

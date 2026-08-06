@@ -84,13 +84,27 @@ function Journal() {
 
   useEffect(() => {
     loadTrades();
+
+    const handleOpenModal = () => {
+      setEditingTrade(null);
+      setIsLogModalOpen(true);
+    };
+
     if (typeof window !== "undefined") {
+      window.addEventListener("open_log_trade_modal", handleOpenModal);
+
       const searchParams = new URLSearchParams(window.location.search);
       if (searchParams.get("openModal") === "true") {
         setIsLogModalOpen(true);
         window.history.replaceState({}, "", window.location.pathname);
       }
     }
+
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("open_log_trade_modal", handleOpenModal);
+      }
+    };
   }, []);
 
   const loadTrades = async () => {
