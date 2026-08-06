@@ -44,7 +44,7 @@ function rng(seed: number) {
 
 function build(): Trade[] {
   const r = rng(20260805);
-  const trades: Trade[] = [];
+  const tradesList: Trade[] = [];
   const start = new Date(Date.UTC(2026, 1, 2));
   for (let i = 0; i < 168; i++) {
     const d = new Date(start);
@@ -59,7 +59,7 @@ function build(): Trade[] {
     const hour = 2 + Math.floor(r() * 16);
     const session = hour < 8 ? "Asian" : hour < 13 ? "London" : "New York";
     const pnl = Math.round((win ? riskPct * rrr : -riskPct) * 100) / 100;
-    trades.push({
+    tradesList.push({
       id: `T-${1000 + i}`,
       date: d.toISOString().slice(0, 10),
       pair,
@@ -82,7 +82,7 @@ function build(): Trade[] {
       ),
     });
   }
-  return trades.sort((a, b) => (a.date < b.date ? -1 : 1));
+  return tradesList.sort((a, b) => (a.date < b.date ? -1 : 1));
 }
 
 export const trades: Trade[] = build();
@@ -198,7 +198,31 @@ export const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 import { supabase } from "./supabase";
 
+const DELETED_TRADES_KEY = "tradernakul_deleted_trade_ids";
+
+function getDeletedTradeIds(): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = localStorage.getItem(DELETED_TRADES_KEY);
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+function saveDeletedTradeId(id: string) {
+  if (typeof window === "undefined") return;
+  try {
+    const deleted = getDeletedTradeIds();
+    deleted.add(id);
+    localStorage.setItem(DELETED_TRADES_KEY, JSON.stringify([...deleted]));
+  } catch (err) {
+    console.warn("Failed to persist deleted trade id to localStorage:", err);
+  }
+}
+
 export async function fetchUserTrades(): Promise<Trade[]> {
+  const deletedSet = getDeletedTradeIds();
   try {
     const { data, error } = await supabase
       .from("trades")
@@ -206,7 +230,7 @@ export async function fetchUserTrades(): Promise<Trade[]> {
       .order("date", { ascending: false });
 
     if (!error && data && data.length > 0) {
-      return data.map((t) => ({
+      const dbTrades: Trade[] = data.map((t) => ({
         id: t.id,
         date: t.date,
         pair: t.pair,
@@ -226,11 +250,12 @@ export async function fetchUserTrades(): Promise<Trade[]> {
         screenshot: t.screenshot_url || "chart-1",
         tags: t.tags || [],
       }));
+      return dbTrades.filter((t) => !deletedSet.has(t.id));
     }
   } catch (err) {
     console.error("Error fetching trades from Supabase:", err);
   }
-  return trades;
+  return trades.filter((t) => !deletedSet.has(t.id));
 }
 
 export async function saveTradeToSupabase(tradePayload: Partial<Trade>, userId: string, imageFile?: File): Promise<void> {
@@ -282,8 +307,14 @@ export async function saveTradeToSupabase(tradePayload: Partial<Trade>, userId: 
 }
 
 export async function deleteTradeFromSupabase(tradeId: string): Promise<void> {
-  if (tradeId.startsWith("T-")) return; // Demo trade
-  const { error } = await supabase.from("trades").delete().eq("id", tradeId);
-  if (error) throw error;
-}
+  saveDeletedTradeId(tradeId);
 
+  if (!tradeId.startsWith("T-")) {
+    try {
+      const { error } = await supabase.from("trades").delete().eq("id", tradeId);
+      if (error) console.warn("Supabase trade deletion notice:", error.message);
+    } catch (err) {
+      console.warn("Notice deleting trade from Supabase:", err);
+    }
+  }
+}
