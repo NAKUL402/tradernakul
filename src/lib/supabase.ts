@@ -24,6 +24,16 @@ export const isSupabaseConfigured = Boolean(
   supabaseUrl && supabaseAnonKey && !isPlaceholderValue(supabaseUrl) && !isPlaceholderValue(supabaseAnonKey),
 );
 
+// Diagnostic logs (completely secure: only outputs string lengths and patterns)
+if (isBrowser) {
+  console.log("=== SUPABASE DIAGNOSTIC CONFIG ===");
+  console.log("URL length:", (supabaseUrl || "").length);
+  console.log("Key length:", (supabaseAnonKey || "").length);
+  console.log("Is Configured:", isSupabaseConfigured);
+  console.log("URL Prefix:", (supabaseUrl || "").slice(0, 12));
+  console.log("==================================");
+}
+
 const clientUrl = isSupabaseConfigured ? supabaseUrl : "https://placeholder.supabase.co";
 const clientKey = isSupabaseConfigured ? supabaseAnonKey : "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsYWNlaG9sZGVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE2MDAwMDAwMDAsImV4cCI6MjAwMDAwMDAwMH0.placeholder";
 
