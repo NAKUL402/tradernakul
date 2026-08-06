@@ -24,7 +24,7 @@ const primaryBtn =
 
 function LoginPage() {
   const navigate = useNavigate();
-  const { user, isApproved } = useAuth();
+  const { user, isApproved, signIn } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -66,17 +66,8 @@ function LoginPage() {
     setApprovalStatus(null);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        toast.error(error.message);
-        return;
-      }
-
-      toast.success("Welcome back!");
+      await signIn(email, password);
+      toast.success("Logged in successfully — welcome back!");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to log in";
       toast.error(msg);
