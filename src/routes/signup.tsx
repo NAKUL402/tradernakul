@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { supabase, type Profile } from "@/lib/supabase";
+import { sendOTPEmail } from "@/lib/email-service";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/signup")({
@@ -25,35 +26,89 @@ function SignupPage() {
   const navigate = useNavigate();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [otp, setOtp] = useState("");
+  const [step, setStep] = useState<"details" | "otp">("details");
+  const [currentOTP, setCurrentOTP] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email || !fullName) return;
     setIsSubmitting(true);
 
-    try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-          },
-        },
-      });
+    // Generate a random 6-digit OTP code
+    const generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
+    setCurrentOTP(generatedOTP);
 
-      if (error) {
-        toast.error(error.message);
+    try {
+      // Attempt to email OTP code via Vercel serverless function
+      const result = await sendOTPEmail({ email: email.toLowerCase().trim(), otp: generatedOTP });
+      
+      if (result.success) {
+        toast.success("Verification code sent to your email!");
+        setStep("otp");
+      } else {
+        if (result.mode === "debug") {
+          // SMTP variables not set. Expose code for testing
+          toast.info(`[Debug mode] Verification code is: ${generatedOTP}`, { duration: 10000 });
+          setStep("otp");
+        } else {
+          toast.error(`Email delivery error: ${result.error}. Code is: ${generatedOTP}`);
+        }
+      }
+    } catch (err) {
+      console.warn("SMTP fetch warning, exposing fallback code:", err);
+      toast.info(`[Fallback mode] Verification code is: ${generatedOTP}`, { duration: 10000 });
+      setStep("otp");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleVerifyOTP = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!otp) return;
+    setIsSubmitting(true);
+
+    if (otp.trim() !== currentOTP) {
+      toast.error("Invalid verification code. Please check your spelling.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Register user profile record in simulated database
+    const cleanedEmail = email.toLowerCase().trim();
+    const ownerEmails = ["nakultrader007@gmail.com", "tradernakul@gmail.com"];
+    const isOwnerEmail = ownerEmails.includes(cleanedEmail);
+
+    try {
+      const { data: profiles } = await supabase.from("profiles").select("*");
+      const existing = (profiles || []).find((p: Profile) => p.email.toLowerCase() === cleanedEmail);
+
+      if (existing) {
+        toast.error("An account with this email address already exists. Please log in.");
+        setIsSubmitting(false);
         return;
       }
 
-      toast.success("Account created successfully!");
+      const newProfile: Profile = {
+        id: `user-${Math.random().toString(36).substr(2, 9)}`,
+        email: cleanedEmail,
+        full_name: fullName,
+        avatar_url: null,
+        role: isOwnerEmail ? "admin" : "user",
+        status: isOwnerEmail ? "approved" : "pending",
+        is_owner: isOwnerEmail,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      await supabase.from("profiles").insert(newProfile);
+      toast.success("Account request registered successfully!");
       setIsSuccess(true);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to sign up";
-      toast.error(msg);
+    } catch (err: any) {
+      toast.error(`Registration failed: ${err.message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -92,42 +147,67 @@ function SignupPage() {
           </div>
         ) : (
           <>
-            <h1 className="mt-7 font-display text-2xl font-semibold">Create account</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Request access to the trading platform.</p>
+            <h1 className="mt-7 font-display text-2xl font-semibold">
+              {step === "details" ? "Create account" : "Enter verification code"}
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {step === "details"
+                ? "Request access to the trading platform."
+                : `We sent a 6-digit code to ${email}`}
+            </p>
 
-            <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
-              <input
-                type="text"
-                required
-                placeholder="Full Name"
-                className={field}
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                autoComplete="name"
-              />
-              <input
-                type="email"
-                required
-                placeholder="Email address"
-                className={field}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
-              />
-              <input
-                type="password"
-                required
-                placeholder="Password"
-                className={field}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="new-password"
-              />
-              
-              <button type="submit" disabled={isSubmitting} className={primaryBtn}>
-                {isSubmitting ? "Creating account…" : "Sign up"}
-              </button>
-            </form>
+            {step === "details" ? (
+              <form className="mt-6 space-y-4" onSubmit={handleSendOTP}>
+                <input
+                  type="text"
+                  required
+                  placeholder="Full Name"
+                  className={field}
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  autoComplete="name"
+                />
+                <input
+                  type="email"
+                  required
+                  placeholder="Email address"
+                  className={field}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                />
+                
+                <button type="submit" disabled={isSubmitting} className={primaryBtn}>
+                  {isSubmitting ? "Sending code…" : "Send Verification Code"}
+                </button>
+              </form>
+            ) : (
+              <form className="mt-6 space-y-4" onSubmit={handleVerifyOTP}>
+                <input
+                  type="text"
+                  required
+                  maxLength={6}
+                  placeholder="Enter 6-digit OTP code"
+                  className={`${field} tracking-widest text-center text-lg font-semibold`}
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  autoComplete="one-time-code"
+                />
+                
+                <button type="submit" disabled={isSubmitting} className={primaryBtn}>
+                  {isSubmitting ? "Verifying…" : "Verify & Register"}
+                </button>
+
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={() => setStep("details")}
+                  className="mt-2 text-center text-xs text-muted-foreground hover:text-foreground w-full underline"
+                >
+                  Go Back
+                </button>
+              </form>
+            )}
 
             <div className="mt-6 text-center text-sm text-muted-foreground">
               Already have an account?{" "}
