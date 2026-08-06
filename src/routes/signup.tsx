@@ -49,12 +49,12 @@ function SignupPage() {
         toast.success("Verification code sent to your email!");
         setStep("otp");
       } else {
-        if (result.mode === "debug") {
+        if (result.mode === "debug" || result.mode === "missing_config") {
           // SMTP variables not set. Expose code for testing
           toast.info(`[Debug mode] Verification code is: ${generatedOTP}`, { duration: 10000 });
           setStep("otp");
         } else {
-          toast.error(`Email delivery error: ${result.error}. Code is: ${generatedOTP}`);
+          toast.error(`Email delivery error: ${result.error || result.message || "Unknown error"}. Code is: ${generatedOTP}`);
         }
       }
     } catch (err) {

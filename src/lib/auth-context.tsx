@@ -116,13 +116,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const result = await sendOTPEmail({ email: email.toLowerCase().trim(), otp: generatedOTP });
       
       if (!result.success) {
-        if (result.mode === "debug") {
+        if (result.mode === "debug" || result.mode === "missing_config") {
           // SMTP not configured. Reveal OTP for easy testing
           toast.info(`[Debug mode] Verification code is: ${generatedOTP}`, { duration: 10000 });
           console.log(`[Debug mode] OTP Code: ${generatedOTP}`);
         } else {
-          toast.error(`Email delivery error: ${result.error}. Code is: ${generatedOTP}`);
+          toast.error(`Email delivery error: ${result.error || result.message || "Unknown error"}. Code is: ${generatedOTP}`);
         }
+      } else {
+        toast.success("Verification code sent to your email!");
       }
     } catch (err) {
       console.warn("SMTP fetch warning, exposing fallback code:", err);

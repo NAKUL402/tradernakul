@@ -5,9 +5,12 @@ export const sendOTPEmail = createServerFn("POST", async ({ email, otp }: { emai
   const pass = process.env.EMAIL_PASS || "";
 
   if (!user || !pass) {
-    console.warn("[SMTP Warn] SMTP credentials are not configured. Using fallback console/UI display mode.");
-    console.log(`[SMTP Debug] OTP code for ${email} is ${otp}`);
-    return { success: false, mode: "debug", message: "SMTP credentials not configured." };
+    console.warn("[SMTP Config Missing] EMAIL_USER and EMAIL_PASS environment variables are not set in Vercel.");
+    return { 
+      success: false, 
+      mode: "missing_config", 
+      message: "SMTP email credentials are not configured in Vercel. Set EMAIL_USER and EMAIL_PASS environment variables." 
+    };
   }
 
   try {
