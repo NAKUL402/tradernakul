@@ -1,3 +1,4 @@
+// Dashboard — Open Access Clean UI
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app/AppShell";
