@@ -3,8 +3,8 @@ import { createClient } from "@supabase/supabase-js";
 // Check if real Supabase credentials are set in the environment
 const isPlaceholderValue = (value: string) => !value || /placeholder|example|local-storage/i.test(value);
 
-export const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
-export const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+export const supabaseUrl = import.meta.env['VITE_SUPABASE_URL'] || "";
+export const supabaseAnonKey = import.meta.env['VITE_SUPABASE_ANON_KEY'] || "";
 
 export const isSupabaseConfigured = Boolean(
   supabaseUrl && 
