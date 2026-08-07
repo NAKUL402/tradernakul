@@ -38,46 +38,101 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-// ── Modular AI Provider Interface ──────────────────────────────────────────
-export interface AIProvider {
-  name: string;
-  generateResponse(prompt: string, context?: string): Promise<string>;
-}
-
-// ── Currently Supported Gemini Models Pool (gemini-2.0-flash primary) ───────
+// ── Supported Gemini Models Pool ─────────────────────────────────────────────
 const GEMINI_MODELS_POOL = [
   "gemini-2.0-flash",
   "gemini-2.0-flash-lite",
   "gemini-1.5-pro",
 ];
 
-// ── Google Gemini Provider Implementation ─────────────────────────────────
-export class GeminiProvider implements AIProvider {
-  name = "Google Gemini";
+// ── Vercel Serverless Function Handler ──────────────────────────────────────
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  console.log("[CHAT_API] STEP 1: Incoming request received");
+  
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  async generateResponse(prompt: string, context?: string): Promise<string> {
-    const apiKey = process.env["GEMINI_API_KEY"];
+  if (req.method === "OPTIONS") {
+    console.log("[CHAT_API] STEP 1.1: OPTIONS preflight handled");
+    return res.status(200).end();
+  }
 
-    if (!apiKey || apiKey.trim() === "" || apiKey === "placeholder") {
-      throw new Error("GEMINI_API_KEY_MISSING");
+  if (req.method !== "POST") {
+    console.log("[CHAT_API] STEP 1.2: Invalid method", req.method);
+    return res.status(405).json({ success: false, error: `Method ${req.method} not allowed` });
+  }
+
+  try {
+    console.log("[CHAT_API] STEP 2: Parsing request body");
+    const requestBody: unknown = req.body || {};
+    let promptInput = "";
+    let contextInput: string | undefined = undefined;
+
+    if (isRecord(requestBody)) {
+      if (typeof requestBody["prompt"] === "string") {
+        promptInput = requestBody["prompt"];
+      }
+      if (typeof requestBody["context"] === "string") {
+        contextInput = requestBody["context"];
+      }
     }
 
+    const cleanPrompt = promptInput.trim();
+    console.log("[CHAT_API] STEP 2.1: Prompt length:", cleanPrompt.length);
+
+    if (!cleanPrompt) {
+      console.log("[CHAT_API] STEP 2.2: Empty prompt error");
+      return res.status(400).json({ success: false, error: "Prompt cannot be empty." });
+    }
+
+    console.log("[CHAT_API] STEP 3: Checking GEMINI_API_KEY environment variable");
+    const apiKey = process.env["GEMINI_API_KEY"];
+    const hasApiKey = Boolean(apiKey && apiKey.trim() !== "" && apiKey !== "placeholder");
+    console.log("[CHAT_API] STEP 3.1: GEMINI_API_KEY exists:", hasApiKey);
+
+    if (!hasApiKey) {
+      console.log("[CHAT_API] STEP 3.2: GEMINI_API_KEY missing - using fallback mentor generator");
+      return res.status(200).json({
+        success: true,
+        provider: "Google Gemini (Offline / Fallback)",
+        response: getFallbackResponse(cleanPrompt),
+        warning: "GEMINI_API_KEY is not set in Vercel Environment Variables.",
+      });
+    }
+
+    console.log("[CHAT_API] STEP 4: Preparing Gemini API Call");
     const systemInstruction =
       "You are a world-class institutional trading mentor for TraderNakul AI Journal. " +
       "You specialize in trading psychology, risk management, liquidity sweeps, price action, and order blocks. " +
       "Keep your answers direct, actionable, professional, and inspiring for intermediate-to-advanced traders." +
-      (context ? ` Trader Context: ${context}` : "");
+      (contextInput ? ` Trader Context: ${contextInput}` : "");
 
-    let lastErrorMsg = "";
+    let lastErrorDetails = "";
+    let executionSuccess = false;
+    let finalResponseText = "";
+    let usedModel = "";
 
-    for (const modelName of GEMINI_MODELS_POOL) {
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+    for (let i = 0; i < GEMINI_MODELS_POOL.length; i++) {
+      const modelName = GEMINI_MODELS_POOL[i]!;
+      const apiVersion = "v1beta";
+      const requestUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
+
+      console.log(`[CHAT_API] STEP 4.${i + 1}: Attempting model execution`);
+      console.log(`  - Model Name: ${modelName}`);
+      console.log(`  - API Version: ${apiVersion}`);
+      console.log(`  - Request URL: ${requestUrl}`);
+      console.log(`  - GEMINI_API_KEY Exists: ${hasApiKey}`);
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 12000);
+      const timeoutId = setTimeout(() => {
+        console.log(`[CHAT_API] STEP 4.${i + 1}.TIMEOUT: Request timed out after 12000ms`);
+        controller.abort();
+      }, 12000);
 
       try {
-        const response = await fetch(endpoint, {
+        console.log(`[CHAT_API] STEP 5.${i + 1}: Executing fetch call to Google Gemini`);
+        const response = await fetch(`${requestUrl}?key=${apiKey}`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -89,7 +144,7 @@ export class GeminiProvider implements AIProvider {
             },
             contents: [
               {
-                parts: [{ text: prompt }],
+                parts: [{ text: cleanPrompt }],
               },
             ],
             generationConfig: {
@@ -101,44 +156,63 @@ export class GeminiProvider implements AIProvider {
 
         clearTimeout(timeoutId);
 
+        console.log(`[CHAT_API] STEP 6.${i + 1}: Fetch completed`);
+        console.log(`  - HTTP Status: ${response.status} ${response.statusText}`);
+        
+        const responseHeaders: Record<string, string> = {};
+        response.headers.forEach((val, key) => {
+          responseHeaders[key] = val;
+        });
+        console.log(`  - Response Headers:`, JSON.stringify(responseHeaders));
+
+        const responseText = await response.text();
+
         if (!response.ok) {
-          let errMsg = `HTTP Error ${response.status}`;
+          console.log(`[CHAT_API] STEP 6.${i + 1}.ERROR: Response not OK!`);
+          console.log(`  - FULL Response Body: ${responseText}`);
+          
+          let parsedErrMsg = responseText;
           try {
-            const errorJson: unknown = await response.json();
-            if (isRecord(errorJson)) {
-              const errPayload = errorJson as GeminiErrorPayload;
+            const errJson: unknown = JSON.parse(responseText);
+            if (isRecord(errJson)) {
+              const errPayload = errJson as GeminiErrorPayload;
               if (errPayload.error && typeof errPayload.error.message === "string") {
-                errMsg = errPayload.error.message;
+                parsedErrMsg = errPayload.error.message;
               }
             }
           } catch {
-            // Fallback
+            // Not JSON
           }
 
-          if (response.status === 401 || response.status === 403) {
-            throw new Error("GEMINI_INVALID_KEY");
-          }
-          if (response.status === 429) {
-            throw new Error("GEMINI_RATE_LIMIT");
-          }
+          lastErrorDetails = `HTTP ${response.status} (${parsedErrMsg})`;
 
-          // If model is not found or unsupported on this endpoint, try next model
           if (
-            errMsg.includes("not found") ||
-            errMsg.includes("not supported") ||
-            errMsg.includes("404") ||
+            parsedErrMsg.includes("not found") ||
+            parsedErrMsg.includes("not supported") ||
             response.status === 404
           ) {
-            lastErrorMsg = errMsg;
+            console.log(`[CHAT_API] Model ${modelName} unavailable, attempting next model in pool...`);
             continue;
           }
 
-          throw new Error(`GEMINI_API_ERROR: ${errMsg}`);
+          // Return original error directly so debugging is crystal clear
+          return res.status(response.status).json({
+            success: false,
+            error: `Gemini API Error (HTTP ${response.status}): ${parsedErrMsg}`,
+            debug: {
+              status: response.status,
+              model: modelName,
+              rawBody: responseText,
+            },
+          });
         }
 
-        const rawJson: unknown = await response.json();
+        console.log(`[CHAT_API] STEP 7.${i + 1}: Parsing successful Gemini response JSON`);
+        const rawJson: unknown = JSON.parse(responseText);
 
         if (!isRecord(rawJson)) {
+          console.log(`[CHAT_API] STEP 7.${i + 1}.ERROR: Response JSON is not an object`);
+          lastErrorDetails = "Invalid JSON structure";
           continue;
         }
 
@@ -147,119 +221,59 @@ export class GeminiProvider implements AIProvider {
         const firstCand = Array.isArray(candidateList) ? candidateList[0] : undefined;
         const partList = firstCand?.content?.parts;
         const firstPart = Array.isArray(partList) ? partList[0] : undefined;
-        const generatedText = firstPart?.text;
+        const textOutput = firstPart?.text;
 
-        if (generatedText && generatedText.trim() !== "") {
-          return generatedText.trim();
+        if (textOutput && textOutput.trim() !== "") {
+          console.log(`[CHAT_API] STEP 8: Generated text successfully from ${modelName}`);
+          finalResponseText = textOutput.trim();
+          usedModel = modelName;
+          executionSuccess = true;
+          break;
+        } else {
+          console.log(`[CHAT_API] STEP 7.${i + 1}.WARN: Generated text was empty`);
+          lastErrorDetails = "Empty response text from model";
         }
-      } catch (err: unknown) {
+      } catch (fetchErr: unknown) {
         clearTimeout(timeoutId);
-        if (err instanceof Error) {
-          if (err.message === "GEMINI_INVALID_KEY" || err.message === "GEMINI_RATE_LIMIT") {
-            throw err;
-          }
-          if (err.name === "AbortError") {
-            lastErrorMsg = "Request timeout";
-          } else {
-            lastErrorMsg = err.message;
-          }
-        }
+        const errMessage = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+        const errStack = fetchErr instanceof Error ? fetchErr.stack : "";
+
+        console.error(`[CHAT_API] STEP 5.${i + 1}.EXCEPTION: Async fetch call failed`);
+        console.error(`  - Message: ${errMessage}`);
+        console.error(`  - Stack: ${errStack}`);
+
+        lastErrorDetails = errMessage;
       }
     }
 
-    throw new Error(`GEMINI_API_ERROR: ${lastErrorMsg || "Supported Gemini models endpoints unavailable."}`);
-  }
-}
-
-// ── AI Provider Registry ────────────────────────────────────────────────────
-export const AI_PROVIDERS: Record<string, AIProvider> = {
-  gemini: new GeminiProvider(),
-};
-
-// ── Vercel Serverless Function Handler ──────────────────────────────────────
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-
-  if (req.method === "OPTIONS") return res.status(200).end();
-  if (req.method !== "POST") {
-    return res.status(405).json({ success: false, error: "Method not allowed" });
-  }
-
-  try {
-    const requestBody: unknown = req.body || {};
-    let promptInput = "";
-    let contextInput: string | undefined = undefined;
-    let providerName = "gemini";
-
-    if (isRecord(requestBody)) {
-      if (typeof requestBody["prompt"] === "string") {
-        promptInput = requestBody["prompt"];
-      }
-      if (typeof requestBody["context"] === "string") {
-        contextInput = requestBody["context"];
-      }
-      if (typeof requestBody["provider"] === "string") {
-        providerName = requestBody["provider"];
-      }
-    }
-
-    const cleanPrompt = promptInput.trim();
-    if (!cleanPrompt) {
-      return res.status(400).json({ success: false, error: "Prompt cannot be empty." });
-    }
-
-    const providerInstance = AI_PROVIDERS[providerName] || AI_PROVIDERS["gemini"];
-
-    try {
-      const outputText = await providerInstance.generateResponse(cleanPrompt, contextInput);
+    if (executionSuccess) {
+      console.log(`[CHAT_API] STEP 9: Returning successful HTTP 200 JSON response`);
       return res.status(200).json({
         success: true,
-        provider: providerInstance.name,
-        response: outputText,
-      });
-    } catch (providerErr: unknown) {
-      const errMessage = providerErr instanceof Error ? providerErr.message : "";
-
-      if (errMessage === "GEMINI_API_KEY_MISSING") {
-        return res.status(200).json({
-          success: true,
-          provider: "Google Gemini (Offline / Fallback)",
-          response: getFallbackResponse(cleanPrompt),
-          warning: "GEMINI_API_KEY is not set in Vercel Environment Variables.",
-        });
-      }
-
-      if (errMessage === "GEMINI_INVALID_KEY") {
-        return res.status(401).json({
-          success: false,
-          error: "Invalid Gemini API Key. Please verify GEMINI_API_KEY in Vercel.",
-        });
-      }
-
-      if (errMessage === "GEMINI_RATE_LIMIT") {
-        return res.status(429).json({
-          success: false,
-          error: "Gemini API rate limit exceeded. Please wait a moment before trying again.",
-        });
-      }
-
-      if (errMessage === "GEMINI_TIMEOUT") {
-        return res.status(504).json({
-          success: false,
-          error: "Gemini API request timed out. Please try again.",
-        });
-      }
-
-      return res.status(500).json({
-        success: false,
-        error: `AI Provider Error: ${errMessage || "Failed to generate response."}`,
+        provider: `Google Gemini (${usedModel})`,
+        response: finalResponseText,
       });
     }
-  } catch (handlerErr: unknown) {
-    console.error("Chat handler error:", handlerErr);
-    return res.status(500).json({ success: false, error: "Internal server error." });
+
+    console.log(`[CHAT_API] STEP 10: All models in pool failed`);
+    return res.status(500).json({
+      success: false,
+      error: `All Gemini models failed. Last error: ${lastErrorDetails}`,
+    });
+
+  } catch (globalErr: unknown) {
+    const message = globalErr instanceof Error ? globalErr.message : String(globalErr);
+    const stack = globalErr instanceof Error ? globalErr.stack : "";
+
+    console.error("[CHAT_API] FATAL UNHANDLED EXCEPTION in handler:");
+    console.error("  - Message:", message);
+    console.error("  - Stack:", stack);
+
+    return res.status(500).json({
+      success: false,
+      error: `Fatal API Error: ${message}`,
+      stack: stack,
+    });
   }
 }
 
