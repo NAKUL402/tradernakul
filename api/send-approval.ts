@@ -103,7 +103,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(500).json({ success: false, error: `Resend: ${errMsg}` });
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = err instanceof Error ? err['message'] : String(err);
       console.error("[send-approval] Resend exception:", msg);
       if (!(smtpUser && smtpPass)) {
         return res.status(500).json({ success: false, error: `Resend error: ${msg}` });
@@ -121,7 +121,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         auth: { user: smtpUser, pass: smtpPass },
       });
       await transporter.verify().catch((e: Error) => {
-        throw new Error(`Gmail SMTP auth failed: ${e.message}`);
+        throw new Error(`Gmail SMTP auth failed: ${e['message']}`);
       });
       await transporter.sendMail({
         from: `"TraderNakul AI" <${smtpUser}>`,
@@ -133,7 +133,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log(`[send-approval] ✅ Sent via Gmail SMTP to owner: ${ownerEmail}`);
       return res.status(200).json({ success: true, provider: "gmail_smtp" });
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = err instanceof Error ? err['message'] : String(err);
       console.error("[send-approval] Gmail SMTP failed:", msg);
       return res.status(500).json({ success: false, error: `SMTP error: ${msg}` });
     }

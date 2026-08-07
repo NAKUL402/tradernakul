@@ -115,7 +115,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
       }
     } catch (err: unknown) {
-      resendError = err instanceof Error ? err.message : String(err);
+      resendError = err instanceof Error ? err['message'] : String(err);
       console.error("[send-otp] Resend exception:", resendError);
       if (!hasGmail) {
         return res.status(500).json({ success: false, error: `Resend exception: ${resendError}` });
@@ -140,7 +140,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       await transporter.verify().catch((e: Error) => {
         throw new Error(
           `Gmail auth failed — EMAIL_PASS must be a 16-character App Password, not your regular Gmail password. ` +
-          `Get one at: myaccount.google.com/apppasswords — Error: ${e.message}`
+          `Get one at: myaccount.google.com/apppasswords — Error: ${e['message']}`
         );
       });
 
@@ -156,7 +156,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ success: true, provider: "gmail_smtp" });
 
     } catch (err: unknown) {
-      gmailError = err instanceof Error ? err.message : String(err);
+      gmailError = err instanceof Error ? err['message'] : String(err);
       console.error("[send-otp] Gmail SMTP failed:", gmailError);
     }
   }
