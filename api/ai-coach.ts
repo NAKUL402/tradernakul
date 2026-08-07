@@ -117,8 +117,8 @@ Rules:
 
     // ── Model Fallback Chain ────────────────────────────────────────────────
     // On 429 rate-limit: try the next model instead of failing immediately.
-    // We use the latest supported models for the v1beta endpoint.
-    const models = ["gemini-1.5-flash-latest", "gemini-1.5-pro-latest", "gemini-1.5-flash-8b-latest"];
+    // We use the most stable and universally supported models across both v1 and v1beta.
+    const models = ["gemini-1.5-pro", "gemini-pro", "gemini-1.0-pro"];
 
     let lastError: string | null = null;
     const rateLimitedModels: string[] = [];
