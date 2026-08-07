@@ -1,5 +1,41 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
+// ── Gemini API Response Interfaces ──────────────────────────────────────────
+export interface GeminiPart {
+  text?: string;
+}
+
+export interface GeminiContent {
+  parts?: GeminiPart[];
+  role?: string;
+}
+
+export interface GeminiCandidate {
+  content?: GeminiContent;
+  finishReason?: string;
+  index?: number;
+}
+
+export interface GeminiResponse {
+  candidates?: GeminiCandidate[];
+  promptFeedback?: {
+    blockReason?: string;
+  };
+}
+
+export interface GeminiErrorResponse {
+  error?: {
+    code?: number;
+    message?: string;
+    status?: string;
+  };
+}
+
+// Type guard for validating JSON object structure
+function isJsonObject(data: unknown): data is Record<string, unknown> {
+  return typeof data === "object" && data !== null;
+}
+
 // ── Modular AI Provider Interface ──────────────────────────────────────────
 export interface AIProvider {
   name: string;
@@ -11,7 +47,7 @@ export class GeminiProvider implements AIProvider {
   name = "Google Gemini";
 
   async generateResponse(prompt: string, context?: string): Promise<string> {
-    const apiKey = process.env['GEMINI_API_KEY'];
+    const apiKey = process.env["GEMINI_API_KEY"];
 
     if (!apiKey || apiKey.trim() === "" || apiKey === "placeholder") {
       throw new Error("GEMINI_API_KEY_MISSING");
@@ -53,28 +89,46 @@ ${context ? `Trader Context: ${context}` : ""}`;
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+        const errorData: unknown = await response.json().catch(() => ({}));
+        let errMsg = `HTTP Error ${response.status}`;
+
+        if (isJsonObject(errorData)) {
+          const errObj = (errorData as GeminiErrorResponse).error;
+          if (errObj && typeof errObj.message === "string") {
+            errMsg = errObj.message;
+          }
+        }
+
         if (response.status === 401 || response.status === 403) {
           throw new Error("GEMINI_INVALID_KEY");
         }
         if (response.status === 429) {
           throw new Error("GEMINI_RATE_LIMIT");
         }
-        const errMsg = (errorData as Record<string, any>)['error']?.['message'] || `HTTP Error ${response.status}`;
         throw new Error(`GEMINI_API_ERROR: ${errMsg}`);
       }
 
-      const data = await response.json();
-      const text = data['candidates']?.[0]?.['content']?.['parts']?.[0]?.['text'];
+      const rawData: unknown = await response.json();
+
+      if (!isJsonObject(rawData)) {
+        throw new Error("GEMINI_INVALID_RESPONSE_STRUCTURE");
+      }
+
+      const geminiData = rawData as GeminiResponse;
+      const candidates = geminiData.candidates;
+      const firstCandidate = Array.isArray(candidates) ? candidates[0] : undefined;
+      const parts = firstCandidate?.content?.parts;
+      const firstPart = Array.isArray(parts) ? parts[0] : undefined;
+      const text = firstPart?.text;
 
       if (!text || text.trim() === "") {
         throw new Error("GEMINI_EMPTY_RESPONSE");
       }
 
       return text.trim();
-    } catch (err: any) {
+    } catch (err: unknown) {
       clearTimeout(timeoutId);
-      if (err.name === "AbortError") {
+      if (err instanceof Error && err.name === "AbortError") {
         throw new Error("GEMINI_TIMEOUT");
       }
       throw err;
@@ -98,13 +152,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
-    const { prompt, context, provider = "gemini" } = req.body || {};
+    const body = req.body || {};
+    const prompt = typeof body.prompt === "string" ? body.prompt : "";
+    const context = typeof body.context === "string" ? body.context : undefined;
+    const provider = typeof body.provider === "string" ? body.provider : "gemini";
 
-    if (!prompt || typeof prompt !== "string" || prompt.trim() === "") {
+    if (!prompt || prompt.trim() === "") {
       return res.status(400).json({ error: "Prompt cannot be empty." });
     }
 
-    const aiProvider = AI_PROVIDERS[provider] || AI_PROVIDERS['gemini'];
+    const aiProvider = AI_PROVIDERS[provider] || AI_PROVIDERS["gemini"];
 
     try {
       const responseText = await aiProvider.generateResponse(prompt.trim(), context);
@@ -113,10 +170,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         provider: aiProvider.name,
         response: responseText,
       });
-    } catch (providerErr: any) {
-      const code = providerErr.message || "";
+    } catch (providerErr: unknown) {
+      const message = providerErr instanceof Error ? providerErr.message : "";
 
-      if (code === "GEMINI_API_KEY_MISSING") {
+      if (message === "GEMINI_API_KEY_MISSING") {
         return res.status(200).json({
           success: true,
           provider: "Google Gemini (Offline / Fallback)",
@@ -125,29 +182,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
       }
 
-      if (code === "GEMINI_INVALID_KEY") {
+      if (message === "GEMINI_INVALID_KEY") {
         return res.status(401).json({
           error: "Invalid Gemini API Key. Please verify GEMINI_API_KEY in your Vercel Environment Variables.",
         });
       }
 
-      if (code === "GEMINI_RATE_LIMIT") {
+      if (message === "GEMINI_RATE_LIMIT") {
         return res.status(429).json({
           error: "Gemini API rate limit exceeded. Please wait a moment before asking again.",
         });
       }
 
-      if (code === "GEMINI_TIMEOUT") {
+      if (message === "GEMINI_TIMEOUT") {
         return res.status(504).json({
           error: "Gemini API request timed out. Please try again.",
         });
       }
 
       return res.status(500).json({
-        error: `AI Provider Error: ${providerErr.message || "Failed to generate response."}`,
+        error: `AI Provider Error: ${message || "Failed to generate response."}`,
       });
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Chat API handler error:", err);
     return res.status(500).json({ error: "Internal server error." });
   }
