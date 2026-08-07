@@ -117,11 +117,8 @@ Rules:
 
     // ── Model Fallback Chain ────────────────────────────────────────────────
     // On 429 rate-limit: try the next model instead of failing immediately.
-    // Free tier limits (approximate):
-    //   gemini-2.5-flash: 10 RPM, 500 RPD
-    //   gemini-2.0-flash: 15 RPM, 1500 RPD
-    //   gemini-1.5-flash: 15 RPM, 1500 RPD
-    const models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+    // We use the latest supported models for the v1beta endpoint.
+    const models = ["gemini-1.5-flash-latest", "gemini-1.5-pro-latest", "gemini-1.5-flash-8b-latest"];
 
     let lastError: string | null = null;
     const rateLimitedModels: string[] = [];
