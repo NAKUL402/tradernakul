@@ -66,3 +66,36 @@ export async function sendOwnerApprovalEmail({
     return { success: false, error: `Network error: ${message}` };
   }
 }
+
+export async function sendStatusNotificationEmail({
+  email,
+  name,
+  status,
+}: {
+  email: string;
+  name: string;
+  status: "approved" | "rejected";
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    const res = await fetch("/api/send-status-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, name, status }),
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      return {
+        success: false,
+        error: data.error || `Server error: ${res.status}`,
+      };
+    }
+
+    return { success: true };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    return { success: false, error: `Network error: ${message}` };
+  }
+}
+

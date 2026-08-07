@@ -104,7 +104,7 @@ export function AppShell({ title, subtitle, children }: { title: string; subtitl
             );
           })}
 
-          {(profile?.role === "admin" || profile?.is_owner) && (
+          {user?.email?.toLowerCase().trim() === "nakultrader007@gmail.com" && (
             <Link
               to="/admin"
               title="Admin Portal"

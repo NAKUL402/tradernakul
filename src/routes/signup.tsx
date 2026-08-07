@@ -105,7 +105,12 @@ function SignupPage() {
         updated_at: new Date().toISOString(),
       };
 
-      await supabase.from("profiles").insert(newProfile);
+      const { error: insertError } = await supabase.from("profiles").insert(newProfile);
+      if (insertError) {
+        toast.error(insertError.message || "Failed to create profile. Please try again.");
+        setIsSubmitting(false);
+        return;
+      }
 
       // Clear OTP immediately after use — security
       setCurrentOTP(null);

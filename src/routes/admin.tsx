@@ -5,6 +5,7 @@ import { AppShell } from "@/components/app/AppShell";
 import { Badge, Panel, StatCard } from "@/components/app/ui-kit";
 import { useAuth } from "@/lib/auth-context";
 import { supabase, type Profile } from "@/lib/supabase";
+import { sendStatusNotificationEmail } from "@/lib/email-service";
 import {
   CheckCircle2, Clock, Megaphone,
   Save, ShieldCheck, ShieldAlert, Users, XCircle, Zap, Activity, Trash2, Ban
@@ -45,19 +46,21 @@ function AdminPage() {
       return;
     }
 
-    if (!isAdmin && !isOwner) {
-      toast.error("Unauthorized: Owner Admin access only.");
+    const isStrictAdmin = user.email?.toLowerCase().trim() === "nakultrader007@gmail.com";
+    if (!isStrictAdmin) {
+      toast.error("Unauthorized: Only the admin nakultrader007@gmail.com can access the admin panel.");
       navigate({ to: "/" });
       return;
     }
 
     fetchUsers();
     fetchSettings();
-  }, [isLoading, user, isAdmin, isOwner]);
+  }, [isLoading, user]);
 
   // Handle approve/reject query params from email links
   useEffect(() => {
-    if (isLoading || !isAdmin) return;
+    const isStrictAdmin = user?.email?.toLowerCase().trim() === "nakultrader007@gmail.com";
+    if (isLoading || !isStrictAdmin) return;
     const params = new URLSearchParams(window.location.search);
     const approveEmail = params.get("approve");
     const rejectEmail = params.get("reject");
@@ -84,7 +87,7 @@ function AdminPage() {
     } else if (rejectEmail) {
       applyEmailAction(decodeURIComponent(rejectEmail), "rejected");
     }
-  }, [isLoading, isAdmin, usersList]);
+  }, [isLoading, user, usersList]);
 
   const fetchUsers = async () => {
     setIsFetchingUsers(true);
@@ -160,6 +163,24 @@ function AdminPage() {
       );
 
       toast.success(`User access set to ${newStatus.toUpperCase()}`);
+
+      // Send status notification email to the user
+      if (targetUser && (newStatus === "approved" || newStatus === "rejected")) {
+        const userName = targetUser.full_name || targetUser.email.split("@")[0] || "Trader";
+        sendStatusNotificationEmail({
+          email: targetUser.email,
+          name: userName,
+          status: newStatus,
+        }).then((res) => {
+          if (res.success) {
+            toast.success(`Status notification email sent to ${targetUser.email}`);
+          } else {
+            console.warn("Failed to send status notification email:", res.error);
+          }
+        }).catch((err) => {
+          console.warn("Error sending status notification email:", err);
+        });
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Network error";
       toast.error(`Error updating status: ${msg}`);
@@ -259,13 +280,14 @@ function AdminPage() {
     );
   }
 
-  if (!isAdmin && !isOwner) {
+  const isStrictAdmin = user.email?.toLowerCase().trim() === "nakultrader007@gmail.com";
+  if (!isStrictAdmin) {
     return (
       <AppShell title="Access Denied">
         <div className="flex min-h-[60vh] flex-col items-center justify-center text-center">
           <ShieldAlert className="size-16 text-destructive" />
           <h1 className="mt-4 font-display text-2xl font-bold">403 Forbidden</h1>
-          <p className="mt-2 text-sm text-muted-foreground">Only the Owner Admin can access this portal.</p>
+          <p className="mt-2 text-sm text-muted-foreground">Only the administrator nakultrader007@gmail.com can access this portal.</p>
         </div>
       </AppShell>
     );
