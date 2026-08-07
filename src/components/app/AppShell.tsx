@@ -173,18 +173,20 @@ export function AppShell({ title, subtitle, children }: { title: string; subtitl
         </main>
       </div>
 
-      <Link
-        to="/journal?openModal=true"
-        onClick={() => {
-          if (typeof window !== "undefined" && window.location.pathname === "/journal") {
-            window.dispatchEvent(new CustomEvent("open_log_trade_modal"));
-          }
-        }}
-        aria-label="Add trade"
-        className="fixed bottom-24 right-5 z-40 grid size-14 place-items-center rounded-2xl bg-gradient-to-br from-primary to-accent text-primary-foreground glow-primary transition active:scale-95 lg:bottom-8"
-      >
-        <Plus className="size-6" />
-      </Link>
+      {pathname === "/journal" && (
+        <Link
+          to="/journal?openModal=true"
+          onClick={() => {
+            if (typeof window !== "undefined" && window.location.pathname === "/journal") {
+              window.dispatchEvent(new CustomEvent("open_log_trade_modal"));
+            }
+          }}
+          aria-label="Add trade"
+          className="fixed bottom-24 right-5 z-40 grid size-14 place-items-center rounded-2xl bg-gradient-to-br from-primary to-accent text-primary-foreground glow-primary transition active:scale-95 lg:bottom-8"
+        >
+          <Plus className="size-6" />
+        </Link>
+      )}
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/60 bg-background/85 backdrop-blur-xl lg:hidden">
         <div className="flex items-stretch justify-between px-2 py-2">
