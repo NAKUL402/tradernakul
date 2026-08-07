@@ -16,6 +16,60 @@ export type AICoachAnalysis = {
   finalVerdict: string;
 };
 
+export type ChatMessage = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: string;
+  isError?: boolean;
+};
+
+/**
+ * Send user message to live Gemini API via backend /api/ai-coach endpoint.
+ * Throws real API error if Gemini API or backend server fails.
+ */
+export async function sendChatMessageToAI(
+  message: string,
+  history: ChatMessage[] = [],
+  userTrades: Trade[] = []
+): Promise<string> {
+  const summaryContext =
+    userTrades && userTrades.length > 0
+      ? {
+          totalTrades: userTrades.length,
+          stats: stats(userTrades),
+          streaks: streaks(userTrades),
+        }
+      : null;
+
+  const res = await fetch("/api/ai-coach", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message,
+      history: history.map((h) => ({ role: h.role, content: h.content })),
+      tradeContext: summaryContext,
+    }),
+  });
+
+  const data = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    const errorMsg = data?.error || `Server HTTP Error ${res.status}: ${res.statusText}`;
+    throw new Error(errorMsg);
+  }
+
+  if (data?.error) {
+    throw new Error(data.error);
+  }
+
+  if (!data?.reply) {
+    throw new Error("No response text received from Gemini API.");
+  }
+
+  return data.reply;
+}
+
 export function analyzeTradeDataWithAI(userTrades: Trade[]): AICoachAnalysis {
   if (!userTrades || userTrades.length === 0) {
     return {
