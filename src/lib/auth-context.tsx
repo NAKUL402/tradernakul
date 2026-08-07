@@ -29,7 +29,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Owner emails — these bypass pending approval requirement
   const ownerEmails = [
     "nakultrader007@gmail.com",
-    "tradernakul@gmail.com",
   ];
 
   const checkUserOwnerEmail = (emailStr: string | undefined) => {

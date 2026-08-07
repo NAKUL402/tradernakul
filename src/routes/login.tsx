@@ -67,7 +67,7 @@ function LoginPage() {
     setApprovalStatus(null);
 
     const cleanedEmail = email.toLowerCase().trim();
-    const ownerEmails = ["nakultrader007@gmail.com", "tradernakul@gmail.com"];
+    const ownerEmails = ["nakultrader007@gmail.com"];
     const isOwnerEmail = ownerEmails.includes(cleanedEmail);
 
     // Secure Admin Bypass Configuration: set to false to disable this bypass later

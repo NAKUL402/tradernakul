@@ -68,17 +68,6 @@ export const supabase = {
           is_owner: true,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
-        },
-        {
-          id: "owner-nakul-2",
-          email: "tradernakul@gmail.com",
-          full_name: "Nakul Trader",
-          avatar_url: null,
-          role: "admin",
-          status: "approved",
-          is_owner: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
         }
       ];
       setLocalStorageData(dataKey, currentData);

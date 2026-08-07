@@ -76,7 +76,7 @@ function SignupPage() {
     }
 
     const cleanedEmail = email.toLowerCase().trim();
-    const ownerEmails = ["nakultrader007@gmail.com", "tradernakul@gmail.com"];
+    const ownerEmails = ["nakultrader007@gmail.com"];
     const isOwnerEmail = ownerEmails.includes(cleanedEmail);
 
     try {
