@@ -1,4 +1,4 @@
-import { supabase } from "./supabase";
+import { supabase, isSupabaseConfigured } from "./supabase";
 
 export type Trade = {
   id: string;
@@ -29,8 +29,6 @@ export type Trade = {
 export const PAIRS = ["XAUUSD", "EURUSD", "GBPUSD", "USDJPY", "BTCUSD", "NAS100"];
 export const SETUPS = ["Order Block", "FVG Retest", "Liquidity Sweep", "Break & Retest", "Trend Continuation"];
 export const SESSIONS = ["Asian", "London", "New York"] as const;
-
-export const trades: Trade[] = [];
 
 export const money = (n: number, currency = "₹") =>
   `${n < 0 ? "-" : ""}${currency}${Math.abs(n).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
@@ -141,84 +139,124 @@ export function monthly(list: Trade[] = []) {
 
 export const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-export async function fetchUserTrades(): Promise<Trade[]> {
-  try {
-    const { data } = await supabase
-      .from("trades")
-      .select("*")
-      .order("date", { ascending: false });
+// ── Local Persistence Store Helpers for Trades ──────────────────────────────
+const LOCAL_TRADES_KEY = "tn_trades_store_v2";
 
-    if (data && data.length > 0) {
-      return data.map((t) => ({
-        id: t.id,
-        tradeNo: t.trade_no ? parseInt(t.trade_no, 10) : undefined,
-        date: t.date,
-        pair: t.pair,
-        side: t.side,
-        session: t.session,
-        entryTime: t.entry_time,
-        exitTime: t.exit_time,
-        entryPrice: parseFloat(t.entry_price),
-        exitPrice: parseFloat(t.exit_price),
-        result: t.result,
-        rrr: String(t.rrr || "1.0"),
-        riskPct: parseFloat(t.risk_pct),
-        pnl: parseFloat(t.pnl),
-        setup: t.setup,
-        confirmation: t.confirmation || "",
-        notes: t.notes || "",
-        screenshot: t.screenshot_url || "chart-1",
-        tags: t.tags || [],
-        lots: t.lots || "",
-        mistakes: t.mistakes || "",
-        rating: t.rating ? parseInt(t.rating, 10) : undefined,
-        reason: t.reason || "",
-      }));
-    }
-  } catch (err) {
-    console.error("Error fetching trades:", err);
+function getLocalTrades(): Trade[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(LOCAL_TRADES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
   }
-  return [];
+}
+
+function setLocalTrades(list: Trade[]) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(LOCAL_TRADES_KEY, JSON.stringify(list));
+  } catch {}
+}
+
+export async function fetchUserTrades(): Promise<Trade[]> {
+  let combined: Trade[] = getLocalTrades();
+
+  if (isSupabaseConfigured) {
+    try {
+      const { data, error } = await supabase
+        .from("trades")
+        .select("*")
+        .order("date", { ascending: false });
+
+      if (!error && data && data.length > 0) {
+        const fetched: Trade[] = data.map((t: any) => ({
+          id: t.id,
+          tradeNo: t.trade_no ? parseInt(t.trade_no, 10) : undefined,
+          date: t.date,
+          pair: t.pair,
+          side: t.side,
+          session: t.session,
+          entryTime: t.entry_time,
+          exitTime: t.exit_time,
+          entryPrice: parseFloat(t.entry_price || "0"),
+          exitPrice: parseFloat(t.exit_price || "0"),
+          result: t.result,
+          rrr: String(t.rrr || "1.0"),
+          riskPct: parseFloat(t.risk_pct || "1"),
+          pnl: parseFloat(t.pnl || "0"),
+          setup: t.setup,
+          confirmation: t.confirmation || "",
+          notes: t.notes || "",
+          screenshot: t.screenshot_url || "chart-1",
+          tags: t.tags || [],
+          lots: t.lots || "",
+          mistakes: t.mistakes || "",
+          rating: t.rating ? parseInt(t.rating, 10) : undefined,
+          reason: t.reason || "",
+        }));
+
+        // Merge fetched trades with local storage
+        const map = new Map<string, Trade>();
+        for (const tr of combined) map.set(tr.id, tr);
+        for (const tr of fetched) map.set(tr.id, tr);
+
+        combined = Array.from(map.values()).sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+        setLocalTrades(combined);
+      }
+    } catch (err) {
+      console.warn("[Trades] Supabase fetch notice:", err);
+    }
+  }
+
+  return combined;
 }
 
 export async function saveTradeToSupabase(tradePayload: Partial<Trade>, userId: string, imageFile?: File): Promise<void> {
   let screenshotUrl = tradePayload.screenshot || "chart-1";
 
-  if (imageFile) {
-    const fileExt = imageFile.name.split(".").pop();
-    const filePath = `${userId}/${Date.now()}.${fileExt}`;
-    const { error: uploadError } = await supabase.storage
-      .from("trade-screenshots")
-      .upload(filePath, imageFile);
-
-    if (!uploadError) {
-      const { data: publicUrlData } = supabase.storage
+  if (imageFile && isSupabaseConfigured) {
+    try {
+      const fileExt = imageFile.name.split(".").pop();
+      const filePath = `${userId}/${Date.now()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage
         .from("trade-screenshots")
-        .getPublicUrl(filePath);
-      screenshotUrl = publicUrlData.publicUrl;
+        .upload(filePath, imageFile);
+
+      if (!uploadError) {
+        const { data: publicUrlData } = supabase.storage
+          .from("trade-screenshots")
+          .getPublicUrl(filePath);
+        screenshotUrl = publicUrlData.publicUrl;
+      }
+    } catch (err) {
+      console.warn("[Storage] Image upload notice:", err);
     }
   }
 
-  const row = {
-    id: tradePayload.id || `trade-${Math.random().toString(36).substr(2, 9)}`,
-    user_id: userId,
-    trade_no: tradePayload.tradeNo,
+  const tradeId = tradePayload.id || `trade-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+
+  const newTradeObj: Trade = {
+    id: tradeId,
+    tradeNo: tradePayload.tradeNo,
     date: tradePayload.date || new Date().toISOString().slice(0, 10),
-    pair: tradePayload.pair,
-    side: tradePayload.side,
-    session: tradePayload.session,
-    entry_time: tradePayload.entryTime || "12:00",
-    exit_time: tradePayload.exitTime || "13:00",
-    entry_price: tradePayload.entryPrice,
-    exit_price: tradePayload.exitPrice,
-    result: tradePayload.result,
-    rrr: tradePayload.rrr,
-    risk_pct: tradePayload.riskPct,
-    pnl: tradePayload.pnl,
-    setup: tradePayload.setup,
+    pair: tradePayload.pair || "XAUUSD",
+    side: tradePayload.side || "Buy",
+    session: tradePayload.session || "London",
+    entryTime: tradePayload.entryTime || "12:00",
+    exitTime: tradePayload.exitTime || "13:00",
+    entryPrice: tradePayload.entryPrice || 0,
+    exitPrice: tradePayload.exitPrice || 0,
+    result: tradePayload.result || "Win",
+    rrr: String(tradePayload.rrr || "2.0"),
+    riskPct: tradePayload.riskPct || 1,
+    pnl: tradePayload.pnl || 0,
+    setup: tradePayload.setup || "Liquidity Sweep",
     confirmation: tradePayload.confirmation || "",
     notes: tradePayload.notes || "",
-    screenshot_url: screenshotUrl,
+    screenshot: screenshotUrl,
     tags: tradePayload.tags || [],
     lots: tradePayload.lots || "",
     mistakes: tradePayload.mistakes || "",
@@ -226,16 +264,69 @@ export async function saveTradeToSupabase(tradePayload: Partial<Trade>, userId: 
     reason: tradePayload.reason || "",
   };
 
-  if (tradePayload.id) {
-    const { error } = await supabase.from("trades").update(row).eq("id", tradePayload.id);
-    if (error) throw error;
+  // 1. Instantly save to local persistent storage
+  const currentList = getLocalTrades();
+  const existingIdx = currentList.findIndex((t) => t.id === tradeId);
+  if (existingIdx >= 0) {
+    currentList[existingIdx] = newTradeObj;
   } else {
-    const { error } = await supabase.from("trades").insert(row);
-    if (error) throw error;
+    currentList.unshift(newTradeObj);
+  }
+  setLocalTrades(currentList);
+
+  // 2. Sync to Supabase Cloud if configured
+  if (isSupabaseConfigured) {
+    const row = {
+      id: tradeId,
+      user_id: userId,
+      trade_no: newTradeObj.tradeNo,
+      date: newTradeObj.date,
+      pair: newTradeObj.pair,
+      side: newTradeObj.side,
+      session: newTradeObj.session,
+      entry_time: newTradeObj.entryTime,
+      exit_time: newTradeObj.exitTime,
+      entry_price: newTradeObj.entryPrice,
+      exit_price: newTradeObj.exitPrice,
+      result: newTradeObj.result,
+      rrr: newTradeObj.rrr,
+      risk_pct: newTradeObj.riskPct,
+      pnl: newTradeObj.pnl,
+      setup: newTradeObj.setup,
+      confirmation: newTradeObj.confirmation,
+      notes: newTradeObj.notes,
+      screenshot_url: screenshotUrl,
+      tags: newTradeObj.tags,
+      lots: newTradeObj.lots,
+      mistakes: newTradeObj.mistakes,
+      rating: newTradeObj.rating,
+      reason: newTradeObj.reason,
+    };
+
+    try {
+      if (tradePayload.id) {
+        await supabase.from("trades").update(row).eq("id", tradeId);
+      } else {
+        await supabase.from("trades").insert(row);
+      }
+    } catch (e) {
+      console.warn("[Database] Trades sync notice:", e);
+    }
   }
 }
 
 export async function deleteTradeFromSupabase(tradeId: string): Promise<void> {
-  const { error } = await supabase.from("trades").delete().eq("id", tradeId);
-  if (error) throw error;
+  // 1. Remove from local storage
+  const currentList = getLocalTrades();
+  const remaining = currentList.filter((t) => t.id !== tradeId);
+  setLocalTrades(remaining);
+
+  // 2. Remove from Supabase Cloud if configured
+  if (isSupabaseConfigured) {
+    try {
+      await supabase.from("trades").delete().eq("id", tradeId);
+    } catch (e) {
+      console.warn("[Database] Delete trade notice:", e);
+    }
+  }
 }
