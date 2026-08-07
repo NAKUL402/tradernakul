@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase, type Profile } from "@/lib/supabase";
-import { sendOTPEmail } from "@/lib/email-service";
+import { sendOTPEmail, sendOwnerApprovalEmail } from "@/lib/email-service";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/signup")({
@@ -23,7 +23,6 @@ const primaryBtn =
   "flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-accent px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90 active:scale-[0.99] glow-primary disabled:opacity-50";
 
 function SignupPage() {
-  const navigate = useNavigate();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
@@ -37,30 +36,29 @@ function SignupPage() {
     if (!email || !fullName) return;
     setIsSubmitting(true);
 
-    // Generate a random 6-digit OTP code
+    // Generate a secure 6-digit OTP — stored in state, NEVER shown to user
     const generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
     setCurrentOTP(generatedOTP);
 
     try {
-      // Attempt to email OTP code via Vercel serverless function
       const result = await sendOTPEmail({ email: email.toLowerCase().trim(), otp: generatedOTP });
-      
+
       if (result.success) {
-        toast.success("Verification code sent to your email!");
+        toast.success("Verification code sent! Check your email inbox (and spam folder).");
         setStep("otp");
       } else {
-        if (result.mode === "debug" || result.mode === "missing_config") {
-          // SMTP variables not set. Expose code for testing
-          toast.info(`[Debug mode] Verification code is: ${generatedOTP}`, { duration: 10000 });
-          setStep("otp");
-        } else {
-          toast.error(`Email delivery error: ${result.error || result.message || "Unknown error"}. Code is: ${generatedOTP}`);
-        }
+        // Do NOT show the OTP — show only the error
+        toast.error(
+          result.error ||
+          "Failed to send verification email. Please verify your email address and try again."
+        );
+        // Clear the OTP so it cannot be guessed/reused
+        setCurrentOTP(null);
       }
-    } catch (err) {
-      console.warn("SMTP fetch warning, exposing fallback code:", err);
-      toast.info(`[Fallback mode] Verification code is: ${generatedOTP}`, { duration: 10000 });
-      setStep("otp");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Unexpected error. Please try again.";
+      toast.error(msg);
+      setCurrentOTP(null);
     } finally {
       setIsSubmitting(false);
     }
@@ -68,47 +66,75 @@ function SignupPage() {
 
   const handleVerifyOTP = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!otp) return;
+    if (!otp || !currentOTP) return;
     setIsSubmitting(true);
 
     if (otp.trim() !== currentOTP) {
-      toast.error("Invalid verification code. Please check your spelling.");
+      toast.error("Invalid verification code. Please try again.");
       setIsSubmitting(false);
       return;
     }
 
-    // Register user profile record in simulated database
     const cleanedEmail = email.toLowerCase().trim();
     const ownerEmails = ["nakultrader007@gmail.com", "tradernakul@gmail.com"];
     const isOwnerEmail = ownerEmails.includes(cleanedEmail);
 
     try {
+      // Check if account already exists
       const { data: profiles } = await supabase.from("profiles").select("*");
-      const existing = (profiles || []).find((p: Profile) => p.email.toLowerCase() === cleanedEmail);
+      const existing = (profiles || []).find(
+        (p: Profile) => p.email.toLowerCase() === cleanedEmail
+      );
 
       if (existing) {
-        toast.error("An account with this email address already exists. Please log in.");
+        toast.error("An account with this email already exists. Please log in instead.");
         setIsSubmitting(false);
         return;
       }
 
+      // Create the new user profile with "pending" status (or "approved" for owner)
       const newProfile: Profile = {
         id: `user-${Math.random().toString(36).substr(2, 9)}`,
         email: cleanedEmail,
-        full_name: fullName,
+        full_name: fullName.trim(),
         avatar_url: null,
         role: isOwnerEmail ? "admin" : "user",
         status: isOwnerEmail ? "approved" : "pending",
         is_owner: isOwnerEmail,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       };
 
       await supabase.from("profiles").insert(newProfile);
-      toast.success("Account request registered successfully!");
+
+      // Clear OTP immediately after use — security
+      setCurrentOTP(null);
+
+      if (isOwnerEmail) {
+        // Owner gets instant access — no approval needed
+        toast.success("Owner account verified! You can now log in.");
+        setIsSuccess(true);
+        return;
+      }
+
+      // For non-owner users: send approval request email to owner
+      const approvalResult = await sendOwnerApprovalEmail({
+        userEmail: cleanedEmail,
+        userName: fullName.trim(),
+      });
+
+      if (approvalResult.success) {
+        console.log("[signup] Owner approval email sent successfully.");
+      } else {
+        // Log the error but don't block the user — profile already created
+        console.warn("[signup] Owner approval email failed:", approvalResult.error);
+      }
+
+      toast.success("Account request submitted! The owner has been notified.");
       setIsSuccess(true);
-    } catch (err: any) {
-      toast.error(`Registration failed: ${err.message}`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Registration failed. Please try again.";
+      toast.error(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -133,9 +159,13 @@ function SignupPage() {
           <div className="mt-8 text-center animate-rise">
             <div className="mx-auto size-16 grid place-items-center rounded-2xl bg-primary/20 text-3xl">⏳</div>
             <h2 className="mt-6 font-display text-xl font-semibold">Pending Approval</h2>
-            <div className="mt-4 rounded-2xl border border-primary/30 bg-primary/10 p-4 text-xs text-left leading-normal">
+            <div className="mt-4 rounded-2xl border border-primary/30 bg-primary/10 p-4 text-xs text-left leading-normal space-y-2">
               <p className="font-medium text-foreground">
-                Your access request has been sent to the administrator. Please wait for approval.
+                ✅ Your email has been verified successfully.
+              </p>
+              <p className="text-muted-foreground">
+                Your access request has been sent to the administrator at <strong>nakultrader007@gmail.com</strong>. 
+                You will gain access once the owner approves your request.
               </p>
             </div>
             <Link
@@ -153,7 +183,7 @@ function SignupPage() {
             <p className="mt-1 text-sm text-muted-foreground">
               {step === "details"
                 ? "Request access to the trading platform."
-                : `We sent a 6-digit code to ${email}`}
+                : `We sent a 6-digit code to ${email}. Check your inbox and spam folder.`}
             </p>
 
             {step === "details" ? (
@@ -176,7 +206,7 @@ function SignupPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   autoComplete="email"
                 />
-                
+
                 <button type="submit" disabled={isSubmitting} className={primaryBtn}>
                   {isSubmitting ? "Sending code…" : "Send Verification Code"}
                 </button>
@@ -187,13 +217,13 @@ function SignupPage() {
                   type="text"
                   required
                   maxLength={6}
-                  placeholder="Enter 6-digit OTP code"
+                  placeholder="Enter 6-digit code from your email"
                   className={`${field} tracking-widest text-center text-lg font-semibold`}
                   value={otp}
                   onChange={(e) => setOtp(e.target.value)}
                   autoComplete="one-time-code"
                 />
-                
+
                 <button type="submit" disabled={isSubmitting} className={primaryBtn}>
                   {isSubmitting ? "Verifying…" : "Verify & Register"}
                 </button>
@@ -201,7 +231,11 @@ function SignupPage() {
                 <button
                   type="button"
                   disabled={isSubmitting}
-                  onClick={() => setStep("details")}
+                  onClick={() => {
+                    setStep("details");
+                    setCurrentOTP(null);
+                    setOtp("");
+                  }}
                   className="mt-2 text-center text-xs text-muted-foreground hover:text-foreground w-full underline"
                 >
                   Go Back

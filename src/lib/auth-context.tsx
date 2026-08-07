@@ -26,7 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [currentOTP, setCurrentOTP] = useState<string | null>(null);
 
-  // Define owner emails
+  // Owner emails — these bypass pending approval requirement
   const ownerEmails = [
     "nakultrader007@gmail.com",
     "tradernakul@gmail.com",
@@ -52,16 +52,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!error && data) {
         const fetchedProfile = data as Profile;
         const isOwnerEmail = checkUserOwnerEmail(currentUser.email);
-        
-        // If they are not approved and not owner, auto-signout to prevent dashboard access
+
+        // Block non-approved, non-owner users from accessing the dashboard
         if (fetchedProfile.status !== "approved" && !fetchedProfile.is_owner && !isOwnerEmail) {
           localStorage.removeItem("tradernakul_session");
           setUser(null);
           setSession(null);
           setProfile(null);
-          // Broadcast custom event for login screen to capture the rejection reason
-          const event = new CustomEvent("auth_approval_blocked", { 
-            detail: { status: fetchedProfile.status } 
+          const event = new CustomEvent("auth_approval_blocked", {
+            detail: { status: fetchedProfile.status },
           });
           window.dispatchEvent(event);
           return null;
@@ -107,28 +106,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const sendOTP = async (email: string) => {
-    // Generate a secure 6-digit OTP code
+    // Generate a cryptographically random 6-digit OTP
     const generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
+    // Store OTP in state only — NEVER expose it to the UI
     setCurrentOTP(generatedOTP);
 
-    try {
-      // Attempt to email OTP code via Vercel serverless function
-      const result = await sendOTPEmail({ email: email.toLowerCase().trim(), otp: generatedOTP });
-      
-      if (!result.success) {
-        if (result.mode === "debug" || result.mode === "missing_config") {
-          // SMTP not configured. Reveal OTP for easy testing
-          toast.info(`[Debug mode] Verification code is: ${generatedOTP}`, { duration: 10000 });
-          console.log(`[Debug mode] OTP Code: ${generatedOTP}`);
-        } else {
-          toast.error(`Email delivery error: ${result.error || result.message || "Unknown error"}. Code is: ${generatedOTP}`);
-        }
-      } else {
-        toast.success("Verification code sent to your email!");
-      }
-    } catch (err) {
-      console.warn("SMTP fetch warning, exposing fallback code:", err);
-      toast.info(`[Fallback mode] Verification code is: ${generatedOTP}`, { duration: 10000 });
+    const result = await sendOTPEmail({ email: email.toLowerCase().trim(), otp: generatedOTP });
+
+    if (result.success) {
+      toast.success("Verification code sent! Please check your email inbox (and spam folder).");
+    } else {
+      // On failure, throw an error — do NOT show the OTP
+      throw new Error(
+        result.error || "Failed to send verification email. Please check your email address and try again."
+      );
     }
   };
 
@@ -138,15 +129,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const isAdminBypass = isOwnerEmail && token === "BYPASS_ADMIN";
 
     if (!isAdminBypass && (!currentOTP || token.trim() !== currentOTP)) {
-      throw new Error("Invalid verification code. Please check your spelling.");
+      throw new Error("Invalid verification code. Please check and try again.");
     }
 
-    // Fetch and check profiles list in local database simulator
+    // Look up or create the user profile
     const { data: profiles } = await supabase.from("profiles").select("*");
-    let profile = (profiles || []).find((p: Profile) => p.email.toLowerCase() === cleanedEmail);
+    let userProfile = (profiles || []).find((p: Profile) => p.email.toLowerCase() === cleanedEmail);
 
-    if (!profile) {
-      // Automatically register profile record if first time logging in
+    if (!userProfile) {
       const newProfile: Profile = {
         id: `user-${Math.random().toString(36).substr(2, 9)}`,
         email: cleanedEmail,
@@ -156,32 +146,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         status: isOwnerEmail ? "approved" : "pending",
         is_owner: isOwnerEmail,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       };
-      
+
       await supabase.from("profiles").insert(newProfile);
-      profile = newProfile;
+      userProfile = newProfile;
     }
 
-    // Gatekeeper verification
-    if (profile.status !== "approved" && !profile.is_owner && !isOwnerEmail) {
-      const event = new CustomEvent("auth_approval_blocked", { 
-        detail: { status: profile.status } 
+    // Block non-approved non-owner users
+    if (userProfile.status !== "approved" && !userProfile.is_owner && !isOwnerEmail) {
+      const event = new CustomEvent("auth_approval_blocked", {
+        detail: { status: userProfile.status },
       });
       window.dispatchEvent(event);
+      // Clear OTP so it cannot be reused
+      setCurrentOTP(null);
       return;
     }
 
-    // Setup session
+    // Establish session
     const mockUser = {
-      id: profile.id,
-      email: profile.email,
-      user_metadata: { full_name: profile.full_name }
+      id: userProfile.id,
+      email: userProfile.email,
+      user_metadata: { full_name: userProfile.full_name },
     };
 
     const mockSession = {
-      access_token: "mock-session-jwt",
-      user: mockUser
+      access_token: `tn-session-${Date.now()}`,
+      user: mockUser,
     };
 
     if (typeof window !== "undefined") {
@@ -190,13 +182,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setUser(mockUser as any);
     setSession(mockSession as any);
-    setProfile(profile);
+    setProfile(userProfile);
+
+    // Clear OTP after use to prevent replay
+    setCurrentOTP(null);
   };
 
   const signOut = async () => {
     if (typeof window !== "undefined") {
       localStorage.removeItem("tradernakul_session");
     }
+    setCurrentOTP(null);
     setUser(null);
     setSession(null);
     setProfile(null);
