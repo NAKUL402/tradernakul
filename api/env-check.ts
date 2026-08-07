@@ -22,6 +22,9 @@ export default function handler(_req: VercelRequest, res: VercelResponse) {
   const ownerEmail = process.env["OWNER_EMAIL"] || "nakultrader007@gmail.com (default)";
   const siteUrl = process.env["VITE_SITE_URL"] || "";
 
+  // AI vars
+  const geminiKey = process.env["GEMINI_API_KEY"] || "";
+
   const urlOk = supabaseUrl.startsWith("https://") && supabaseUrl.includes(".supabase.co");
   const keyOk = supabaseKey.length > 20;
 
@@ -29,6 +32,11 @@ export default function handler(_req: VercelRequest, res: VercelResponse) {
     status: "ok",
     timestamp: new Date().toISOString(),
     nodeVersion: process.version,
+    ai: {
+      GEMINI_API_KEY: geminiKey
+        ? `✅ SET — length: ${geminiKey.length} chars`
+        : "❌ NOT SET — Add GEMINI_API_KEY to Vercel Environment Variables to enable live Gemini AI",
+    },
     supabase: {
       VITE_SUPABASE_URL: urlOk
         ? `✅ SET — ${supabaseUrl}`

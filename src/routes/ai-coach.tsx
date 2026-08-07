@@ -118,7 +118,7 @@ function CoachPage() {
   const isCurrentWeek = activeWeekIdx === getCurrentWeekIndex();
 
   // Handle Interactive Chat Prompt Selection / Submit
-  const handleAskQuestion = (questionText: string) => {
+  const handleAskQuestion = async (questionText: string) => {
     if (!questionText.trim()) return;
 
     const userMsg = questionText.trim();
@@ -126,30 +126,37 @@ function CoachPage() {
     setCustomQuestion("");
     setIsAnswering(true);
 
-    setTimeout(() => {
-      let reply = "";
-      const lower = userMsg.toLowerCase();
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: userMsg,
+          context: `Current Weekly Rule: ${selectedRule.title}. Win Rate: ${ai.qualityScore}%. Overall Grade: ${ai.overallGrade}.`,
+        }),
+      });
 
-      if (lower.includes("revenge") || lower.includes("loss")) {
-        reply =
-          "Revenge trading is an emotional attempt to control an uncontrollable market. Enforce a mandatory 30-minute rule after any stop out: close your chart, walk away, and breathe. Never trade to get back lost money.";
-      } else if (lower.includes("lot") || lower.includes("position") || lower.includes("size")) {
-        reply =
-          "Calculate lot size strictly using: (Account Capital × Risk %) ÷ (Stop Loss Pips × Pip Value). Never risk more than 1% to 2% per trade. If the stop loss is wide, lot size must decrease dynamically.";
-      } else if (lower.includes("london") || lower.includes("sweep") || lower.includes("liquidity")) {
-        reply =
-          "London Session liquidity sweeps happen when Asian high/lows are broken to grab stops before the true expansion. Wait for the 15m/5m displacement (BOS) and Fair Value Gap (FVG) creation before taking entry.";
-      } else if (lower.includes("rrr") || lower.includes("ratio")) {
-        reply =
-          "To improve your RRR: 1) Refuse entries offering less than 1:2 RRR. 2) Tighten your entry by waiting for lower timeframe POI confirmation. 3) Take partial profits at 1:2 and let the rest run to key liquidity pool targets.";
+      const data = await res.json();
+      if (res.ok && data.success && data.response) {
+        setChatMessages((prev) => [...prev, { role: "coach", text: data.response }]);
+        if (data.warning) {
+          console.warn("[Gemini API Notice]:", data.warning);
+        }
       } else {
-        reply =
-          `To optimize your trading edge: 1) Focus strictly on high-probability setups. 2) Maintain fixed 1% risk per trade. 3) Adhere to your Weekly Golden Rule: "${selectedRule.title}".`;
+        const errReply = data.error || "Sorry, I am unable to generate a response right now. Please try again.";
+        setChatMessages((prev) => [...prev, { role: "coach", text: errReply }]);
       }
-
-      setChatMessages((prev) => [...prev, { role: "coach", text: reply }]);
+    } catch {
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          role: "coach",
+          text: "Network connection error. Please check your connection and try again.",
+        },
+      ]);
+    } finally {
       setIsAnswering(false);
-    }, 600);
+    }
   };
 
   // Readiness Score Calculation
