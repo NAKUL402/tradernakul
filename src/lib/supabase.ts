@@ -1,10 +1,20 @@
 import { createClient } from "@supabase/supabase-js";
 
 // ── Environment Variable Reading ────────────────────────────────────────────
-// VITE_ prefix required for Vite to embed these into the client-side bundle.
-// They MUST be set in Vercel → Project Settings → Environment Variables.
-export const supabaseUrl = (import.meta.env['VITE_SUPABASE_URL'] as string | undefined) || "";
-export const supabaseAnonKey = (import.meta.env['VITE_SUPABASE_ANON_KEY'] as string | undefined) || "";
+// CRITICAL: Vite's static replacement only works with DOT notation.
+// import.meta.env['VITE_KEY'] (bracket notation) is NOT replaced at build time.
+// We must use import.meta.env.VITE_KEY (dot notation).
+// To satisfy TypeScript's noPropertyAccessFromIndexSignature, we cast the whole
+// import.meta.env object to a typed interface first, then use dot notation.
+type ViteEnv = {
+  VITE_SUPABASE_URL: string | undefined;
+  VITE_SUPABASE_ANON_KEY: string | undefined;
+  [key: string]: string | undefined;
+};
+
+const env = import.meta.env as unknown as ViteEnv;
+export const supabaseUrl = env.VITE_SUPABASE_URL || "";
+export const supabaseAnonKey = env.VITE_SUPABASE_ANON_KEY || "";
 
 export const isSupabaseConfigured = Boolean(
   supabaseUrl &&
@@ -14,13 +24,18 @@ export const isSupabaseConfigured = Boolean(
   supabaseAnonKey.length > 20
 );
 
-if (!isSupabaseConfigured && typeof window !== "undefined") {
-  console.error(
-    "[TraderNakul] ❌ Supabase is NOT configured.\n" +
-    "  VITE_SUPABASE_URL:", supabaseUrl || "(empty)",
-    "\n  VITE_SUPABASE_ANON_KEY:", supabaseAnonKey ? `(set, ${supabaseAnonKey.length} chars)` : "(empty)",
-    "\n\n  Fix: Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to Vercel Environment Variables, then Redeploy."
-  );
+if (typeof window !== "undefined") {
+  if (isSupabaseConfigured) {
+    console.log("[TraderNakul] ✅ Supabase connected:", supabaseUrl.substring(0, 40) + "...");
+  } else {
+    console.error(
+      "[TraderNakul] ❌ Supabase NOT configured.\n",
+      "  VITE_SUPABASE_URL:", supabaseUrl ? `"${supabaseUrl}"` : "(empty — not embedded by Vite build)",
+      "\n  VITE_SUPABASE_ANON_KEY:", supabaseAnonKey ? `(set, ${supabaseAnonKey.length} chars)` : "(empty — not embedded by Vite build)",
+      "\n\n  Cause: VITE_ variables must use DOT notation in source code (import.meta.env.VITE_KEY)",
+      "\n  and must be set in Vercel Environment Variables before the build runs."
+    );
+  }
 }
 
 // ── UUID Generator ─────────────────────────────────────────────────────────
@@ -36,23 +51,17 @@ export function generateUUID() {
 }
 
 // ── Supabase Client ─────────────────────────────────────────────────────────
-// Uses real credentials when configured; falls back to a no-op placeholder URL
-// that triggers clear Supabase API errors rather than silent crashes.
-const effectiveUrl = isSupabaseConfigured
-  ? supabaseUrl
-  : "https://placeholder-not-configured.supabase.co";
-
-const effectiveKey = isSupabaseConfigured
-  ? supabaseAnonKey
-  : "placeholder-key-not-configured";
-
-export const supabase = createClient(effectiveUrl, effectiveKey, {
-  auth: {
-    persistSession: typeof window !== "undefined",
-    autoRefreshToken: typeof window !== "undefined",
-    detectSessionInUrl: typeof window !== "undefined",
-  },
-});
+export const supabase = createClient(
+  supabaseUrl || "https://placeholder-not-configured.supabase.co",
+  supabaseAnonKey || "placeholder-key-not-configured",
+  {
+    auth: {
+      persistSession: typeof window !== "undefined",
+      autoRefreshToken: typeof window !== "undefined",
+      detectSessionInUrl: typeof window !== "undefined",
+    },
+  }
+);
 
 // ── Profile Type ────────────────────────────────────────────────────────────
 export type Profile = {
