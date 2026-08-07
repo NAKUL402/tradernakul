@@ -24,6 +24,8 @@ export type ChatMessage = {
   isError?: boolean;
 };
 
+import { supabase } from "./supabase";
+
 /**
  * Send user message to live Gemini API via backend /api/ai-coach endpoint.
  *
@@ -56,9 +58,17 @@ export async function sendChatMessageToAI(
 
   let res: Response;
   try {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
     res = await fetch("/api/ai-coach", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({
         message,
         history: historyToSend,

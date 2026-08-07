@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { createClient } from "@supabase/supabase-js";
 
 /**
  * POST /api/ai-coach
@@ -229,6 +230,39 @@ Rules:
       }
 
       // ── SUCCESS ───────────────────────────────────────────────────────────
+      // Try to save to Supabase
+      try {
+        const authHeader = req.headers.authorization;
+        const supabaseUrl = process.env["VITE_SUPABASE_URL"];
+        // For inserting, we can use anon key if we have the user's JWT, or the service role key.
+        // Using anon key with the user's JWT is best for RLS.
+        const supabaseAnonKey = process.env["VITE_SUPABASE_ANON_KEY"];
+        
+        if (authHeader && supabaseUrl && supabaseAnonKey) {
+          const token = authHeader.replace("Bearer ", "");
+          const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+            global: {
+              headers: { Authorization: `Bearer ${token}` }
+            }
+          });
+          
+          const { data: { user } } = await supabase.auth.getUser(token);
+          
+          if (user) {
+            await supabase.from("ai_chat_history").insert({
+              user_id: user.id,
+              user_message: message.trim(),
+              ai_response: candidateText,
+              model_used: model
+            });
+            console.log(`[ai-coach] Saved chat history for user ${user.id}`);
+          }
+        }
+      } catch (dbErr) {
+        console.error("[ai-coach] Failed to save chat history to Supabase:", dbErr);
+        // Do not fail the request if DB save fails, just log it.
+      }
+
       return res.status(200).json({
         reply: candidateText,
         modelUsed: model,
