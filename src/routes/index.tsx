@@ -4,7 +4,7 @@ import { AppShell } from "@/components/app/AppShell";
 import { Panel, StatCard, Badge } from "@/components/app/ui-kit";
 import { BarsChart, EquityChart, WinLossPie } from "@/components/app/charts";
 import { equityCurve, fetchUserTrades, monthly, money, pct, pnlUsd, stats, type Trade } from "@/lib/trades";
-import { Activity, Flame, Percent, Scale, Snowflake, Target, TrendingDown, TrendingUp, Trophy, Wallet, Crown } from "lucide-react";
+import { Activity, Flame, Percent, Scale, Snowflake, Target, TrendingDown, TrendingUp, Trophy, Wallet, Crown, Brain, ChevronRight } from "lucide-react";
 import { goldenRules } from "@/lib/golden-rules";
 
 export const Route = createFileRoute("/")({
@@ -55,12 +55,6 @@ function Dashboard() {
               <Link to="/journal" className="rounded-xl bg-gradient-to-r from-primary to-accent px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 glow-primary">
                 Log a trade
               </Link>
-              <button 
-                onClick={() => window.dispatchEvent(new CustomEvent("open-ai-coach"))}
-                className="rounded-xl border border-border bg-card/40 px-5 py-2.5 text-sm font-medium transition hover:bg-card/70"
-              >
-                Ask AI Coach
-              </button>
             </div>
           </div>
           <div className="grid grid-cols-3 gap-3 sm:gap-4">
@@ -78,18 +72,50 @@ function Dashboard() {
         </div>
       </section>
 
-      {/* Dynamic Golden Rule Section */}
-      <div className="mt-4">
+      {/* Interactive AI & Psychology Section */}
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        {/* Premium AI Mentor Card */}
+        <Panel title="AI Trading Mentor">
+          <div className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-primary/20 bg-card p-5 sm:p-6 sm:h-full transition hover:border-primary/40 hover:shadow-[0_0_30px_-5px_var(--color-primary)]">
+            <div className="absolute -right-10 -top-10 size-40 rounded-full bg-primary/10 blur-3xl transition group-hover:bg-primary/20" />
+            
+            <div className="relative z-10 flex items-start gap-4">
+              <div className="grid shrink-0 size-12 place-items-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/30">
+                <Brain className="size-6" />
+              </div>
+              <div>
+                <p className="font-display text-lg font-semibold text-foreground">
+                  Consult AI Mentor
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Ask questions, analyze your trading, and improve your performance instantly.
+                </p>
+              </div>
+            </div>
+
+            <div className="relative z-10 mt-6 sm:mt-auto">
+              <button 
+                onClick={() => window.dispatchEvent(new CustomEvent("open-ai-coach"))}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-muted/50 px-4 py-3 text-sm font-medium transition hover:bg-primary hover:text-primary-foreground"
+              >
+                Open Coach Workspace
+                <ChevronRight className="size-4" />
+              </button>
+            </div>
+          </div>
+        </Panel>
+
+        {/* Dynamic Golden Rule Section */}
         <Panel title="Golden Rule">
-          <div className="flex items-start gap-4 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/10 p-5 sm:p-6 sm:items-center">
+          <div className="flex flex-col justify-center h-full gap-4 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/10 p-5 sm:p-6 sm:items-center sm:flex-row sm:justify-start">
             <div className="grid shrink-0 size-12 place-items-center rounded-full bg-primary/20 text-primary">
               <Crown className="size-6" />
             </div>
             <div>
-              <p className="font-display text-lg font-semibold sm:text-xl text-foreground">
+              <p className="font-display text-lg font-semibold sm:text-xl text-foreground leading-snug">
                 "{todaysRule}"
               </p>
-              <p className="mt-1 text-xs text-muted-foreground">
+              <p className="mt-2 text-xs font-medium uppercase tracking-wider text-primary/70">
                 Daily Trading Psychology
               </p>
             </div>

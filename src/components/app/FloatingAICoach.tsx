@@ -5,7 +5,6 @@ import { fetchUserTrades, type Trade } from "@/lib/trades";
 
 export function FloatingAICoach() {
   const [isOpen, setIsOpen] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
   const [userTrades, setUserTrades] = useState<Trade[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -39,7 +38,7 @@ export function FloatingAICoach() {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
-  }, [messages, loading, isOpen, isExpanded]);
+  }, [messages, loading, isOpen]);
 
   const startCooldown = (seconds: number) => {
     if (cooldownTimerRef.current) clearInterval(cooldownTimerRef.current);
@@ -107,45 +106,44 @@ export function FloatingAICoach() {
       {/* Floating Button */}
       <button
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-tr from-primary to-accent text-primary-foreground shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 ${isOpen ? "scale-0 opacity-0" : "scale-100 opacity-100 glow-primary"}`}
+        className={`fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-tr from-primary to-accent text-primary-foreground shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 ${isOpen ? "scale-0 opacity-0 pointer-events-none" : "scale-100 opacity-100 glow-primary"}`}
         aria-label="Open AI Coach"
       >
         <Bot className="size-6" />
       </button>
 
-      {/* Floating Chat Window */}
+      {/* Backdrop */}
+      <div 
+        className={`fixed inset-0 z-[60] bg-background/40 backdrop-blur-sm transition-opacity duration-300 ${
+          isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+        onClick={() => setIsOpen(false)}
+      />
+
+      {/* Premium Drawer Chat Window */}
       <div
-        className={`fixed bottom-6 right-6 z-50 flex flex-col overflow-hidden rounded-2xl border border-border/50 bg-card/95 shadow-2xl backdrop-blur-xl transition-all duration-300 ${
-          isOpen
-            ? "translate-y-0 opacity-100 pointer-events-auto"
-            : "translate-y-10 opacity-0 pointer-events-none"
-        } ${isExpanded ? "h-[85vh] w-[90vw] sm:w-[600px]" : "h-[500px] w-[90vw] sm:w-[400px]"}`}
+        className={`fixed inset-y-0 right-0 z-[70] flex w-full flex-col border-l border-primary/20 bg-card/95 shadow-[0_0_50px_-12px_var(--color-primary)] backdrop-blur-2xl transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] sm:w-[480px] lg:w-[550px] ${
+          isOpen ? "translate-x-0" : "translate-x-full"
+        }`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-border/50 bg-muted/30 px-4 py-3">
-          <div className="flex items-center gap-2">
-            <div className="grid size-8 place-items-center rounded-full bg-primary/20 text-primary">
-              <Bot className="size-4" />
+        <div className="relative flex items-center justify-between border-b border-primary/10 bg-gradient-to-r from-primary/5 to-transparent px-6 py-5">
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+          <div className="flex items-center gap-4">
+            <div className="grid size-10 place-items-center rounded-xl bg-primary shadow-lg shadow-primary/30 text-primary-foreground">
+              <Bot className="size-5" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-foreground">AI Coach</h3>
-              <p className="text-[10px] text-muted-foreground">Always listening</p>
+              <h3 className="font-display text-base font-semibold text-foreground leading-none">TraderNakul AI Mentor</h3>
+              <p className="mt-1 text-xs font-medium uppercase tracking-widest text-primary/80">Active Session</p>
             </div>
           </div>
-          <div className="flex items-center gap-1 text-muted-foreground">
-            <button
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="rounded-md p-1.5 hover:bg-muted hover:text-foreground transition-colors"
-            >
-              {isExpanded ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
-            </button>
-            <button
-              onClick={() => setIsOpen(false)}
-              className="rounded-md p-1.5 hover:bg-muted hover:text-foreground transition-colors"
-            >
-              <X className="size-4" />
-            </button>
-          </div>
+          <button
+            onClick={() => setIsOpen(false)}
+            className="grid size-8 place-items-center rounded-full hover:bg-primary/10 hover:text-primary transition-colors text-muted-foreground"
+          >
+            <X className="size-5" />
+          </button>
         </div>
 
         {/* Chat Area */}
