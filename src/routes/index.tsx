@@ -4,7 +4,8 @@ import { AppShell } from "@/components/app/AppShell";
 import { Panel, StatCard, Badge } from "@/components/app/ui-kit";
 import { BarsChart, EquityChart, WinLossPie } from "@/components/app/charts";
 import { equityCurve, fetchUserTrades, monthly, money, pct, pnlUsd, stats, type Trade } from "@/lib/trades";
-import { Activity, Flame, Percent, Scale, Snowflake, Target, TrendingDown, TrendingUp, Trophy, Wallet } from "lucide-react";
+import { Activity, Flame, Percent, Scale, Snowflake, Target, TrendingDown, TrendingUp, Trophy, Wallet, Crown } from "lucide-react";
+import { goldenRules } from "@/lib/golden-rules";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -31,6 +32,9 @@ function Dashboard() {
   const recent = [...userTrades].slice(-8).reverse();
   const weekly = months.slice(-7).map((m, i) => ({ label: `W${i + 1}`, pnl: Math.round(m.pnl / 4) }));
 
+  const dayIndex = Math.floor(Date.now() / 86400000);
+  const todaysRule = goldenRules[dayIndex % goldenRules.length];
+
   return (
     <AppShell title="Dashboard" subtitle="Track. Analyze. Improve.">
       <section className="glass relative animate-rise overflow-hidden rounded-[2rem] p-6 sm:p-8">
@@ -51,9 +55,12 @@ function Dashboard() {
               <Link to="/journal" className="rounded-xl bg-gradient-to-r from-primary to-accent px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 glow-primary">
                 Log a trade
               </Link>
-              <Link to="/ai-coach" className="rounded-xl border border-border bg-card/40 px-5 py-2.5 text-sm font-medium transition hover:bg-card/70">
+              <button 
+                onClick={() => window.dispatchEvent(new CustomEvent("open-ai-coach"))}
+                className="rounded-xl border border-border bg-card/40 px-5 py-2.5 text-sm font-medium transition hover:bg-card/70"
+              >
                 Ask AI Coach
-              </Link>
+              </button>
             </div>
           </div>
           <div className="grid grid-cols-3 gap-3 sm:gap-4">
@@ -70,6 +77,25 @@ function Dashboard() {
           </div>
         </div>
       </section>
+
+      {/* Dynamic Golden Rule Section */}
+      <div className="mt-4">
+        <Panel title="Golden Rule">
+          <div className="flex items-start gap-4 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/10 p-5 sm:p-6 sm:items-center">
+            <div className="grid shrink-0 size-12 place-items-center rounded-full bg-primary/20 text-primary">
+              <Crown className="size-6" />
+            </div>
+            <div>
+              <p className="font-display text-lg font-semibold sm:text-xl text-foreground">
+                "{todaysRule}"
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Daily Trading Psychology
+              </p>
+            </div>
+          </div>
+        </Panel>
+      </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
         <StatCard label="Total Trades" value={String(s.total)} sub="all time" icon={<Activity className="size-4" />} />

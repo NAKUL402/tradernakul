@@ -36,6 +36,7 @@ function Brand({ compact }: { compact?: boolean }) {
 }
 
 import { Gatekeeper } from "@/components/app/Gatekeeper";
+import { FloatingAICoach } from "@/components/app/FloatingAICoach";
 import { useAuth } from "@/lib/auth-context";
 
 export function AppShell({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
@@ -206,6 +207,7 @@ export function AppShell({ title, subtitle, children }: { title: string; subtitl
           })}
         </div>
       </nav>
+      <FloatingAICoach />
     </div>
   );
 }
