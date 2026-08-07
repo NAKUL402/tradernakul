@@ -38,24 +38,9 @@ function AdminPage() {
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
   useEffect(() => {
-    if (isLoading) return;
-
-    if (!user) {
-      toast.error("Please login first to access the Admin Dashboard.");
-      navigate({ to: "/login" });
-      return;
-    }
-
-    const isStrictAdmin = user.email?.toLowerCase().trim() === "nakultrader007@gmail.com";
-    if (!isStrictAdmin) {
-      toast.error("Unauthorized: Only the admin nakultrader007@gmail.com can access the admin panel.");
-      navigate({ to: "/" });
-      return;
-    }
-
     fetchUsers();
     fetchSettings();
-  }, [isLoading, user]);
+  }, []);
 
   // Handle approve/reject query params from email links
   useEffect(() => {
