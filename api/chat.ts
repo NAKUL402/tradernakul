@@ -44,12 +44,10 @@ export interface AIProvider {
   generateResponse(prompt: string, context?: string): Promise<string>;
 }
 
-// ── Supported Gemini Models Pool ─────────────────────────────────────────────
+// ── Currently Supported Gemini Models Pool (gemini-2.0-flash primary) ───────
 const GEMINI_MODELS_POOL = [
   "gemini-2.0-flash",
-  "gemini-1.5-flash-latest",
-  "gemini-1.5-flash",
-  "gemini-1.5-pro-latest",
+  "gemini-2.0-flash-lite",
   "gemini-1.5-pro",
 ];
 
