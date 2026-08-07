@@ -1,21 +1,29 @@
 import { createClient } from "@supabase/supabase-js";
 
-export const supabaseUrl = import.meta.env['VITE_SUPABASE_URL'] || "";
-export const supabaseAnonKey = import.meta.env['VITE_SUPABASE_ANON_KEY'] || "";
-
-// Verify variables exist; if not, use placeholder fallback that triggers explicit library errors on query
-const cleanUrl = supabaseUrl.trim() || "https://your-project-id.supabase.co";
-const cleanKey = supabaseAnonKey.trim() || "your-anon-key";
+// ── Environment Variable Reading ────────────────────────────────────────────
+// VITE_ prefix required for Vite to embed these into the client-side bundle.
+// They MUST be set in Vercel → Project Settings → Environment Variables.
+export const supabaseUrl = (import.meta.env['VITE_SUPABASE_URL'] as string | undefined) || "";
+export const supabaseAnonKey = (import.meta.env['VITE_SUPABASE_ANON_KEY'] as string | undefined) || "";
 
 export const isSupabaseConfigured = Boolean(
-  supabaseUrl && 
-  supabaseAnonKey && 
-  !/placeholder|example|local-storage|your-project-id/i.test(supabaseUrl) && 
-  !/placeholder|example|local-storage|your-anon-key/i.test(supabaseAnonKey)
+  supabaseUrl &&
+  supabaseAnonKey &&
+  supabaseUrl.startsWith("https://") &&
+  supabaseUrl.includes(".supabase.co") &&
+  supabaseAnonKey.length > 20
 );
 
+if (!isSupabaseConfigured && typeof window !== "undefined") {
+  console.error(
+    "[TraderNakul] ❌ Supabase is NOT configured.\n" +
+    "  VITE_SUPABASE_URL:", supabaseUrl || "(empty)",
+    "\n  VITE_SUPABASE_ANON_KEY:", supabaseAnonKey ? `(set, ${supabaseAnonKey.length} chars)` : "(empty)",
+    "\n\n  Fix: Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to Vercel Environment Variables, then Redeploy."
+  );
+}
+
 // ── UUID Generator ─────────────────────────────────────────────────────────
-// Generates standard compliant RFC4122 v4 UUIDs for Supabase PK compatibility
 export function generateUUID() {
   if (typeof window !== "undefined" && window.crypto && window.crypto.randomUUID) {
     return window.crypto.randomUUID();
@@ -27,16 +35,26 @@ export function generateUUID() {
   });
 }
 
-// ── Client Export ───────────────────────────────────────────────────────────
-// Exposes the real Supabase client as the single source of truth (no mock fallback).
-export const supabase = createClient(cleanUrl, cleanKey, {
+// ── Supabase Client ─────────────────────────────────────────────────────────
+// Uses real credentials when configured; falls back to a no-op placeholder URL
+// that triggers clear Supabase API errors rather than silent crashes.
+const effectiveUrl = isSupabaseConfigured
+  ? supabaseUrl
+  : "https://placeholder-not-configured.supabase.co";
+
+const effectiveKey = isSupabaseConfigured
+  ? supabaseAnonKey
+  : "placeholder-key-not-configured";
+
+export const supabase = createClient(effectiveUrl, effectiveKey, {
   auth: {
     persistSession: typeof window !== "undefined",
     autoRefreshToken: typeof window !== "undefined",
     detectSessionInUrl: typeof window !== "undefined",
-  }
+  },
 });
 
+// ── Profile Type ────────────────────────────────────────────────────────────
 export type Profile = {
   id: string;
   email: string;
@@ -50,4 +68,3 @@ export type Profile = {
   created_at: string;
   updated_at: string;
 };
-

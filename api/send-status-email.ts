@@ -103,7 +103,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       resendError = data['message'] || data['error'] || `HTTP ${response.status}`;
       console.warn(`[send-status-email] Resend failed: ${resendError}`);
     } catch (err: unknown) {
-      resendError = err instanceof Error ? err['message'] : String(err);
+      resendError = err instanceof Error ? err.message : String(err);
       console.error("[send-status-email] Resend exception:", resendError);
     }
   }
@@ -119,7 +119,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
 
       await transporter.verify().catch((e: Error) => {
-        throw new Error(`SMTP verify failed: ${e['message']}`);
+        throw new Error(`SMTP verify failed: ${e.message}`);
       });
 
       await transporter.sendMail({
@@ -133,7 +133,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log(`[send-status-email] ✅ Gmail SMTP success: ${email}`);
       return res.status(200).json({ success: true, provider: "gmail_smtp" });
     } catch (err: unknown) {
-      gmailError = err instanceof Error ? err['message'] : String(err);
+      gmailError = err instanceof Error ? err.message : String(err);
       console.error("[send-status-email] Gmail SMTP failed:", gmailError);
     }
   }
