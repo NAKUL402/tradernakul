@@ -51,6 +51,29 @@ const mockSupabaseClient = {
         localStorage.removeItem("tradernakul_session");
       }
     },
+    signUp: async ({ email, password }: any) => {
+      const userId = `user-mock-${Math.random().toString(36).substr(2, 9)}`;
+      const user = { id: userId, email };
+      return { data: { user }, error: null };
+    },
+    signInWithPassword: async ({ email, password }: any) => {
+      const dataKey = "tn_db_profiles";
+      const profiles = getLocalStorageData(dataKey);
+      const profile = profiles.find((p: any) => p.email.toLowerCase() === email.toLowerCase());
+      
+      const userId = profile ? profile.id : `user-mock-${Math.random().toString(36).substr(2, 9)}`;
+      const user = { id: userId, email };
+      const session = {
+        access_token: `tn-session-${Date.now()}`,
+        user,
+      };
+      
+      if (typeof window !== "undefined") {
+        localStorage.setItem("tradernakul_session", JSON.stringify(session));
+      }
+      
+      return { data: { session, user }, error: null };
+    },
     getSession: async () => {
       const sessionStr = typeof window !== "undefined" ? localStorage.getItem("tradernakul_session") : null;
       return { data: { session: sessionStr ? JSON.parse(sessionStr) : null }, error: null };

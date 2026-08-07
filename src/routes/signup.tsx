@@ -80,7 +80,7 @@ function SignupPage() {
     const isOwnerEmail = ownerEmails.includes(cleanedEmail);
 
     try {
-      // Check if account already exists
+      // Check if profile record already exists
       const { data: profiles } = await supabase.from("profiles").select("*");
       const existing = (profiles || []).find(
         (p: Profile) => p.email.toLowerCase() === cleanedEmail
@@ -92,9 +92,27 @@ function SignupPage() {
         return;
       }
 
-      // Create the new user profile with "pending" status (or "approved" for owner)
+      // Generate secure deterministic password for Supabase Auth
+      const password = `TN@Journal_${cleanedEmail.replace(/[^a-z0-9]/g, "").slice(0, 10)}_2026!`;
+
+      // 1. Create user in Supabase Authentication
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: cleanedEmail,
+        password,
+      });
+
+      if (authError) {
+        throw authError;
+      }
+
+      const userUUID = authData.user?.id;
+      if (!userUUID) {
+        throw new Error("Failed to create authentication account. Please contact support.");
+      }
+
+      // 2. Save user profile data in Supabase database
       const newProfile: Profile = {
-        id: generateUUID(),
+        id: userUUID,
         email: cleanedEmail,
         full_name: fullName.trim(),
         avatar_url: null,
@@ -107,22 +125,24 @@ function SignupPage() {
 
       const { error: insertError } = await supabase.from("profiles").insert(newProfile);
       if (insertError) {
-        toast.error(insertError.message || "Failed to create profile. Please try again.");
-        setIsSubmitting(false);
-        return;
+        // If profile insertion fails, sign out the auth session
+        await supabase.auth.signOut();
+        throw insertError;
       }
 
-      // Clear OTP immediately after use — security
+      // 3. Immediately sign out the auth session so they are not logged in yet
+      await supabase.auth.signOut();
+
+      // Clear OTP immediately after use
       setCurrentOTP(null);
 
       if (isOwnerEmail) {
-        // Owner gets instant access — no approval needed
         toast.success("Owner account verified! You can now log in.");
         setIsSuccess(true);
         return;
       }
 
-      // For non-owner users: send approval request email to owner
+      // Send approval request email to owner
       const approvalResult = await sendOwnerApprovalEmail({
         userEmail: cleanedEmail,
         userName: fullName.trim(),
@@ -131,7 +151,6 @@ function SignupPage() {
       if (approvalResult.success) {
         console.log("[signup] Owner approval email sent successfully.");
       } else {
-        // Log the error but don't block the user — profile already created
         console.warn("[signup] Owner approval email failed:", approvalResult.error);
       }
 

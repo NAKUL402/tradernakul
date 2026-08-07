@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // Block non-approved, non-owner users from accessing the dashboard
         if (fetchedProfile.status !== "approved" && !fetchedProfile.is_owner && !isOwnerEmail) {
-          localStorage.removeItem("tradernakul_session");
+          supabase.auth.signOut();
           setUser(null);
           setSession(null);
           setProfile(null);
@@ -131,13 +131,70 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error("Invalid verification code. Please check and try again.");
     }
 
-    // Look up or create the user profile
-    const { data: profiles } = await supabase.from("profiles").select("*");
-    let userProfile = (profiles || []).find((p: Profile) => p.email.toLowerCase() === cleanedEmail);
+    // Generate secure deterministic password for Supabase Auth
+    const password = `TN@Journal_${cleanedEmail.replace(/[^a-z0-9]/g, "").slice(0, 10)}_2026!`;
 
-    if (!userProfile) {
+    let userUUID = "";
+    let finalProfile: Profile | null = null;
+
+    if (isAdminBypass) {
+      // Admin bypass logs directly into Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: cleanedEmail,
+        password,
+      });
+
+      if (authError) {
+        // If the admin user doesn't exist yet, sign them up
+        if (authError.message.includes("Invalid login credentials") || authError.message.includes("Email not confirmed")) {
+          const { data: signupData, error: signupError } = await supabase.auth.signUp({
+            email: cleanedEmail,
+            password,
+          });
+          if (signupError) throw signupError;
+          userUUID = signupData.user?.id || "";
+        } else {
+          throw authError;
+        }
+      } else {
+        userUUID = authData.user?.id || "";
+      }
+    } else {
+      // Normal user (or owner logging in with OTP)
+      // Since they verified OTP, we log them into Supabase Auth using the password
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: cleanedEmail,
+        password,
+      });
+
+      if (authError) {
+        // If the user doesn't exist in Supabase Auth yet, sign them up!
+        if (authError.message.includes("Invalid login credentials") || authError.message.includes("Email not confirmed")) {
+          const { data: signupData, error: signupError } = await supabase.auth.signUp({
+            email: cleanedEmail,
+            password,
+          });
+          if (signupError) throw signupError;
+          userUUID = signupData.user?.id || "";
+        } else {
+          throw authError;
+        }
+      } else {
+        userUUID = authData.user?.id || "";
+      }
+    }
+
+    // Now, look up or create the profile in Supabase profiles database using userUUID
+    const { data: existingProfile } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", userUUID)
+      .single();
+
+    if (!existingProfile) {
+      // Create new profile with pending status
       const newProfile: Profile = {
-        id: generateUUID(),
+        id: userUUID,
         email: cleanedEmail,
         full_name: cleanedEmail.split("@")[0] || "Trader",
         avatar_url: null,
@@ -148,57 +205,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         updated_at: new Date().toISOString(),
       };
 
-      await supabase.from("profiles").insert(newProfile);
-      userProfile = newProfile;
+      const { error: insertError } = await supabase.from("profiles").insert(newProfile);
+      if (insertError) throw insertError;
+      finalProfile = newProfile;
+    } else {
+      finalProfile = existingProfile as Profile;
     }
 
-    // Block non-approved non-owner users
-    if (userProfile.status !== "approved" && !userProfile.is_owner && !isOwnerEmail) {
+    // Check approval status
+    if (finalProfile.status !== "approved" && !finalProfile.is_owner && !isOwnerEmail) {
+      // Log them out of Supabase Auth since they are not approved yet!
+      await supabase.auth.signOut();
+      
       const event = new CustomEvent("auth_approval_blocked", {
-        detail: { status: userProfile.status },
+        detail: { status: finalProfile.status },
       });
       window.dispatchEvent(event);
-      // Clear OTP so it cannot be reused
       setCurrentOTP(null);
       
-      if (userProfile.status === "pending") {
+      if (finalProfile.status === "pending") {
         throw new Error("Access Pending: Your registration is currently awaiting administrator approval.");
-      } else if (userProfile.status === "rejected") {
+      } else if (finalProfile.status === "rejected") {
         throw new Error("Access Denied: Your registration has been rejected by the administrator.");
-      } else if (userProfile.status === "suspended") {
+      } else if (finalProfile.status === "suspended") {
         throw new Error("Account Suspended: Please contact the administrator.");
       } else {
-        throw new Error(`Access Denied: Your status is ${userProfile.status}.`);
+        throw new Error(`Access Denied: Your status is ${finalProfile.status}.`);
       }
     }
 
-    // Establish session
-    const mockUser = {
-      id: userProfile.id,
-      email: userProfile.email,
-      user_metadata: { full_name: userProfile.full_name },
-    };
-
-    const mockSession = {
-      access_token: `tn-session-${Date.now()}`,
-      user: mockUser,
-    };
-
-    if (typeof window !== "undefined") {
-      localStorage.setItem("tradernakul_session", JSON.stringify(mockSession));
+    // If approved, establish the authenticated session
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (sessionData?.session) {
+      setUser(sessionData.session.user as any);
+      setSession(sessionData.session as any);
+      setProfile(finalProfile);
+    } else {
+      // Re-sign in to establish session if needed
+      const { data: loginData } = await supabase.auth.signInWithPassword({
+        email: cleanedEmail,
+        password,
+      });
+      if (loginData?.session) {
+        setUser(loginData.session.user as any);
+        setSession(loginData.session as any);
+        setProfile(finalProfile);
+      }
     }
 
-    setUser(mockUser as any);
-    setSession(mockSession as any);
-    setProfile(userProfile);
-
-    // Clear OTP after use to prevent replay
     setCurrentOTP(null);
   };
 
   const signOut = async () => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("tradernakul_session");
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.warn("Sign out warning:", err);
     }
     setCurrentOTP(null);
     setUser(null);
