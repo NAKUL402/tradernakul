@@ -282,19 +282,86 @@ STRICT MENTOR RULES:
         retryAfterSeconds: 60,
         rateLimited: true,
       });
+    console.log("[AI_COACH] All Gemini models failed. Attempting Groq fallback...");
+    
+    const groqApiKey = process.env["GROQ_API_KEY"];
+    if (groqApiKey && groqApiKey.trim() !== "") {
+      try {
+        const groqMessages = [
+          { role: "system", content: systemText }
+        ];
+        
+        for (const item of formattedContents) {
+          groqMessages.push({
+            role: item.role === "model" ? "assistant" : item.role,
+            content: item.parts?.[0]?.text || ""
+          });
+        }
+        
+        const groqResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${groqApiKey}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: "llama-3.3-70b-versatile",
+            messages: groqMessages,
+            temperature: 0.7,
+            max_tokens: 1024
+          })
+        });
+        
+        if (groqResponse.ok) {
+          const groqData = await groqResponse.json() as any;
+          const groqText = groqData.choices?.[0]?.message?.content;
+          
+          if (groqText) {
+            console.log(`[AI_COACH] Groq fallback successful`);
+            // Fire and forget Supabase insert
+            try {
+              const authHeader = req.headers.authorization;
+              const supabaseUrl = process.env["VITE_SUPABASE_URL"];
+              const supabaseAnonKey = process.env["VITE_SUPABASE_ANON_KEY"];
+              
+              if (authHeader && supabaseUrl && supabaseAnonKey) {
+                const token = authHeader.replace("Bearer ", "");
+                const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+                  global: { headers: { Authorization: `Bearer ${token}` } }
+                });
+                const { data: { user } } = await supabase.auth.getUser(token);
+                if (user) {
+                  await supabase.from("ai_chat_history").insert({
+                    user_id: user.id,
+                    user_message: message.trim(),
+                    ai_response: groqText,
+                    created_at: new Date().toISOString(),
+                  });
+                }
+              }
+            } catch (dbErr) {
+              console.error("[AI_COACH] Groq DB save error:", dbErr);
+            }
+            
+            return res.status(200).json({
+              reply: groqText,
+              modelUsed: "groq-llama-3.3-70b-versatile"
+            });
+          }
+        } else {
+          console.error(`[AI_COACH] Groq fallback failed with status ${groqResponse.status}`);
+        }
+      } catch (err) {
+        console.error(`[AI_COACH] Groq fallback fetch error:`, err);
+      }
     }
 
-    if (rateLimitedModels.length > 0) {
-      return res.status(503).json({
-        error:
-          `Some models were rate-limited (${rateLimitedModels.join(", ")}) ` +
-          `and remaining models failed: ${lastError}`,
-      });
-    }
-
-    return res.status(503).json({
-      error: lastError || "All Gemini models failed to respond. Check the Google AI status page.",
+    return res.status(500).json({
+      error: `AI Service temporarily unavailable. All Gemini models failed. ${
+        rateLimitedModels.length > 0 ? "Rate limits hit on: " + rateLimitedModels.join(", ") : ""
+      } Last error: ${lastError}`,
     });
+
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : "Internal Server Error";
     return res.status(500).json({ error: `AI Coach API Exception: ${errorMsg}` });

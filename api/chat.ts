@@ -195,6 +195,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             continue;
           }
 
+          if (response.status === 429 || response.status >= 500) {
+            console.log(`[CHAT_API] Gemini Error ${response.status}. Breaking to try Groq fallback.`);
+            break;
+          }
+
           // Return original error directly so debugging is crystal clear
           return res.status(response.status).json({
             success: false,
@@ -255,10 +260,53 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    console.log(`[CHAT_API] STEP 10: All models in pool failed`);
+    console.log(`[CHAT_API] STEP 10: Gemini models failed. Attempting Groq fallback...`);
+    const groqApiKey = process.env["GROQ_API_KEY"];
+    
+    if (groqApiKey && groqApiKey.trim() !== "") {
+      try {
+        const groqResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${groqApiKey}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: "llama-3.3-70b-versatile",
+            messages: [
+              { role: "system", content: systemInstruction },
+              { role: "user", content: cleanPrompt }
+            ],
+            temperature: 0.7,
+            max_tokens: 800
+          })
+        });
+        
+        if (groqResponse.ok) {
+          const groqData = await groqResponse.json() as any;
+          const groqText = groqData.choices?.[0]?.message?.content;
+          
+          if (groqText) {
+            console.log(`[CHAT_API] Groq fallback successful`);
+            return res.status(200).json({
+              success: true,
+              provider: "Groq (llama-3.3-70b-versatile)",
+              response: groqText,
+              warning: "Gemini models failed. Used Groq fallback."
+            });
+          }
+        } else {
+          console.error(`[CHAT_API] Groq fallback failed with status ${groqResponse.status}`);
+        }
+      } catch (err) {
+        console.error(`[CHAT_API] Groq fallback fetch error:`, err);
+      }
+    }
+
+    console.log(`[CHAT_API] STEP 11: All models in pool and fallbacks failed`);
     return res.status(500).json({
       success: false,
-      error: `All Gemini models failed. Last error: ${lastErrorDetails}`,
+      error: `AI Generation failed. Last Gemini error: ${lastErrorDetails}`,
     });
 
   } catch (globalErr: unknown) {
