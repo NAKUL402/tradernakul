@@ -1,4 +1,4 @@
-import { groupStats, stats, streaks, type Trade } from "./trades";
+import { groupStats, money, stats, streaks, type Trade } from "./trades";
 
 export type WeeklyGoldenRule = {
   week: number;
