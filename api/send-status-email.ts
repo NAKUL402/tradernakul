@@ -95,12 +95,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
 
       const data = (await response.json().catch(() => ({}))) as Record<string, any>;
-      if (response.ok && data.id) {
-        console.log(`[send-status-email] ✅ Resend success: ${data.id}`);
+      if (response.ok && data['id']) {
+        console.log(`[send-status-email] ✅ Resend success: ${data['id']}`);
         return res.status(200).json({ success: true, provider: "resend" });
       }
 
-      resendError = data?.message || data?.error || `HTTP ${response.status}`;
+      resendError = data['message'] || data['error'] || `HTTP ${response.status}`;
       console.warn(`[send-status-email] Resend failed: ${resendError}`);
     } catch (err: unknown) {
       resendError = err instanceof Error ? err.message : String(err);

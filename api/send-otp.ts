@@ -92,14 +92,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const data = (await response.json().catch(() => ({}))) as Record<string, any>;
       console.log(`[send-otp] Resend HTTP ${response.status}:`, JSON.stringify(data));
 
-      if (response.ok && data.id) {
+      if (response.ok && data['id']) {
         // ✅ Resend succeeded
-        console.log(`[send-otp] ✅ Provider 1 (Resend) success — email id: ${data.id}`);
+        console.log(`[send-otp] ✅ Provider 1 (Resend) success — email id: ${data['id']}`);
         return res.status(200).json({ success: true, provider: "resend" });
       }
 
       // Resend failed — capture the exact error message
-      resendError = data?.message || data?.error || data?.name || `HTTP ${response.status}`;
+      resendError = data['message'] || data['error'] || data['name'] || `HTTP ${response.status}`;
       console.warn(`[send-otp] Resend failed: ${resendError}`);
 
       // Resend testing restriction = HTTP 403 with specific message

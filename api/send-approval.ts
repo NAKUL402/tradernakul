@@ -81,7 +81,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }),
       });
 
-      const data = (await response.json().catch(() => ({}))) as any;
+      const data = (await response.json().catch(() => ({}))) as Record<string, any>;
       console.log(`[send-approval] Resend status: ${response.status}`, JSON.stringify(data));
 
       if (response.ok) {
@@ -89,7 +89,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({ success: true, provider: "resend" });
       }
 
-      const errMsg: string = data?.message || data?.error || `Resend error ${response.status}`;
+      const errMsg: string = data['message'] || data['error'] || `Resend error ${response.status}`;
       const isDomainError =
         errMsg.toLowerCase().includes("domain") ||
         errMsg.toLowerCase().includes("verify") ||
