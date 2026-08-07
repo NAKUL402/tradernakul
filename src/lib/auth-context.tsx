@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { User, Session } from "@supabase/supabase-js";
-import { supabase, type Profile } from "./supabase";
+import { supabase, type Profile, generateUUID } from "./supabase";
 import { sendOTPEmail } from "./email-service";
 import { toast } from "sonner";
 
@@ -137,7 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (!userProfile) {
       const newProfile: Profile = {
-        id: `user-${Math.random().toString(36).substr(2, 9)}`,
+        id: generateUUID(),
         email: cleanedEmail,
         full_name: cleanedEmail.split("@")[0] || "Trader",
         avatar_url: null,

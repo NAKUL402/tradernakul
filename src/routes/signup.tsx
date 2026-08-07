@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { supabase, type Profile } from "@/lib/supabase";
+import { supabase, type Profile, generateUUID } from "@/lib/supabase";
 import { sendOTPEmail, sendOwnerApprovalEmail } from "@/lib/email-service";
 import { toast } from "sonner";
 
@@ -94,7 +94,7 @@ function SignupPage() {
 
       // Create the new user profile with "pending" status (or "approved" for owner)
       const newProfile: Profile = {
-        id: `user-${Math.random().toString(36).substr(2, 9)}`,
+        id: generateUUID(),
         email: cleanedEmail,
         full_name: fullName.trim(),
         avatar_url: null,

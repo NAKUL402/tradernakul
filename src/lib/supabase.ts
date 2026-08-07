@@ -1,8 +1,32 @@
-// 100% Decoupled Local Database Engine replacing Supabase
-export const isSupabaseConfigured = true; // Set to true to satisfy check triggers
-export const supabaseUrl = "local-storage-engine";
-export const supabaseAnonKey = "local-storage-anon-key";
+import { createClient } from "@supabase/supabase-js";
 
+// Check if real Supabase credentials are set in the environment
+const isPlaceholderValue = (value: string) => !value || /placeholder|example|local-storage/i.test(value);
+
+export const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
+export const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+
+export const isSupabaseConfigured = Boolean(
+  supabaseUrl && 
+  supabaseAnonKey && 
+  !isPlaceholderValue(supabaseUrl) && 
+  !isPlaceholderValue(supabaseAnonKey)
+);
+
+// ── UUID Generator ─────────────────────────────────────────────────────────
+// Generates standard compliant RFC4122 v4 UUIDs for Supabase PK compatibility
+export function generateUUID() {
+  if (typeof window !== "undefined" && window.crypto && window.crypto.randomUUID) {
+    return window.crypto.randomUUID();
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
+// ── Local Storage Database Mock (Fallback) ──────────────────────────────────
 const getLocalStorageData = (key: string): any[] => {
   if (typeof window === "undefined") return [];
   try {
@@ -20,7 +44,7 @@ const setLocalStorageData = (key: string, data: any[]) => {
   } catch {}
 };
 
-export const supabase = {
+const mockSupabaseClient = {
   auth: {
     signOut: async () => {
       if (typeof window !== "undefined") {
@@ -32,7 +56,6 @@ export const supabase = {
       return { data: { session: sessionStr ? JSON.parse(sessionStr) : null }, error: null };
     },
     onAuthStateChange: (callback: any) => {
-      // Mock subscription triggering initial fetch
       if (typeof window !== "undefined") {
         const sessionStr = localStorage.getItem("tradernakul_session");
         const session = sessionStr ? JSON.parse(sessionStr) : null;
@@ -55,7 +78,7 @@ export const supabase = {
     const dataKey = `tn_db_${table}`;
     let currentData = getLocalStorageData(dataKey);
 
-    // Automatically seed owner profiles if empty
+    // Seed owner profile on initialization if mock profiles is empty
     if (table === "profiles" && currentData.length === 0) {
       currentData = [
         {
@@ -139,6 +162,18 @@ export const supabase = {
   }
 };
 
+// ── Client Export ───────────────────────────────────────────────────────────
+// Exposes real Supabase connection in production (Vercel) & localStorage mock locally.
+export const supabase = isSupabaseConfigured 
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: typeof window !== "undefined",
+        autoRefreshToken: typeof window !== "undefined",
+        detectSessionInUrl: typeof window !== "undefined",
+      }
+    })
+  : mockSupabaseClient;
+
 export type Profile = {
   id: string;
   email: string;
@@ -152,3 +187,4 @@ export type Profile = {
   created_at: string;
   updated_at: string;
 };
+
