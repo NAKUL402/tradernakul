@@ -5,17 +5,17 @@
  * Vite dev server proxies /api/* → http://localhost:3001
  *
  * Usage:
- *   npx tsx api/local-server.ts   (Terminal 1)
- *   npm run dev                    (Terminal 2)
+ *   npm run dev:api   (Terminal 1)
+ *   npm run dev       (Terminal 2)
  *
- * Or use the combined script:
+ * Or combined:
  *   npm run dev:full
  */
 
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = 3001;
@@ -24,8 +24,8 @@ const PORT = 3001;
 function loadEnv() {
   const envPath = path.resolve(__dirname, "../.env");
   if (!fs.existsSync(envPath)) {
-    console.warn("[api-server] ⚠️  No .env file found at project root.");
-    console.warn("[api-server]    Create .env from .env.example and add GEMINI_API_KEY.");
+    console.warn("[api-server] WARNING: No .env file found at project root.");
+    console.warn("[api-server] Create .env from .env.example and add your GEMINI_API_KEY.");
     return;
   }
   const content = fs.readFileSync(envPath, "utf8");
@@ -43,17 +43,17 @@ function loadEnv() {
       loaded++;
     }
   }
-  console.log(`[api-server] ✅ Loaded ${loaded} env vars from .env`);
+  console.log(`[api-server] Loaded ${loaded} env vars from .env`);
 }
 
 // ── Parse request body ────────────────────────────────────────────────────────
-function parseBody(req: http.IncomingMessage): Promise<Record<string, unknown>> {
+function parseBody(req) {
   return new Promise((resolve, reject) => {
     let data = "";
-    req.on("data", (chunk: Buffer) => (data += chunk.toString()));
+    req.on("data", (chunk) => (data += chunk.toString()));
     req.on("end", () => {
       try {
-        resolve(data.trim() ? (JSON.parse(data) as Record<string, unknown>) : {});
+        resolve(data.trim() ? JSON.parse(data) : {});
       } catch {
         resolve({});
       }
@@ -63,19 +63,19 @@ function parseBody(req: http.IncomingMessage): Promise<Record<string, unknown>> 
 }
 
 // ── Mock Vercel response object ───────────────────────────────────────────────
-function createMockResponse(res: http.ServerResponse) {
+function createMockResponse(res) {
   let statusCode = 200;
-  const headers: Record<string, string> = {};
+  const headers = {};
 
   return {
-    setHeader(key: string, value: string) {
+    setHeader(key, value) {
       headers[key] = value;
     },
-    status(code: number) {
+    status(code) {
       statusCode = code;
       return this;
     },
-    json(data: unknown) {
+    json(data) {
       const body = JSON.stringify(data);
       headers["Content-Type"] = "application/json";
       headers["Content-Length"] = String(Buffer.byteLength(body));
@@ -90,7 +90,7 @@ function createMockResponse(res: http.ServerResponse) {
 }
 
 // ── Route map: path → handler file ───────────────────────────────────────────
-const ROUTES: Record<string, string> = {
+const ROUTES = {
   "/api/ai-coach": "./ai-coach.ts",
   "/api/health": "./health.ts",
   "/api/send-otp": "./send-otp.ts",
@@ -99,8 +99,11 @@ const ROUTES: Record<string, string> = {
   "/api/send-status-email": "./send-status-email.ts",
 };
 
+// Cache for loaded modules
+const moduleCache = new Map();
+
 // ── Main request handler ──────────────────────────────────────────────────────
-async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse) {
+async function handleRequest(req, res) {
   const url = new URL(req.url ?? "/", `http://localhost:${PORT}`);
   const pathname = url.pathname;
 
@@ -118,7 +121,11 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
   const handlerFile = ROUTES[pathname];
   if (!handlerFile) {
     res.writeHead(404, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: `Unknown API route: ${pathname}. Available: ${Object.keys(ROUTES).join(", ")}` }));
+    res.end(
+      JSON.stringify({
+        error: `Unknown API route: ${pathname}. Available: ${Object.keys(ROUTES).join(", ")}`,
+      })
+    );
     return;
   }
 
@@ -127,17 +134,23 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
     const mockReq = { method: req.method, body, headers: req.headers, url: req.url };
     const mockRes = createMockResponse(res);
 
-    // Dynamic import with cache-busting for hot reload
+    // Dynamic import - use file:// URL for Windows ESM compatibility
     const modulePath = path.resolve(__dirname, handlerFile);
-    const { default: handler } = (await import(`${modulePath}?t=${Date.now()}`)) as {
-      default: (req: unknown, res: unknown) => Promise<void>;
-    };
+    const moduleUrl = pathToFileURL(modulePath).href;
 
+    // Cache module (restart server to pick up API handler changes)
+    let mod = moduleCache.get(modulePath);
+    if (!mod) {
+      mod = await import(moduleUrl);
+      moduleCache.set(modulePath, mod);
+    }
+
+    const handler = mod.default;
     await handler(mockReq, mockRes);
-    console.log(`[api-server] ${req.method} ${pathname} → handled`);
-  } catch (err: unknown) {
+    console.log(`[api-server] ${req.method} ${pathname} -> OK`);
+  } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error(`[api-server] ❌ ${pathname} error:`, msg);
+    console.error(`[api-server] ERROR ${pathname}:`, msg);
     if (!res.headersSent) {
       res.writeHead(500, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: `Local API server error: ${msg}` }));
@@ -151,20 +164,22 @@ loadEnv();
 const server = http.createServer(handleRequest);
 
 server.listen(PORT, "127.0.0.1", () => {
-  console.log(`\n[api-server] 🚀 Local API server started`);
-  console.log(`[api-server]    http://localhost:${PORT}`);
-  console.log(`[api-server]    Routes:`);
+  console.log(`\n[api-server] Local API server started on http://localhost:${PORT}`);
+  console.log(`[api-server] Available routes:`);
   for (const route of Object.keys(ROUTES)) {
-    console.log(`[api-server]      ${route}`);
+    console.log(`[api-server]   ${route}`);
   }
   const keySet = !!process.env["GEMINI_API_KEY"] || !!process.env["VITE_GEMINI_API_KEY"];
-  console.log(`[api-server]    GEMINI_API_KEY: ${keySet ? "✅ SET" : "❌ MISSING — AI Coach will not work"}\n`);
+  console.log(
+    `[api-server] GEMINI_API_KEY: ${keySet ? "SET (AI Coach ready)" : "MISSING (add to .env file)"}\n`
+  );
 });
 
 server.on("error", (err) => {
   console.error("[api-server] Server error:", err.message);
-  if ((err as NodeJS.ErrnoException).code === "EADDRINUSE") {
-    console.error(`[api-server] Port ${PORT} already in use. Kill the other process or change PORT.`);
+  const errWithCode = err;
+  if (errWithCode.code === "EADDRINUSE") {
+    console.error(`[api-server] Port ${PORT} already in use. Kill the other process.`);
     process.exit(1);
   }
 });
