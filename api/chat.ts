@@ -1,39 +1,41 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
 // ── Gemini API Response Interfaces ──────────────────────────────────────────
-export interface GeminiPart {
+interface GeminiPart {
   text?: string;
 }
 
-export interface GeminiContent {
+interface GeminiContent {
   parts?: GeminiPart[];
   role?: string;
 }
 
-export interface GeminiCandidate {
+interface GeminiCandidate {
   content?: GeminiContent;
   finishReason?: string;
   index?: number;
 }
 
-export interface GeminiResponse {
+interface GeminiResponse {
   candidates?: GeminiCandidate[];
   promptFeedback?: {
     blockReason?: string;
   };
 }
 
-export interface GeminiErrorResponse {
-  error?: {
-    code?: number;
-    message?: string;
-    status?: string;
-  };
+interface GeminiErrorDetail {
+  code?: number;
+  message?: string;
+  status?: string;
 }
 
-// Type guard for validating JSON object structure
-function isJsonObject(data: unknown): data is Record<string, unknown> {
-  return typeof data === "object" && data !== null;
+interface GeminiErrorPayload {
+  error?: GeminiErrorDetail;
+}
+
+// ── Type Guard Helper ───────────────────────────────────────────────────────
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 // ── Modular AI Provider Interface ──────────────────────────────────────────
@@ -42,7 +44,16 @@ export interface AIProvider {
   generateResponse(prompt: string, context?: string): Promise<string>;
 }
 
-// ── Google Gemini AI Provider Implementation ─────────────────────────────────
+// ── Supported Gemini Models Pool ─────────────────────────────────────────────
+const GEMINI_MODELS_POOL = [
+  "gemini-2.0-flash",
+  "gemini-1.5-flash-latest",
+  "gemini-1.5-flash",
+  "gemini-1.5-pro-latest",
+  "gemini-1.5-pro",
+];
+
+// ── Google Gemini Provider Implementation ─────────────────────────────────
 export class GeminiProvider implements AIProvider {
   name = "Google Gemini";
 
@@ -53,165 +64,209 @@ export class GeminiProvider implements AIProvider {
       throw new Error("GEMINI_API_KEY_MISSING");
     }
 
-    const systemInstruction = `You are a world-class institutional trading mentor for TraderNakul AI Journal.
-You specialize in trading psychology, risk management, liquidity sweeps, price action, and order blocks.
-Keep your answers direct, actionable, professional, and inspiring for intermediate-to-advanced traders.
-${context ? `Trader Context: ${context}` : ""}`;
+    const systemInstruction =
+      "You are a world-class institutional trading mentor for TraderNakul AI Journal. " +
+      "You specialize in trading psychology, risk management, liquidity sweeps, price action, and order blocks. " +
+      "Keep your answers direct, actionable, professional, and inspiring for intermediate-to-advanced traders." +
+      (context ? ` Trader Context: ${context}` : "");
 
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    let lastErrorMsg = "";
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+    for (const modelName of GEMINI_MODELS_POOL) {
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
-    try {
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        signal: controller.signal,
-        body: JSON.stringify({
-          system_instruction: {
-            parts: [{ text: systemInstruction }],
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+      try {
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
-          contents: [
-            {
-              parts: [{ text: prompt }],
+          signal: controller.signal,
+          body: JSON.stringify({
+            system_instruction: {
+              parts: [{ text: systemInstruction }],
             },
-          ],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 800,
-          },
-        }),
-      });
+            contents: [
+              {
+                parts: [{ text: prompt }],
+              },
+            ],
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 800,
+            },
+          }),
+        });
 
-      clearTimeout(timeoutId);
+        clearTimeout(timeoutId);
 
-      if (!response.ok) {
-        const errorData: unknown = await response.json().catch(() => ({}));
-        let errMsg = `HTTP Error ${response.status}`;
+        if (!response.ok) {
+          let errMsg = `HTTP Error ${response.status}`;
+          try {
+            const errorJson: unknown = await response.json();
+            if (isRecord(errorJson)) {
+              const errPayload = errorJson as GeminiErrorPayload;
+              if (errPayload.error && typeof errPayload.error.message === "string") {
+                errMsg = errPayload.error.message;
+              }
+            }
+          } catch {
+            // Fallback
+          }
 
-        if (isJsonObject(errorData)) {
-          const errObj = (errorData as GeminiErrorResponse).error;
-          if (errObj && typeof errObj.message === "string") {
-            errMsg = errObj.message;
+          if (response.status === 401 || response.status === 403) {
+            throw new Error("GEMINI_INVALID_KEY");
+          }
+          if (response.status === 429) {
+            throw new Error("GEMINI_RATE_LIMIT");
+          }
+
+          // If model is not found or unsupported on this endpoint, try next model
+          if (
+            errMsg.includes("not found") ||
+            errMsg.includes("not supported") ||
+            errMsg.includes("404") ||
+            response.status === 404
+          ) {
+            lastErrorMsg = errMsg;
+            continue;
+          }
+
+          throw new Error(`GEMINI_API_ERROR: ${errMsg}`);
+        }
+
+        const rawJson: unknown = await response.json();
+
+        if (!isRecord(rawJson)) {
+          continue;
+        }
+
+        const parsedData = rawJson as GeminiResponse;
+        const candidateList = parsedData.candidates;
+        const firstCand = Array.isArray(candidateList) ? candidateList[0] : undefined;
+        const partList = firstCand?.content?.parts;
+        const firstPart = Array.isArray(partList) ? partList[0] : undefined;
+        const generatedText = firstPart?.text;
+
+        if (generatedText && generatedText.trim() !== "") {
+          return generatedText.trim();
+        }
+      } catch (err: unknown) {
+        clearTimeout(timeoutId);
+        if (err instanceof Error) {
+          if (err.message === "GEMINI_INVALID_KEY" || err.message === "GEMINI_RATE_LIMIT") {
+            throw err;
+          }
+          if (err.name === "AbortError") {
+            lastErrorMsg = "Request timeout";
+          } else {
+            lastErrorMsg = err.message;
           }
         }
-
-        if (response.status === 401 || response.status === 403) {
-          throw new Error("GEMINI_INVALID_KEY");
-        }
-        if (response.status === 429) {
-          throw new Error("GEMINI_RATE_LIMIT");
-        }
-        throw new Error(`GEMINI_API_ERROR: ${errMsg}`);
       }
-
-      const rawData: unknown = await response.json();
-
-      if (!isJsonObject(rawData)) {
-        throw new Error("GEMINI_INVALID_RESPONSE_STRUCTURE");
-      }
-
-      const geminiData = rawData as GeminiResponse;
-      const candidates = geminiData.candidates;
-      const firstCandidate = Array.isArray(candidates) ? candidates[0] : undefined;
-      const parts = firstCandidate?.content?.parts;
-      const firstPart = Array.isArray(parts) ? parts[0] : undefined;
-      const text = firstPart?.text;
-
-      if (!text || text.trim() === "") {
-        throw new Error("GEMINI_EMPTY_RESPONSE");
-      }
-
-      return text.trim();
-    } catch (err: unknown) {
-      clearTimeout(timeoutId);
-      if (err instanceof Error && err.name === "AbortError") {
-        throw new Error("GEMINI_TIMEOUT");
-      }
-      throw err;
     }
+
+    throw new Error(`GEMINI_API_ERROR: ${lastErrorMsg || "Supported Gemini models endpoints unavailable."}`);
   }
 }
 
-// ── Registry of AI Providers for Future Expansion (Groq, OpenRouter, Mistral, Cohere)
+// ── AI Provider Registry ────────────────────────────────────────────────────
 export const AI_PROVIDERS: Record<string, AIProvider> = {
   gemini: new GeminiProvider(),
 };
 
 // ── Vercel Serverless Function Handler ──────────────────────────────────────
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // CORS Headers
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
   if (req.method === "OPTIONS") return res.status(200).end();
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+  if (req.method !== "POST") {
+    return res.status(405).json({ success: false, error: "Method not allowed" });
+  }
 
   try {
-    const body = req.body || {};
-    const prompt = typeof body.prompt === "string" ? body.prompt : "";
-    const context = typeof body.context === "string" ? body.context : undefined;
-    const provider = typeof body.provider === "string" ? body.provider : "gemini";
+    const requestBody: unknown = req.body || {};
+    let promptInput = "";
+    let contextInput: string | undefined = undefined;
+    let providerName = "gemini";
 
-    if (!prompt || prompt.trim() === "") {
-      return res.status(400).json({ error: "Prompt cannot be empty." });
+    if (isRecord(requestBody)) {
+      if (typeof requestBody["prompt"] === "string") {
+        promptInput = requestBody["prompt"];
+      }
+      if (typeof requestBody["context"] === "string") {
+        contextInput = requestBody["context"];
+      }
+      if (typeof requestBody["provider"] === "string") {
+        providerName = requestBody["provider"];
+      }
     }
 
-    const aiProvider = AI_PROVIDERS[provider] || AI_PROVIDERS["gemini"];
+    const cleanPrompt = promptInput.trim();
+    if (!cleanPrompt) {
+      return res.status(400).json({ success: false, error: "Prompt cannot be empty." });
+    }
+
+    const providerInstance = AI_PROVIDERS[providerName] || AI_PROVIDERS["gemini"];
 
     try {
-      const responseText = await aiProvider.generateResponse(prompt.trim(), context);
+      const outputText = await providerInstance.generateResponse(cleanPrompt, contextInput);
       return res.status(200).json({
         success: true,
-        provider: aiProvider.name,
-        response: responseText,
+        provider: providerInstance.name,
+        response: outputText,
       });
     } catch (providerErr: unknown) {
-      const message = providerErr instanceof Error ? providerErr.message : "";
+      const errMessage = providerErr instanceof Error ? providerErr.message : "";
 
-      if (message === "GEMINI_API_KEY_MISSING") {
+      if (errMessage === "GEMINI_API_KEY_MISSING") {
         return res.status(200).json({
           success: true,
           provider: "Google Gemini (Offline / Fallback)",
-          response: getFallbackMentorResponse(prompt),
-          warning: "GEMINI_API_KEY is not set in Vercel Environment Variables. Add GEMINI_API_KEY to enable live Gemini AI generation.",
+          response: getFallbackResponse(cleanPrompt),
+          warning: "GEMINI_API_KEY is not set in Vercel Environment Variables.",
         });
       }
 
-      if (message === "GEMINI_INVALID_KEY") {
+      if (errMessage === "GEMINI_INVALID_KEY") {
         return res.status(401).json({
-          error: "Invalid Gemini API Key. Please verify GEMINI_API_KEY in your Vercel Environment Variables.",
+          success: false,
+          error: "Invalid Gemini API Key. Please verify GEMINI_API_KEY in Vercel.",
         });
       }
 
-      if (message === "GEMINI_RATE_LIMIT") {
+      if (errMessage === "GEMINI_RATE_LIMIT") {
         return res.status(429).json({
-          error: "Gemini API rate limit exceeded. Please wait a moment before asking again.",
+          success: false,
+          error: "Gemini API rate limit exceeded. Please wait a moment before trying again.",
         });
       }
 
-      if (message === "GEMINI_TIMEOUT") {
+      if (errMessage === "GEMINI_TIMEOUT") {
         return res.status(504).json({
+          success: false,
           error: "Gemini API request timed out. Please try again.",
         });
       }
 
       return res.status(500).json({
-        error: `AI Provider Error: ${message || "Failed to generate response."}`,
+        success: false,
+        error: `AI Provider Error: ${errMessage || "Failed to generate response."}`,
       });
     }
-  } catch (err: unknown) {
-    console.error("Chat API handler error:", err);
-    return res.status(500).json({ error: "Internal server error." });
+  } catch (handlerErr: unknown) {
+    console.error("Chat handler error:", handlerErr);
+    return res.status(500).json({ success: false, error: "Internal server error." });
   }
 }
 
-// ── Smart Trading Mentor Fallback Generator ──────────────────────────────
-function getFallbackMentorResponse(prompt: string): string {
+// ── Offline Fallback Response Generator ─────────────────────────────────────
+function getFallbackResponse(prompt: string): string {
   const lower = prompt.toLowerCase();
   if (lower.includes("revenge") || lower.includes("loss")) {
     return "Revenge trading is an emotional attempt to regain lost capital in an uncontrollable market. Take a mandatory 30-minute cooling-off period after any stop out: close your charts, reset your mind, and evaluate your entry rules before placing another trade.";
