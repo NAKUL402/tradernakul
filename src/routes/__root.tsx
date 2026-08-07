@@ -13,7 +13,6 @@ import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/lib/auth-context";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { isSupabaseConfigured } from "@/lib/supabase";
 
 function NotFoundComponent() {
   return (
@@ -144,24 +143,6 @@ function RootComponent() {
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClient}>
-        {!isSupabaseConfigured && (
-          <div style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            zIndex: 9999,
-            background: "#dc2626",
-            color: "#fff",
-            padding: "10px 16px",
-            fontSize: "13px",
-            fontFamily: "monospace",
-            textAlign: "center",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.4)"
-          }}>
-            ⚠️ <strong>Database Not Connected</strong> — VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are missing from Vercel Environment Variables. Signup/Login will fail with "Invalid API Key". Go to Vercel → Project → Settings → Environment Variables → Add them → Redeploy.
-          </div>
-        )}
         <Outlet />
         <Toaster position="top-center" />
       </QueryClientProvider>

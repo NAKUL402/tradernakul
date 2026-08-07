@@ -32,32 +32,3 @@ export const field =
 
 export const primaryBtn =
   "flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-accent px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90 active:scale-[0.99] glow-primary";
-
-import { useAuth } from "@/lib/auth-context";
-import { toast } from "sonner";
-
-export function GoogleButton() {
-  const { signInWithGoogle } = useAuth();
-
-  const handleGoogleSignIn = async () => {
-    try {
-      await signInWithGoogle();
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Google sign-in failed";
-      toast.error(msg);
-    }
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={handleGoogleSignIn}
-      className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card/50 px-4 py-3 text-sm font-medium transition hover:border-primary/50 active:scale-[0.99]"
-    >
-      <svg viewBox="0 0 24 24" className="size-4" aria-hidden>
-        <path fill="#EA4335" d="M12 10.2v3.9h5.5c-.24 1.4-1.7 4.1-5.5 4.1a6.2 6.2 0 1 1 0-12.4c1.9 0 3.2.8 3.9 1.5l2.7-2.6C16.9 3 14.7 2 12 2a10 10 0 1 0 0 20c5.8 0 9.6-4 9.6-9.7 0-.65-.07-1.14-.16-1.63H12z" />
-      </svg>
-      Continue with Google
-    </button>
-  );
-}
