@@ -3,11 +3,17 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 /**
  * POST /api/ai-coach
  * Live Gemini API Integration for TraderNakul AI Coach.
- * Sends user prompt & conversation history to Google Gemini API.
- * Returns real AI response or clear error reason — NO fake/hardcoded fallbacks.
+ *
+ * Models tried in order (free tier fallback chain):
+ *   1. gemini-2.5-flash  — 10 RPM / 500 RPD free tier
+ *   2. gemini-2.0-flash  — fallback if 2.5 is rate-limited or unavailable
+ *   3. gemini-1.5-flash  — last resort fallback
+ *
+ * On 429 rate-limit: tries next model in chain instead of failing immediately.
+ * Returns real error reason — NO fake/hardcoded fallbacks.
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // CORS & Header setup
+  // ── CORS ──────────────────────────────────────────────────────────────────
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -27,9 +33,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({
       error:
         "GEMINI_API_KEY is not configured. " +
-        "Please add your Google AI Studio API key to Vercel environment variables (for production) " +
-        "or to the .env file (for local development). " +
-        "Get a free key at: https://aistudio.google.com/",
+        "Add your Google AI Studio key to Vercel environment variables (production) " +
+        "or to .env file (local). Get a free key at: https://aistudio.google.com/",
     });
   }
 
@@ -44,47 +49,52 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let systemText = `You are TraderNakul AI Coach, an elite institutional trading mentor and quantitative analyst.
 Your objective is to provide sharp, concise, actionable, and accurate responses.
 Rules:
-- If asked general questions (e.g. "Hi", greetings, math questions like "2+2"), answer directly, naturally, and accurately.
-- If asked about trading concepts (liquidity sweep, order blocks, ICT, SMC, etc.), provide professional trading mentor insights with clear explanations.
-- If asked to analyze trade data that is provided, give specific, data-driven feedback.
-- Never refuse to answer basic questions. Always be helpful.
-- For math: compute and answer directly (e.g., "2+2 = 4").
-- For greetings: respond warmly and mention you are the AI Trading Coach.`;
+- Answer ALL questions directly and naturally — general, math, greetings, and trading.
+- For greetings (e.g. "Hi", "Hello"): respond warmly and introduce yourself as the AI Trading Coach.
+- For math (e.g. "2+2"): compute and answer directly without explanation.
+- For trading concepts (liquidity sweep, order blocks, ICT, SMC, FVG, etc.): give professional, precise explanations.
+- For trade data analysis: give specific, data-driven insights based on the provided context.
+- Keep responses concise unless detail is specifically requested.`;
 
     if (tradeContext && typeof tradeContext === "object") {
       systemText += `\n\nUser's Current Trade Summary:\n${JSON.stringify(tradeContext, null, 2)}`;
     }
 
     // ── Format Chat History ─────────────────────────────────────────────────
-    // Gemini requires alternating user/model roles — filter out error messages
+    // IMPORTANT: history sent from frontend already excludes the current message.
+    // We add the current message ourselves here — do NOT include it in history.
+    //
+    // Gemini strict requirements:
+    //   1. Roles must alternate: user → model → user → model
+    //   2. First turn must be "user"
+    //   3. Last turn before our new message must be "model" (or empty history)
+
     const filteredHistory = Array.isArray(history)
       ? history.filter(
-          (item: { role: string; content: string; isError?: boolean }) => !item.isError && item.content?.trim(),
+          (item: { role: string; content: string; isError?: boolean }) =>
+            !item.isError && typeof item.content === "string" && item.content.trim().length > 0,
         )
       : [];
 
     const formattedContents: Array<{ role: string; parts: Array<{ text: string }> }> = [];
-
-    // Ensure alternating roles (Gemini strict requirement)
     let lastRole = "";
+
     for (const item of filteredHistory as Array<{ role: string; content: string }>) {
       const role = item.role === "assistant" || item.role === "model" ? "model" : "user";
-      if (role === lastRole) continue; // Skip consecutive same-role messages
+      // Skip consecutive same-role messages (Gemini rejects these)
+      if (role === lastRole) continue;
       formattedContents.push({ role, parts: [{ text: item.content }] });
       lastRole = role;
     }
 
-    // Append current user message
-    // If last message was also 'user', merge or skip (shouldn't happen normally)
-    if (lastRole !== "user") {
-      formattedContents.push({ role: "user", parts: [{ text: message }] });
-    } else {
-      // Edge case: replace last user message
-      formattedContents[formattedContents.length - 1] = {
-        role: "user",
-        parts: [{ text: message }],
-      };
+    // Ensure the last history entry is "model" before we append the new "user" message.
+    // If last was "user", remove it (the current message will replace it).
+    if (lastRole === "user" && formattedContents.length > 0) {
+      formattedContents.pop();
     }
+
+    // Append current user message
+    formattedContents.push({ role: "user", parts: [{ text: message.trim() }] });
 
     const payload = {
       systemInstruction: {
@@ -105,10 +115,15 @@ Rules:
     };
 
     // ── Model Fallback Chain ────────────────────────────────────────────────
+    // On 429 rate-limit: try the next model instead of failing immediately.
+    // Free tier limits (approximate):
+    //   gemini-2.5-flash: 10 RPM, 500 RPD
+    //   gemini-2.0-flash: 15 RPM, 1500 RPD
+    //   gemini-1.5-flash: 15 RPM, 1500 RPD
     const models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
 
     let lastError: string | null = null;
-    let allModels404 = true;
+    const rateLimitedModels: string[] = [];
 
     for (const model of models) {
       const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey.trim()}`;
@@ -133,47 +148,52 @@ Rules:
         responseData = (await geminiRes.json()) as typeof responseData;
       } catch (fetchErr: unknown) {
         const msg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
-        lastError = `Network error connecting to Gemini API (${model}): ${msg}. Check your internet connection.`;
-        continue;
+        lastError = `Network error reaching Gemini API (${model}): ${msg}`;
+        continue; // Try next model
       }
 
       if (!geminiRes.ok) {
-        allModels404 = allModels404 && geminiRes.status === 404;
         const errDetail = responseData?.error?.message || geminiRes.statusText;
-        const errCode = responseData?.error?.code || geminiRes.status;
 
+        // ── 401 Unauthorized — bad API key, stop immediately ────────────────
         if (geminiRes.status === 401) {
           return res.status(401).json({
-            error: `Invalid Gemini API Key (HTTP 401). Your GEMINI_API_KEY is incorrect or expired. Get a new key at https://aistudio.google.com/`,
+            error:
+              "Invalid Gemini API Key (HTTP 401). Your GEMINI_API_KEY is incorrect or has been revoked. " +
+              "Get a new key at https://aistudio.google.com/",
           });
         }
 
+        // ── 429 Rate Limited — try next model in fallback chain ─────────────
         if (geminiRes.status === 429) {
-          return res.status(429).json({
-            error: `Gemini API rate limit exceeded (HTTP 429). You have hit the free tier quota. Wait a minute and try again, or upgrade your Google AI plan.`,
-          });
+          rateLimitedModels.push(model);
+          lastError = `${model} rate-limited (429). Trying next model…`;
+          continue; // ← KEY FIX: don't give up, try the next model
         }
 
+        // ── 400 Bad Request — likely a payload issue ────────────────────────
         if (geminiRes.status === 400) {
           return res.status(400).json({
-            error: `Gemini API bad request (HTTP 400): ${errDetail}. This may be a message formatting issue.`,
+            error: `Gemini API bad request (HTTP 400): ${errDetail}. This is usually a message history formatting issue.`,
           });
         }
 
+        // ── 404 Model Not Found — try next model ────────────────────────────
         if (geminiRes.status === 404) {
-          lastError = `Model "${model}" not found (HTTP 404). Trying fallback model…`;
-          continue; // Try next model in fallback chain
+          lastError = `Model "${model}" not found (HTTP 404). Trying next model…`;
+          continue;
         }
 
-        lastError = `Gemini API Error (${model}, HTTP ${errCode}): ${errDetail}`;
+        // ── Other errors — return immediately ───────────────────────────────
+        lastError = `Gemini API Error (${model}, HTTP ${geminiRes.status}): ${errDetail}`;
         return res.status(geminiRes.status).json({ error: lastError });
       }
 
-      // ── Check for safety/content blocks ──────────────────────────────────
+      // ── Safety / Content Blocks ───────────────────────────────────────────
       const blockReason = responseData?.promptFeedback?.blockReason;
       if (blockReason) {
         return res.status(200).json({
-          reply: `I cannot answer that question. Reason: ${blockReason}. Please rephrase your trading question.`,
+          reply: `I cannot answer that. Reason: ${blockReason}. Please rephrase your trading question.`,
           modelUsed: model,
           blocked: true,
         });
@@ -184,18 +204,18 @@ Rules:
 
       if (finishReason === "SAFETY") {
         return res.status(200).json({
-          reply: `That response was blocked by safety filters. Please rephrase your question about trading.`,
+          reply: `That response was blocked by Gemini's safety filters. Please rephrase your question.`,
           modelUsed: model,
           blocked: true,
         });
       }
 
+      // ── Partial response from MAX_TOKENS — still return it ────────────────
       if (finishReason === "MAX_TOKENS") {
-        // Partial response is still valid — return it
         const partialText = candidate?.content?.parts?.[0]?.text;
-        if (partialText) {
+        if (partialText && partialText.trim()) {
           return res.status(200).json({
-            reply: partialText + "\n\n[Response truncated due to length limit]",
+            reply: partialText + "\n\n[Response was cut short. Ask me to continue if needed.]",
             modelUsed: model,
           });
         }
@@ -204,28 +224,45 @@ Rules:
       const candidateText = candidate?.content?.parts?.[0]?.text;
 
       if (!candidateText || !candidateText.trim()) {
-        lastError = `Gemini API (${model}) returned an empty response. Finish reason: ${finishReason || "unknown"}.`;
-        continue; // Try next model
+        lastError = `${model} returned empty response (finish reason: ${finishReason || "unknown"}). Trying next model…`;
+        continue;
       }
 
-      // ── Success ───────────────────────────────────────────────────────────
+      // ── SUCCESS ───────────────────────────────────────────────────────────
       return res.status(200).json({
         reply: candidateText,
         modelUsed: model,
+        // Include info if fallback was used
+        ...(rateLimitedModels.length > 0 && {
+          note: `Primary model(s) rate-limited. Response from fallback: ${model}.`,
+        }),
       });
     }
 
-    // All models exhausted
-    if (allModels404) {
+    // ── All models exhausted ──────────────────────────────────────────────
+    if (rateLimitedModels.length === models.length) {
+      // Every single model hit rate limit
+      return res.status(429).json({
+        error:
+          `All Gemini models are rate-limited (HTTP 429). ` +
+          `Models tried: ${rateLimitedModels.join(", ")}. ` +
+          `You have exceeded the free tier quota (10–15 requests/minute). ` +
+          `Wait 60 seconds and try again, or upgrade your Google AI plan at https://aistudio.google.com/`,
+        retryAfterSeconds: 60,
+        rateLimited: true,
+      });
+    }
+
+    if (rateLimitedModels.length > 0) {
       return res.status(503).json({
         error:
-          "All Gemini models are unavailable (404). The model names may have changed in the Google API. " +
-          "Please check: https://ai.google.dev/gemini-api/docs/models",
+          `Some models were rate-limited (${rateLimitedModels.join(", ")}) ` +
+          `and remaining models failed: ${lastError}`,
       });
     }
 
     return res.status(503).json({
-      error: lastError || "Failed to get a response from Gemini API after trying all available models.",
+      error: lastError || "All Gemini models failed to respond. Check the Google AI status page.",
     });
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : "Internal Server Error";

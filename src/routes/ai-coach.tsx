@@ -98,8 +98,11 @@ function Coach() {
   ]);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+  // Rate-limit cooldown: seconds remaining before next message is allowed
+  const [rateLimitCooldown, setRateLimitCooldown] = useState(0);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const cooldownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     fetchUserTrades().then((data) => setUserTrades(data));
@@ -111,9 +114,25 @@ function Coach() {
     }
   }, [messages, loading]);
 
+  const startCooldown = (seconds: number) => {
+    if (cooldownTimerRef.current) clearInterval(cooldownTimerRef.current);
+    setRateLimitCooldown(seconds);
+    cooldownTimerRef.current = setInterval(() => {
+      setRateLimitCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(cooldownTimerRef.current!);
+          cooldownTimerRef.current = null;
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
   const handleSendMessage = async (textToSend?: string) => {
     const text = (textToSend || inputMessage).trim();
-    if (!text || loading) return;
+    // Block sending during loading OR rate-limit cooldown
+    if (!text || loading || rateLimitCooldown > 0) return;
 
     setApiError(null);
     setInputMessage("");
@@ -125,12 +144,17 @@ function Coach() {
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     };
 
-    const newHistory = [...messages, userMsg];
-    setMessages(newHistory);
+    // ── IMPORTANT FIX ────────────────────────────────────────────────────────
+    // Pass `messages` (history BEFORE current turn) NOT `[...messages, userMsg]`.
+    // The API handler appends the current message itself from the `message` param.
+    // Sending `newHistory` would duplicate the user message in the Gemini payload.
+    const historyBeforeCurrentTurn = messages;
+
+    setMessages((prev) => [...prev, userMsg]);
     setLoading(true);
 
     try {
-      const replyText = await sendChatMessageToAI(text, newHistory, userTrades);
+      const replyText = await sendChatMessageToAI(text, historyBeforeCurrentTurn, userTrades);
 
       const aiMsg: ChatMessage = {
         id: `ai-${Date.now()}`,
@@ -144,10 +168,15 @@ function Coach() {
       const errDetail = err instanceof Error ? err.message : "Failed to communicate with AI Coach.";
       setApiError(errDetail);
 
+      // Start a 60-second cooldown if rate-limited
+      if (errDetail.includes("rate limit") || errDetail.includes("rate-limit") || errDetail.includes("429")) {
+        startCooldown(60);
+      }
+
       const errorMsg: ChatMessage = {
         id: `err-${Date.now()}`,
         role: "assistant",
-        content: `Error: ${errDetail}`,
+        content: `⚠️ ${errDetail}`,
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         isError: true,
       };
@@ -244,8 +273,19 @@ function Coach() {
               )}
             </div>
 
-            {/* Error Alert Box if any */}
-            {apiError && (
+            {/* Rate-limit countdown banner */}
+            {rateLimitCooldown > 0 && (
+              <div className="mx-4 mb-2 flex items-center gap-2 rounded-xl bg-amber-500/15 p-3 text-xs font-medium text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                <Loader2 className="size-4 shrink-0 animate-spin" />
+                <span>
+                  Rate limit reached. Next message available in{" "}
+                  <strong>{rateLimitCooldown}s</strong>. Gemini free tier allows ~10 requests/minute.
+                </span>
+              </div>
+            )}
+
+            {/* Error Alert Box */}
+            {apiError && rateLimitCooldown === 0 && (
               <div className="mx-4 mb-2 flex items-center gap-2 rounded-xl bg-destructive/15 p-3 text-xs font-medium text-destructive border border-destructive/30">
                 <AlertCircle className="size-4 shrink-0" />
                 <span>{apiError}</span>
@@ -262,7 +302,7 @@ function Coach() {
                   <button
                     key={prompt}
                     type="button"
-                    disabled={loading}
+                    disabled={loading || rateLimitCooldown > 0}
                     onClick={() => handleSendMessage(prompt)}
                     className="rounded-lg border border-border/70 bg-card px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent/10 hover:text-foreground transition disabled:opacity-50"
                   >
@@ -290,11 +330,13 @@ function Coach() {
               />
               <button
                 type="submit"
-                disabled={loading || !inputMessage.trim()}
+                disabled={loading || !inputMessage.trim() || rateLimitCooldown > 0}
                 className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 transition disabled:opacity-50 shrink-0"
               >
                 {loading ? (
                   <Loader2 className="size-4 animate-spin" />
+                ) : rateLimitCooldown > 0 ? (
+                  <span className="tabular-nums">{rateLimitCooldown}s</span>
                 ) : (
                   <>
                     <span>Send</span>

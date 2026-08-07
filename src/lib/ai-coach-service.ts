@@ -26,8 +26,11 @@ export type ChatMessage = {
 
 /**
  * Send user message to live Gemini API via backend /api/ai-coach endpoint.
- * Throws real API error if Gemini API or backend server fails.
- * NO fake responses — errors always show the real reason.
+ *
+ * IMPORTANT: `history` must be the conversation BEFORE the current `message`.
+ * The API handler appends the current message itself — do not include it in history.
+ *
+ * Throws real error reason — NO fake responses ever.
  */
 export async function sendChatMessageToAI(
   message: string,
@@ -43,6 +46,14 @@ export async function sendChatMessageToAI(
         }
       : null;
 
+  // ── Build history to send ─────────────────────────────────────────────────
+  // Exclude: error messages, the welcome/init message, and the current user message.
+  // The current user message is NOT in history yet at the time we call this function
+  // (it was just added to the local state, but we pass the history BEFORE it).
+  const historyToSend = history
+    .filter((h) => !h.isError && h.id !== "init-1")
+    .map((h) => ({ role: h.role, content: h.content }));
+
   let res: Response;
   try {
     res = await fetch("/api/ai-coach", {
@@ -50,30 +61,49 @@ export async function sendChatMessageToAI(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         message,
-        history: history
-          .filter((h) => !h.isError)
-          .map((h) => ({ role: h.role, content: h.content })),
+        history: historyToSend,
         tradeContext: summaryContext,
       }),
     });
   } catch (networkErr: unknown) {
     const msg = networkErr instanceof Error ? networkErr.message : String(networkErr);
-    // Distinguish between: API server not running vs real network failure
     throw new Error(
       `Network Error: Cannot reach /api/ai-coach. ` +
-        `If running locally, start the API server first: run "npm run dev:api" in a separate terminal. ` +
+        `If running locally, start the API server: npm run dev:api. ` +
         `Original error: ${msg}`
     );
   }
 
-  let data: { reply?: string; error?: string; blocked?: boolean; modelUsed?: string } | null = null;
+  let data: {
+    reply?: string;
+    error?: string;
+    blocked?: boolean;
+    modelUsed?: string;
+    note?: string;
+    retryAfterSeconds?: number;
+    rateLimited?: boolean;
+  } | null = null;
+
   try {
     data = (await res.json()) as typeof data;
   } catch {
-    throw new Error(`Server returned non-JSON response (HTTP ${res.status}). The API server may not be running.`);
+    throw new Error(
+      `Server returned non-JSON response (HTTP ${res.status}). ` +
+        `The API server may not be running or crashed.`
+    );
   }
 
   if (!res.ok) {
+    // ── Rate limit: show helpful countdown message ────────────────────────
+    if (res.status === 429 || data?.rateLimited) {
+      const waitSec = data?.retryAfterSeconds ?? 60;
+      throw new Error(
+        `⏱ Gemini API rate limit reached (free tier: ~10 requests/minute). ` +
+          `Please wait ${waitSec} seconds before sending another message. ` +
+          `This is a Google API quota limit, not an app error.`
+      );
+    }
+
     const errorMsg = data?.error || `Server HTTP ${res.status}: ${res.statusText}`;
     throw new Error(errorMsg);
   }
@@ -83,11 +113,12 @@ export async function sendChatMessageToAI(
   }
 
   if (!data?.reply) {
-    throw new Error("No response text received from Gemini AI. The API returned an empty result.");
+    throw new Error("Gemini AI returned an empty response. Please try again.");
   }
 
   return data.reply;
 }
+
 
 export function analyzeTradeDataWithAI(userTrades: Trade[]): AICoachAnalysis {
   if (!userTrades || userTrades.length === 0) {
