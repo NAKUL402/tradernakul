@@ -8,4 +8,16 @@ export default defineConfig({
       routes: [],
     },
   },
+  vite: {
+    server: {
+      proxy: {
+        // Forward /api/* to local API dev server in development
+        "/api": {
+          target: "http://localhost:3001",
+          changeOrigin: false,
+          secure: false,
+        },
+      },
+    },
+  },
 });

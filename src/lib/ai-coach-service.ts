@@ -27,6 +27,7 @@ export type ChatMessage = {
 /**
  * Send user message to live Gemini API via backend /api/ai-coach endpoint.
  * Throws real API error if Gemini API or backend server fails.
+ * NO fake responses — errors always show the real reason.
  */
 export async function sendChatMessageToAI(
   message: string,
@@ -42,20 +43,38 @@ export async function sendChatMessageToAI(
         }
       : null;
 
-  const res = await fetch("/api/ai-coach", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      message,
-      history: history.map((h) => ({ role: h.role, content: h.content })),
-      tradeContext: summaryContext,
-    }),
-  });
+  let res: Response;
+  try {
+    res = await fetch("/api/ai-coach", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message,
+        history: history
+          .filter((h) => !h.isError)
+          .map((h) => ({ role: h.role, content: h.content })),
+        tradeContext: summaryContext,
+      }),
+    });
+  } catch (networkErr: unknown) {
+    const msg = networkErr instanceof Error ? networkErr.message : String(networkErr);
+    // Distinguish between: API server not running vs real network failure
+    throw new Error(
+      `Network Error: Cannot reach /api/ai-coach. ` +
+        `If running locally, start the API server first: run "npm run dev:api" in a separate terminal. ` +
+        `Original error: ${msg}`
+    );
+  }
 
-  const data = await res.json().catch(() => null);
+  let data: { reply?: string; error?: string; blocked?: boolean; modelUsed?: string } | null = null;
+  try {
+    data = (await res.json()) as typeof data;
+  } catch {
+    throw new Error(`Server returned non-JSON response (HTTP ${res.status}). The API server may not be running.`);
+  }
 
   if (!res.ok) {
-    const errorMsg = data?.error || `Server HTTP Error ${res.status}: ${res.statusText}`;
+    const errorMsg = data?.error || `Server HTTP ${res.status}: ${res.statusText}`;
     throw new Error(errorMsg);
   }
 
@@ -64,7 +83,7 @@ export async function sendChatMessageToAI(
   }
 
   if (!data?.reply) {
-    throw new Error("No response text received from Gemini API.");
+    throw new Error("No response text received from Gemini AI. The API returned an empty result.");
   }
 
   return data.reply;
