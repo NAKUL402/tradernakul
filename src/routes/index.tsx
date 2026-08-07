@@ -5,7 +5,7 @@ import { AppShell } from "@/components/app/AppShell";
 import { Panel, StatCard, Badge } from "@/components/app/ui-kit";
 import { BarsChart, EquityChart, WinLossPie } from "@/components/app/charts";
 import { equityCurve, fetchUserTrades, monthly, money, pct, pnlUsd, stats, type Trade } from "@/lib/trades";
-import { Activity, Flame, Percent, Scale, Snowflake, Target, TrendingDown, TrendingUp, Trophy } from "lucide-react";
+import { Activity, Flame, Percent, Scale, Snowflake, Target, TrendingDown, TrendingUp, Trophy, Wallet } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -57,24 +57,27 @@ function Dashboard() {
               </Link>
             </div>
           </div>
-          <div className="flex justify-center gap-3 sm:justify-end">
-            <div className="hairline rounded-2xl bg-background/30 p-4 text-center min-w-[130px]">
-              <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">Win Rate</p>
-              <p className="mt-2 font-display text-xl sm:text-2xl">{pct(s.winRate)}</p>
-            </div>
-            <div className="hairline rounded-2xl bg-background/30 p-4 text-center min-w-[130px]">
-              <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">Avg RRR</p>
-              <p className="mt-2 font-display text-xl sm:text-2xl">1:{s.avgRRR.toFixed(2)}</p>
-            </div>
+          <div className="grid grid-cols-3 gap-3 sm:gap-4">
+            {[
+              { k: "Win Rate", v: pct(s.winRate) },
+              { k: "Avg RRR", v: `1:${s.avgRRR.toFixed(2)}` },
+              { k: "Monthly", v: money(s.monthlyPnl) },
+            ].map((i) => (
+              <div key={i.k} className="hairline rounded-2xl bg-background/30 p-4 text-center">
+                <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">{i.k}</p>
+                <p className="mt-2 font-display text-xl sm:text-2xl">{i.v}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
         <StatCard label="Total Trades" value={String(s.total)} sub="all time" icon={<Activity className="size-4" />} />
         <StatCard label="Win Rate" value={pct(s.winRate)} delta={4.2} icon={<Target className="size-4" />} accent="success" />
         <StatCard label="Average RRR" value={`1 : ${s.avgRRR.toFixed(2)}`} sub="risk / reward" icon={<Scale className="size-4" />} accent="accent" />
         <StatCard label="Profit Factor" value={s.profitFactor.toFixed(2)} delta={1.8} icon={<Percent className="size-4" />} />
+        <StatCard label="Monthly PnL" value={money(s.monthlyPnl)} delta={s.monthlyPnl >= 0 ? 8.4 : -6.1} icon={<Wallet className="size-4" />} accent={s.monthlyPnl >= 0 ? "success" : "destructive"} />
         <StatCard label="Win Streak" value={`${s.winStreak}`} sub="consecutive wins" icon={<Flame className="size-4" />} accent="success" />
         <StatCard label="Loss Streak" value={`${s.lossStreak}`} sub="consecutive losses" icon={<Snowflake className="size-4" />} accent="destructive" />
         <StatCard label="Best Pair" value={s.bestPair.name} sub={`${money(s.bestPair.pnl)} · ${pct(s.bestPair.winRate)}`} icon={<Trophy className="size-4" />} accent="success" />
