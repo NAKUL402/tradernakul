@@ -13,8 +13,8 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { action, email, secret } = req.query as Record<string, string>;
 
-  const expectedSecret = process.env.APPROVAL_SECRET || "tn-approve-2026";
-  const baseUrl = process.env.VITE_SITE_URL || "https://tradernakul.vercel.app";
+  const expectedSecret = process.env['APPROVAL_SECRET'] || "tn-approve-2026";
+  const baseUrl = process.env['VITE_SITE_URL'] || "https://tradernakul.vercel.app";
 
   if (!secret || secret !== expectedSecret) {
     return res.status(403).send(`

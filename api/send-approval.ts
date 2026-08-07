@@ -19,13 +19,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ success: false, error: "Missing userEmail or userName" });
   }
 
-  const resendApiKey = process.env.RESEND_API_KEY;
-  const smtpUser = process.env.EMAIL_USER;
-  const smtpPass = process.env.EMAIL_PASS;
-  const ownerEmail = process.env.OWNER_EMAIL || "nakultrader007@gmail.com";
-  const baseUrl = process.env.VITE_SITE_URL || "https://tradernakul.vercel.app";
-  const secret = process.env.APPROVAL_SECRET || "tn-approve-2026";
-  const resendFrom = process.env.RESEND_FROM_EMAIL || "TraderNakul AI <onboarding@resend.dev>";
+  const resendApiKey = process.env['RESEND_API_KEY'];
+  const smtpUser = process.env['EMAIL_USER'];
+  const smtpPass = process.env['EMAIL_PASS'];
+  const ownerEmail = process.env['OWNER_EMAIL'] || "nakultrader007@gmail.com";
+  const baseUrl = process.env['VITE_SITE_URL'] || "https://tradernakul.vercel.app";
+  const secret = process.env['APPROVAL_SECRET'] || "tn-approve-2026";
+  const resendFrom = process.env['RESEND_FROM_EMAIL'] || "TraderNakul AI <onboarding@resend.dev>";
 
   const approveLink = `${baseUrl}/api/approve-user?action=approve&email=${encodeURIComponent(userEmail)}&secret=${encodeURIComponent(secret)}`;
   const rejectLink = `${baseUrl}/api/approve-user?action=reject&email=${encodeURIComponent(userEmail)}&secret=${encodeURIComponent(secret)}`;

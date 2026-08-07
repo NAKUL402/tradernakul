@@ -30,10 +30,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ success: false, error: "Invalid OTP format" });
   }
 
-  const resendApiKey = process.env.RESEND_API_KEY;
-  const smtpUser    = process.env.EMAIL_USER;
-  const smtpPass    = process.env.EMAIL_PASS;
-  const resendFrom  = process.env.RESEND_FROM_EMAIL || "TraderNakul AI <onboarding@resend.dev>";
+  const resendApiKey = process.env['RESEND_API_KEY'];
+  const smtpUser    = process.env['EMAIL_USER'];
+  const smtpPass    = process.env['EMAIL_PASS'];
+  const resendFrom  = process.env['RESEND_FROM_EMAIL'] || "TraderNakul AI <onboarding@resend.dev>";
   const hasGmail    = !!(smtpUser && smtpPass);
 
   // ── Logging (no sensitive values logged) ─────────────────────────────────

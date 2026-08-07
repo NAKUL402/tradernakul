@@ -8,18 +8,18 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Cache-Control", "no-cache");
 
-  const resendKey = !!process.env.RESEND_API_KEY;
-  const smtpUser = !!process.env.EMAIL_USER;
-  const smtpPass = !!process.env.EMAIL_PASS;
-  const resendFrom = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev (default — testing only)";
+  const resendKey = !!process.env['RESEND_API_KEY'];
+  const smtpUser = !!process.env['EMAIL_USER'];
+  const smtpPass = !!process.env['EMAIL_PASS'];
+  const resendFrom = process.env['RESEND_FROM_EMAIL'] || "onboarding@resend.dev (default — testing only)";
 
   let activeProvider = "❌ NONE — email will fail";
   if (resendKey) activeProvider = "✅ Resend API";
   if (!resendKey && smtpUser && smtpPass) activeProvider = "✅ Gmail SMTP";
   if (resendKey && smtpUser && smtpPass) activeProvider = "✅ Resend (Gmail SMTP as fallback)";
 
-  const hasSupabaseUrl = !!(process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL);
-  const hasSupabaseKey = !!(process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY);
+  const hasSupabaseUrl = !!(process.env['VITE_SUPABASE_URL'] || process.env['SUPABASE_URL']);
+  const hasSupabaseKey = !!(process.env['VITE_SUPABASE_ANON_KEY'] || process.env['SUPABASE_ANON_KEY']);
 
   return res.status(200).json({
     status: "ok",
@@ -37,9 +37,9 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
       RESEND_FROM_EMAIL: resendFrom,
       EMAIL_USER: smtpUser ? "✅ SET" : "❌ NOT SET",
       EMAIL_PASS: smtpPass ? "✅ SET" : "❌ NOT SET",
-      OWNER_EMAIL: process.env.OWNER_EMAIL || "nakultrader007@gmail.com (default)",
-      VITE_SITE_URL: process.env.VITE_SITE_URL || "❌ NOT SET (email links may be wrong)",
-      APPROVAL_SECRET: process.env.APPROVAL_SECRET ? "✅ SET" : "using default",
+      OWNER_EMAIL: process.env['OWNER_EMAIL'] || "nakultrader007@gmail.com (default)",
+      VITE_SITE_URL: process.env['VITE_SITE_URL'] || "❌ NOT SET (email links may be wrong)",
+      APPROVAL_SECRET: process.env['APPROVAL_SECRET'] ? "✅ SET" : "using default",
     },
     notes: [
       "Resend free tier: can only send to your OWN Resend account email until you verify a domain.",

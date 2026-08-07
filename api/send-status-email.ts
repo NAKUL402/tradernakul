@@ -20,10 +20,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ success: false, error: "Missing or invalid email, name, or status" });
   }
 
-  const resendApiKey = process.env.RESEND_API_KEY;
-  const smtpUser = process.env.EMAIL_USER;
-  const smtpPass = process.env.EMAIL_PASS;
-  const resendFrom = process.env.RESEND_FROM_EMAIL || "TraderNakul AI <onboarding@resend.dev>";
+  const resendApiKey = process.env['RESEND_API_KEY'];
+  const smtpUser = process.env['EMAIL_USER'];
+  const smtpPass = process.env['EMAIL_PASS'];
+  const resendFrom = process.env['RESEND_FROM_EMAIL'] || "TraderNakul AI <onboarding@resend.dev>";
   const hasGmail = !!(smtpUser && smtpPass);
 
   console.log(`[send-status-email] Sending ${status} notification to: ${email}`);
@@ -47,7 +47,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             We are pleased to inform you that your request for access to <strong style="color:#10b981;">TraderNakul AI</strong> has been approved by the administrator.
           </p>
           <div style="text-align:center;margin:30px 0;">
-            <a href="${process.env.VITE_SITE_URL || "https://tradernakul.vercel.app"}/login" 
+            <a href="${process.env['VITE_SITE_URL'] || "https://tradernakul.vercel.app"}/login" 
                style="display:inline-block;background:#10b981;color:#ffffff;text-decoration:none;padding:12px 30px;border-radius:10px;font-weight:700;font-size:15px;box-shadow:0 4px 12px rgba(16,185,129,0.3);">
               Log In to Dashboard
             </a>
@@ -69,7 +69,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   `;
 
   const textBody = isApproved 
-    ? `Hello ${name},\n\nYour request for access to TraderNakul AI has been approved! You can now log in here: ${process.env.VITE_SITE_URL || "https://tradernakul.vercel.app"}/login`
+    ? `Hello ${name},\n\nYour request for access to TraderNakul AI has been approved! You can now log in here: ${process.env['VITE_SITE_URL'] || "https://tradernakul.vercel.app"}/login`
     : `Hello ${name},\n\nYour request for access to TraderNakul AI was declined by the administrator.`;
 
   let resendError: string | null = null;
