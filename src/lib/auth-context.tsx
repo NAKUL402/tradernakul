@@ -161,7 +161,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.dispatchEvent(event);
       // Clear OTP so it cannot be reused
       setCurrentOTP(null);
-      return;
+      
+      if (userProfile.status === "pending") {
+        throw new Error("Access Pending: Your registration is currently awaiting administrator approval.");
+      } else if (userProfile.status === "rejected") {
+        throw new Error("Access Denied: Your registration has been rejected by the administrator.");
+      } else if (userProfile.status === "suspended") {
+        throw new Error("Account Suspended: Please contact the administrator.");
+      } else {
+        throw new Error(`Access Denied: Your status is ${userProfile.status}.`);
+      }
     }
 
     // Establish session
