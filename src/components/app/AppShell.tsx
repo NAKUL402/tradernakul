@@ -1,7 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, NotebookPen, BarChart3, Brain, CalendarDays, FileText,
-  Settings, User, Menu, Plus, Bell, Search, ShieldCheck,
+  Settings, User, Menu, Search, ShieldCheck,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
@@ -149,10 +149,6 @@ export function AppShell({ title, subtitle, children }: { title: string; subtitl
                 <Search className="size-3.5" />
                 <span>Search trades…</span>
               </div>
-              <button aria-label="Notifications" className="relative rounded-xl border border-border/70 bg-card/50 p-2 text-muted-foreground transition hover:text-foreground">
-                <Bell className="size-4" />
-                <span className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-accent" />
-              </button>
               <Link to="/profile" aria-label="Profile" className="grid size-9 place-items-center rounded-xl bg-gradient-to-br from-accent to-primary text-xs font-bold text-primary-foreground">
                 {profile?.avatar_url ? (
                   <img src={profile.avatar_url} alt={name} className="size-full rounded-xl object-cover" />
@@ -172,19 +168,6 @@ export function AppShell({ title, subtitle, children }: { title: string; subtitl
           <Gatekeeper>{children}</Gatekeeper>
         </main>
       </div>
-
-      <Link
-        to="/journal?openModal=true"
-        onClick={() => {
-          if (typeof window !== "undefined" && window.location.pathname === "/journal") {
-            window.dispatchEvent(new CustomEvent("open_log_trade_modal"));
-          }
-        }}
-        aria-label="Add trade"
-        className="fixed bottom-24 right-5 z-40 grid size-14 place-items-center rounded-2xl bg-gradient-to-br from-primary to-accent text-primary-foreground glow-primary transition active:scale-95 lg:bottom-8"
-      >
-        <Plus className="size-6" />
-      </Link>
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/60 bg-background/85 backdrop-blur-xl lg:hidden">
         <div className="flex items-stretch justify-between px-2 py-2">
