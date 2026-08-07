@@ -102,6 +102,8 @@ function CoachPage() {
   ]);
   const [isAnswering, setIsAnswering] = useState(false);
 
+  const [isChatModalOpen, setIsChatModalOpen] = useState(false);
+
   // Pre-Trading Readiness State
   const [readinessState, setReadinessState] = useState({
     emotion: "Calm",
@@ -402,79 +404,140 @@ function CoachPage() {
           </div>
         </Panel>
 
-        {/* ── 4. Interactive AI Mentor Chat & Prompt Suggestions ───────────── */}
-        <Panel className="lg:col-span-3 shadow-2xl border-accent/30" title="Interactive AI Mentor Assistant">
-          <div className="space-y-4">
-            <div className="flex flex-wrap gap-2">
-              <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1 self-center mr-1">
-                <Zap className="size-3 text-primary" /> Suggested Questions:
-              </span>
-              {ai.suggestedPrompts.map((promptText) => (
-                <button
-                  key={promptText}
-                  type="button"
-                  onClick={() => handleAskQuestion(promptText)}
-                  className="rounded-xl border border-border/60 bg-card/50 px-3 py-1.5 text-xs text-muted-foreground transition hover:border-primary/60 hover:text-foreground active:scale-95"
-                >
-                  {promptText}
-                </button>
-              ))}
+        {/* ── 4. Interactive AI Mentor Chat Trigger Card ───────────── */}
+        <div 
+          onClick={() => setIsChatModalOpen(true)}
+          className="lg:col-span-3 group relative cursor-pointer overflow-hidden rounded-2xl border border-border/60 bg-card/50 p-6 shadow-xl backdrop-blur-md transition-all hover:border-primary/50 hover:bg-card/80 hover:shadow-[0_0_40px_-10px_var(--color-primary)]"
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+          <div className="relative flex items-center justify-between">
+            <div className="flex items-center gap-5">
+              <div className="grid size-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-lg glow-primary transition-transform duration-500 group-hover:scale-110">
+                <Brain className="size-7" />
+              </div>
+              <div>
+                <h3 className="font-display text-lg font-bold text-foreground">AI Trading Mentor</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Personal AI guidance for your trading journey.
+                </p>
+              </div>
             </div>
-
-            <div className="max-h-60 overflow-y-auto space-y-3 rounded-2xl border border-border/60 bg-background/60 p-4 backdrop-blur-md">
-              {chatMessages.map((msg, i) => (
-                <div
-                  key={i}
-                  className={`flex gap-3 text-sm ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-                >
-                  {msg.role === "coach" && (
-                    <div className="grid size-7 shrink-0 place-items-center rounded-lg bg-primary/20 text-primary">
-                      <Brain className="size-4" />
-                    </div>
-                  )}
-                  <div
-                    className={`max-w-[85%] rounded-2xl p-3.5 leading-relaxed ${
-                      msg.role === "user"
-                        ? "bg-primary text-primary-foreground font-medium"
-                        : "border border-border/50 bg-card/80 text-muted-foreground"
-                    }`}
-                  >
-                    {msg.text}
-                  </div>
-                </div>
-              ))}
-              {isAnswering && (
-                <div className="flex gap-2 items-center text-xs text-muted-foreground italic">
-                  <Brain className="size-4 animate-spin text-primary" /> AI Coach is thinking...
-                </div>
-              )}
-            </div>
-
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleAskQuestion(customQuestion);
-              }}
-              className="flex gap-2"
-            >
-              <input
-                type="text"
-                value={customQuestion}
-                onChange={(e) => setCustomQuestion(e.target.value)}
-                placeholder="Ask AI Coach about your setups, psychology, or position sizing..."
-                className="w-full rounded-xl border border-border bg-card/50 px-4 py-2.5 text-sm outline-none transition placeholder:text-muted-foreground focus:border-primary/60 focus:ring-2 focus:ring-ring/40"
-              />
-              <button
-                type="submit"
-                disabled={!customQuestion.trim() || isAnswering}
-                className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-accent px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 active:scale-[0.99] glow-primary disabled:opacity-50"
-              >
-                <Send className="size-4" />
-                Ask
-              </button>
-            </form>
+            <button className="hidden sm:flex items-center gap-2 rounded-xl bg-primary/10 px-4 py-2 text-sm font-semibold text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+              Open AI Mentor
+            </button>
           </div>
-        </Panel>
+        </div>
+
+        {/* ── Chat Modal/Drawer ────────────────────────────────────────────── */}
+        <>
+          {/* Backdrop */}
+          <div 
+            className={`fixed inset-0 z-[60] bg-background/60 backdrop-blur-sm transition-opacity duration-300 ${
+              isChatModalOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+            }`}
+            onClick={() => setIsChatModalOpen(false)}
+          />
+
+          {/* Drawer */}
+          <div
+            className={`fixed inset-y-0 right-0 z-[70] flex w-full flex-col border-l border-primary/20 bg-card/95 shadow-[0_0_50px_-12px_var(--color-primary)] backdrop-blur-2xl transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] sm:w-[500px] lg:w-[600px] ${
+              isChatModalOpen ? "translate-x-0" : "translate-x-full"
+            }`}
+          >
+            {/* Header */}
+            <div className="relative flex items-center justify-between border-b border-primary/10 bg-gradient-to-r from-primary/5 to-transparent px-6 py-5">
+              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+              <div className="flex items-center gap-4">
+                <div className="grid size-10 place-items-center rounded-xl bg-primary shadow-lg shadow-primary/30 text-primary-foreground">
+                  <Brain className="size-5" />
+                </div>
+                <div>
+                  <h3 className="font-display text-base font-semibold text-foreground leading-none">AI Mentor Assessment</h3>
+                  <p className="mt-1 text-xs font-medium uppercase tracking-widest text-primary/80">Active Session</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsChatModalOpen(false)}
+                className="grid size-8 place-items-center rounded-full hover:bg-primary/10 hover:text-primary transition-colors text-muted-foreground"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Chat Content */}
+            <div className="flex flex-col flex-1 overflow-hidden p-6 space-y-6">
+              <div className="flex flex-col gap-2">
+                <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
+                  <Zap className="size-3 text-primary" /> Suggested Prompts
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {ai.suggestedPrompts.map((promptText) => (
+                    <button
+                      key={promptText}
+                      type="button"
+                      onClick={() => handleAskQuestion(promptText)}
+                      className="rounded-xl border border-border/60 bg-card/50 px-3 py-1.5 text-xs text-muted-foreground transition hover:border-primary/60 hover:text-foreground hover:bg-primary/5 active:scale-95"
+                    >
+                      {promptText}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto space-y-4 rounded-2xl border border-border/60 bg-background/40 p-4 shadow-inner">
+                {chatMessages.map((msg, i) => (
+                  <div
+                    key={i}
+                    className={`flex gap-3 text-sm ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                  >
+                    {msg.role === "coach" && (
+                      <div className="grid size-8 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-sm">
+                        <Brain className="size-4" />
+                      </div>
+                    )}
+                    <div
+                      className={`max-w-[85%] rounded-2xl p-4 leading-relaxed shadow-sm ${
+                        msg.role === "user"
+                          ? "bg-primary text-primary-foreground font-medium rounded-tr-sm"
+                          : "border border-border/50 bg-card/90 text-foreground rounded-tl-sm"
+                      }`}
+                    >
+                      {msg.text}
+                    </div>
+                  </div>
+                ))}
+                {isAnswering && (
+                  <div className="flex gap-2 items-center text-xs text-muted-foreground italic px-2">
+                    <Brain className="size-4 animate-spin text-primary" /> AI Coach is thinking...
+                  </div>
+                )}
+              </div>
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleAskQuestion(customQuestion);
+                }}
+                className="flex items-center gap-3 pt-2"
+              >
+                <input
+                  type="text"
+                  value={customQuestion}
+                  onChange={(e) => setCustomQuestion(e.target.value)}
+                  placeholder="Discuss setups, psychology, risk..."
+                  className="w-full flex-1 rounded-xl border border-border/60 bg-card/50 px-4 py-3 text-sm outline-none transition placeholder:text-muted-foreground focus:border-primary/60 focus:bg-card focus:ring-2 focus:ring-primary/20"
+                />
+                <button
+                  type="submit"
+                  disabled={!customQuestion.trim() || isAnswering}
+                  className="flex shrink-0 items-center justify-center gap-2 rounded-xl bg-gradient-to-tr from-primary to-accent h-11 w-12 text-primary-foreground transition hover:opacity-90 active:scale-95 disabled:opacity-50 shadow-lg glow-primary"
+                >
+                  <Send className="size-4 ml-1" />
+                </button>
+              </form>
+            </div>
+          </div>
+        </>
 
         {/* ── 5. Top Execution Mistakes & Strengths ────────────────────────── */}
         <Panel title="Top Execution Mistakes">
