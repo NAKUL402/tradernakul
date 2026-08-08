@@ -16,7 +16,6 @@ import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as JournalRouteImport } from './routes/journal'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as MarketRouteImport } from './routes/market'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as SettingsRouteImport } from './routes/settings'
@@ -57,11 +56,6 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MarketRoute = MarketRouteImport.update({
-  id: '/market',
-  path: '/market',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -91,7 +85,6 @@ export interface FileRoutesByFullPath {
   '/calendar': typeof CalendarRoute
   '/journal': typeof JournalRoute
   '/login': typeof LoginRoute
-  '/market': typeof MarketRoute
   '/profile': typeof ProfileRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
@@ -105,7 +98,6 @@ export interface FileRoutesByTo {
   '/calendar': typeof CalendarRoute
   '/journal': typeof JournalRoute
   '/login': typeof LoginRoute
-  '/market': typeof MarketRoute
   '/profile': typeof ProfileRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
@@ -120,7 +112,6 @@ export interface FileRoutesById {
   '/calendar': typeof CalendarRoute
   '/journal': typeof JournalRoute
   '/login': typeof LoginRoute
-  '/market': typeof MarketRoute
   '/profile': typeof ProfileRoute
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
@@ -136,7 +127,6 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/journal'
     | '/login'
-    | '/market'
     | '/profile'
     | '/reports'
     | '/settings'
@@ -150,7 +140,6 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/journal'
     | '/login'
-    | '/market'
     | '/profile'
     | '/reports'
     | '/settings'
@@ -164,7 +153,6 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/journal'
     | '/login'
-    | '/market'
     | '/profile'
     | '/reports'
     | '/settings'
@@ -179,7 +167,6 @@ export interface RootRouteChildren {
   CalendarRoute: typeof CalendarRoute
   JournalRoute: typeof JournalRoute
   LoginRoute: typeof LoginRoute
-  MarketRoute: typeof MarketRoute
   ProfileRoute: typeof ProfileRoute
   ReportsRoute: typeof ReportsRoute
   SettingsRoute: typeof SettingsRoute
@@ -237,13 +224,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/market': {
-      id: '/market'
-      path: '/market'
-      fullPath: '/market'
-      preLoaderRoute: typeof MarketRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/profile': {
       id: '/profile'
       path: '/profile'
@@ -283,7 +263,6 @@ const rootRouteChildren: RootRouteChildren = {
   CalendarRoute: CalendarRoute,
   JournalRoute: JournalRoute,
   LoginRoute: LoginRoute,
-  MarketRoute: MarketRoute,
   ProfileRoute: ProfileRoute,
   ReportsRoute: ReportsRoute,
   SettingsRoute: SettingsRoute,

@@ -39,7 +39,7 @@ export function IndianMarketLive() {
     };
 
     fetchMarketData();
-    const interval = setInterval(fetchMarketData, 5000); // Smart polling every 5s
+    const interval = setInterval(fetchMarketData, 60000); // Smart polling every 60s to prevent API limits
     return () => clearInterval(interval);
   }, []);
 
@@ -60,7 +60,9 @@ export function IndianMarketLive() {
           <AlertCircle className="size-8 text-muted-foreground mb-3" />
           <p className="text-sm font-medium text-foreground">{market.message || "Live market data unavailable."}</p>
           {market.status === "unconfigured" && (
-            <p className="text-xs text-muted-foreground mt-1">Please configure UPSTOX_API_KEY.</p>
+            <a href="/api/upstox-login" className="mt-4 inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-primary to-accent px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition hover:opacity-90">
+              Connect Upstox
+            </a>
           )}
         </div>
       </Panel>

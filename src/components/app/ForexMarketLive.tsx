@@ -39,7 +39,7 @@ export function ForexMarketLive() {
     };
 
     fetchMarketData();
-    const interval = setInterval(fetchMarketData, 5000); // Smart polling every 5s
+    const interval = setInterval(fetchMarketData, 60000); // Smart polling every 60s to prevent API limits
     return () => clearInterval(interval);
   }, []);
 

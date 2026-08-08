@@ -8,7 +8,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
 
 // In-memory cache to prevent Finnhub/Upstox rate limits (60/min) on Vercel
-const CACHE_TTL = 15000; // 15 seconds
+const CACHE_TTL = 60000; // 60 seconds
 let cache: { data: any; timestamp: number } | null = null;
 
 const FINNHUB_SYMBOLS = [
