@@ -64,6 +64,38 @@ function TradeCard({ t, onOpen }: { t: Trade; onOpen: () => void }) {
   );
 }
 
+function FilterInput({ label, value, onChange }: { label: string, value: string, onChange: (val: string) => void }) {
+  return (
+    <div className="flex items-center gap-1.5 rounded-xl border border-border bg-card/60 px-3 py-1.5 text-xs text-foreground transition-colors focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/50">
+      <span className="font-medium text-muted-foreground whitespace-nowrap">{label}:</span>
+      <input
+        type="text"
+        value={value === "All" ? "" : value}
+        onChange={(e) => onChange(e.target.value || "All")}
+        placeholder="All"
+        className="w-16 sm:w-20 bg-transparent outline-none placeholder:text-foreground"
+      />
+    </div>
+  );
+}
+
+function FilterSelect({ label, value, onChange, options }: { label: string, value: string, onChange: (val: string) => void, options: { label: string, value: string }[] }) {
+  return (
+    <div className="flex items-center gap-1.5 rounded-xl border border-border bg-card/60 pl-3 pr-2 py-1.5 text-xs text-foreground transition-colors focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/50">
+      <span className="font-medium text-muted-foreground whitespace-nowrap">{label}:</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="bg-transparent outline-none cursor-pointer"
+      >
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value} className="bg-background">{opt.label}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 function Journal() {
   const { user } = useAuth();
   const [allTrades, setAllTrades] = useState<Trade[]>([]);
@@ -143,9 +175,9 @@ function Journal() {
       const text = `${t.pair || ""} ${t.setup || ""} ${t.notes || ""} ${tagsText} ${t.session || ""}`.toLowerCase();
       return (
         text.includes(q.toLowerCase()) &&
-        (pair === "All" || t.pair === pair) &&
+        (pair === "All" || (t.pair?.toLowerCase() || "").includes(pair.toLowerCase())) &&
         (result === "All" || t.result === result) &&
-        (setup === "All" || t.setup === setup)
+        (setup === "All" || (t.setup?.toLowerCase() || "").includes(setup.toLowerCase()))
       );
     });
     l = [...l].sort((a, b) =>
@@ -157,7 +189,6 @@ function Journal() {
     return l;
   }, [allTrades, q, pair, result, setup, sort]);
 
-  const select = "rounded-xl border border-border bg-card/60 px-3 py-2 text-xs text-foreground outline-none focus:ring-2 focus:ring-ring";
 
   return (
     <AppShell title="Trading Journal" subtitle={`${list.length} trades logged`}>
@@ -185,22 +216,30 @@ function Journal() {
             />
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="flex items-center gap-1 text-xs text-muted-foreground"><SlidersHorizontal className="size-3.5" /> Filters</span>
-            <select className={select} value={pair} onChange={(e) => setPair(e.target.value)}>
-              {["All", ...PAIRS].map((p) => <option key={p}>{p}</option>)}
-            </select>
-            <select className={select} value={result} onChange={(e) => setResult(e.target.value)}>
-              {["All", "Win", "Loss"].map((p) => <option key={p}>{p}</option>)}
-            </select>
-            <select className={select} value={setup} onChange={(e) => setSetup(e.target.value)}>
-              {["All", ...SETUPS].map((p) => <option key={p}>{p}</option>)}
-            </select>
-            <select className={select} value={sort} onChange={(e) => setSort(e.target.value)}>
-              <option value="newest">Newest first</option>
-              <option value="oldest">Oldest first</option>
-              <option value="rrr">Highest RRR</option>
-              <option value="pnl">Biggest PnL</option>
-            </select>
+            <span className="flex items-center gap-1 text-xs text-muted-foreground mr-1"><SlidersHorizontal className="size-3.5" /> Filters</span>
+            <FilterInput label="Symbol" value={pair} onChange={setPair} />
+            <FilterSelect 
+              label="Result" 
+              value={result} 
+              onChange={setResult} 
+              options={[
+                { label: "All", value: "All" },
+                { label: "Win", value: "Win" },
+                { label: "Loss", value: "Loss" }
+              ]} 
+            />
+            <FilterInput label="Setup" value={setup} onChange={setSetup} />
+            <FilterSelect 
+              label="Sort" 
+              value={sort} 
+              onChange={setSort} 
+              options={[
+                { label: "Newest first", value: "newest" },
+                { label: "Oldest first", value: "oldest" },
+                { label: "Highest RRR", value: "rrr" },
+                { label: "Highest Profit", value: "pnl" }
+              ]} 
+            />
           </div>
         </div>
       </Panel>
