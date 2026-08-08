@@ -7,6 +7,7 @@ import { BarsChart, EquityChart, WinLossPie } from "@/components/app/charts";
 import { equityCurve, fetchUserTrades, monthly, money, pct, pnlUsd, stats, type Trade } from "@/lib/trades";
 import { Activity, Flame, Percent, Scale, Snowflake, Target, TrendingDown, TrendingUp, Trophy, Wallet, Crown, Brain, ChevronRight } from "lucide-react";
 import { goldenRules } from "@/lib/golden-rules";
+import { DecisionReplayCard } from "@/components/app/DecisionReplayCard";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -78,7 +79,6 @@ function Dashboard() {
         {/* Premium AI Mentor Card */}
         <Panel title="AI Trading Mentor" className="flex flex-col h-full">
           <div className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-primary/20 bg-card p-5 sm:p-6 flex-1 transition hover:border-primary/40 hover:shadow-[0_0_30px_-5px_var(--color-primary)]">
-            <div className="absolute -right-10 -top-10 size-40 rounded-full bg-primary/10 blur-3xl transition group-hover:bg-primary/20" />
             
             <div className="relative z-10 flex items-start gap-4">
               <div className="grid shrink-0 size-12 place-items-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/30">
@@ -108,8 +108,7 @@ function Dashboard() {
 
         {/* Dynamic Golden Rule Section */}
         <Panel title="Golden Rule" className="flex flex-col h-full">
-          <div className="group relative flex flex-col justify-center flex-1 gap-4 rounded-2xl border border-primary/20 bg-card p-5 sm:p-6 sm:items-center sm:flex-row sm:justify-start overflow-hidden transition hover:border-primary/40 hover:shadow-[0_0_30px_-5px_var(--color-primary)]">
-            <div className="absolute -left-10 -bottom-10 size-40 rounded-full bg-primary/10 blur-3xl transition group-hover:bg-primary/20" />
+          <div className="group relative flex flex-col justify-center flex-1 gap-4 p-5 sm:p-6 sm:items-center sm:flex-row sm:justify-start overflow-hidden transition">
             
             <div className="relative z-10 grid shrink-0 size-12 place-items-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/30">
               <Crown className="size-6" />
@@ -159,12 +158,13 @@ function Dashboard() {
         <Panel title="Weekly Performance"><BarsChart data={weekly} /></Panel>
       </div>
 
-      <Panel
-        title="Recent Trades"
-        className="mt-4"
-        action={<Link to="/journal" className="text-xs font-medium text-primary hover:underline">View all</Link>}
-      >
-        <div className="-mx-2 overflow-x-auto">
+      <div className="mt-4 grid gap-4 lg:grid-cols-3">
+        <Panel
+          title="Recent Trades"
+          className="lg:col-span-2"
+          action={<Link to="/journal" className="text-xs font-medium text-primary hover:underline">View all</Link>}
+        >
+          <div className="-mx-2 overflow-x-auto">
           <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="text-left text-[11px] uppercase tracking-wide text-muted-foreground">
@@ -188,7 +188,9 @@ function Dashboard() {
             </tbody>
           </table>
         </div>
-      </Panel>
+        </Panel>
+        <DecisionReplayCard trades={userTrades} />
+      </div>
     </AppShell>
   );
 }
