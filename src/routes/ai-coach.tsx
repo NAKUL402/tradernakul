@@ -6,10 +6,8 @@ import { fetchUserTrades, type Trade } from "@/lib/trades";
 import { useAuth } from "@/lib/auth-context";
 import {
   analyzeTradeDataWithAI,
-  WEEKLY_GOLDEN_RULES,
-  getCurrentWeekIndex,
-  type WeeklyGoldenRule,
 } from "@/lib/ai-coach-service";
+import { DAILY_QUOTES, getDailyQuoteIndex } from "@/lib/daily-quotes";
 import {
   AlertTriangle,
   Brain,
@@ -92,7 +90,7 @@ function List3D({ items, tone }: { items: string[]; tone: "good" | "bad" }) {
 function CoachPage() {
   const { session } = useAuth();
   const [userTrades, setUserTrades] = useState<Trade[]>([]);
-  const [activeWeekIdx, setActiveWeekIdx] = useState<number>(getCurrentWeekIndex());
+  const [activeQuoteIdx, setActiveQuoteIdx] = useState<number>(getDailyQuoteIndex());
 
   // Interactive AI Assistant Chat State
   const [customQuestion, setCustomQuestion] = useState("");
@@ -113,8 +111,8 @@ function CoachPage() {
   }, []);
 
   const ai = analyzeTradeDataWithAI(userTrades);
-  const selectedRule: WeeklyGoldenRule = WEEKLY_GOLDEN_RULES[activeWeekIdx] || ai.currentWeeklyRule;
-  const isCurrentWeek = activeWeekIdx === getCurrentWeekIndex();
+  const selectedQuote = DAILY_QUOTES[activeQuoteIdx] || DAILY_QUOTES[0];
+  const isCurrentDay = activeQuoteIdx === getDailyQuoteIndex();
 
   // Handle Interactive Chat Prompt Selection / Submit
   const handleAskQuestion = async (questionText: string) => {
@@ -140,7 +138,7 @@ function CoachPage() {
         body: JSON.stringify({
           message: userMsg,
           history: chatMessages.map(m => ({ role: m.role, content: m.text })),
-          tradeContext: `Current Weekly Rule: ${selectedRule.title}. Win Rate: ${ai.qualityScore}%. Overall Grade: ${ai.overallGrade}.`,
+          tradeContext: `Current Daily Quote: "${selectedQuote}". Win Rate: ${ai.qualityScore}%. Overall Grade: ${ai.overallGrade}.`,
         }),
         signal: AbortSignal.timeout(20000)
       });
@@ -220,37 +218,36 @@ function CoachPage() {
 
       {/* ── Main 3D Grid ─────────────────────────────────────────────────── */}
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
-        {/* ── 1. Weekly Changing Golden Rules Showcase ────────────────────── */}
+        {/* ── 1. Daily Golden Rules Showcase ────────────────────── */}
         <Panel
           className="lg:col-span-3 border-primary/40 bg-gradient-to-br from-card/80 via-card/50 to-primary/5 shadow-2xl relative overflow-hidden"
-          title={`Weekly Golden Rule · Week ${selectedRule.week} of ${WEEKLY_GOLDEN_RULES.length}`}
           action={
-            <div className="flex items-center gap-1.5">
+            <div className="ml-auto flex items-center gap-1.5">
               <button
                 type="button"
                 onClick={() =>
-                  setActiveWeekIdx((prev) => (prev > 0 ? prev - 1 : WEEKLY_GOLDEN_RULES.length - 1))
+                  setActiveQuoteIdx((prev) => (prev > 0 ? prev - 1 : DAILY_QUOTES.length - 1))
                 }
-                title="Previous Week Rule"
+                title="Previous Quote"
                 className="grid size-8 place-items-center rounded-lg border border-border/60 bg-card/60 text-muted-foreground transition hover:border-primary/50 hover:text-foreground active:scale-95"
               >
                 <ChevronLeft className="size-4" />
               </button>
               <button
                 type="button"
-                onClick={() => setActiveWeekIdx(getCurrentWeekIndex())}
-                title="Current Week"
+                onClick={() => setActiveQuoteIdx(getDailyQuoteIndex())}
+                title="Current Day"
                 className="flex items-center gap-1 rounded-lg border border-border/60 bg-card/60 px-2.5 py-1 text-xs font-semibold text-muted-foreground transition hover:border-primary/50 hover:text-foreground"
               >
                 <RefreshCw className="size-3" />
-                {isCurrentWeek ? "Current" : "Reset"}
+                {isCurrentDay ? "Current" : "Reset"}
               </button>
               <button
                 type="button"
                 onClick={() =>
-                  setActiveWeekIdx((prev) => (prev < WEEKLY_GOLDEN_RULES.length - 1 ? prev + 1 : 0))
+                  setActiveQuoteIdx((prev) => (prev < DAILY_QUOTES.length - 1 ? prev + 1 : 0))
                 }
-                title="Next Week Rule"
+                title="Next Quote"
                 className="grid size-8 place-items-center rounded-lg border border-border/60 bg-card/60 text-muted-foreground transition hover:border-primary/50 hover:text-foreground active:scale-95"
               >
                 <ChevronRight className="size-4" />
@@ -263,26 +260,9 @@ function CoachPage() {
               <Crown className="size-10 text-primary animate-bounce-subtle" />
             </div>
             <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/15 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-primary">
-                  <Flame className="size-3 text-primary" /> {selectedRule.category}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  Rotates automatically every week
-                </span>
-              </div>
-              <h2 className="mt-3 font-display text-xl font-bold tracking-tight text-foreground sm:text-2xl">
-                "{selectedRule.title}"
-              </h2>
-              <blockquote className="mt-2 text-base leading-relaxed text-foreground/90 font-medium italic border-l-2 border-primary/50 pl-3 py-1">
-                "{selectedRule.rule}"
+              <blockquote className="text-xl leading-relaxed text-foreground font-medium italic border-l-2 border-primary/50 pl-4 py-2">
+                "{selectedQuote}"
               </blockquote>
-              <div className="mt-4 rounded-xl border border-border/50 bg-background/50 p-3.5 backdrop-blur-md">
-                <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
-                  <Target className="size-3.5 text-accent" /> Actionable Principle
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">{selectedRule.principle}</p>
-              </div>
             </div>
           </div>
         </Panel>
