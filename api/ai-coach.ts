@@ -43,9 +43,10 @@ async function callOpenRouter(
   filteredHistory: Array<{ role: string; content: string }>,
   userMessage: string
 ): Promise<string> {
-  const openRouterKey = process.env["OPENROUTER_API_KEY"];
+  const rawOpenRouterKey = process.env["OPENROUTER_API_KEY"] || "";
+  const openRouterKey = rawOpenRouterKey.replace(/^["']|["']$/g, "").trim();
 
-  if (!openRouterKey || openRouterKey.trim().length < 10) {
+  if (!openRouterKey || openRouterKey.length < 10) {
     throw new Error("OPENROUTER_API_KEY is not configured.");
   }
 
@@ -181,9 +182,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // =========================================================================
     // PRIMARY: GROQ
     // =========================================================================
-    const groqApiKey = process.env["GROQ_API_KEY"];
+    const rawGroqKey = process.env["GROQ_API_KEY"] || "";
+    const groqApiKey = rawGroqKey.replace(/^["']|["']$/g, "").trim();
 
-    if (!groqApiKey || groqApiKey.trim() === "" || groqApiKey === "your_groq_api_key_here") {
+    if (!groqApiKey || groqApiKey === "" || groqApiKey === "your_groq_api_key_here") {
       return res.status(500).json({
         error: "GROQ_API_KEY is not configured or invalid.",
         code: "CONFIG_ERROR",
