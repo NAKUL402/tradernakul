@@ -2,8 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { Loader2, Send, Bot, X, Maximize2, Minimize2 } from "lucide-react";
 import { type ChatMessage, sendChatMessageToAI } from "@/lib/ai-coach-service";
 import { fetchUserTrades, type Trade } from "@/lib/trades";
+import { useLocation } from "@tanstack/react-router";
 
 export function FloatingAICoach() {
+  const location = useLocation();
+  const isAICoachPage = location.pathname === "/ai-coach";
   const [isOpen, setIsOpen] = useState(false);
   const [userTrades, setUserTrades] = useState<Trade[]>([]);
   const [inputMessage, setInputMessage] = useState("");
@@ -104,13 +107,15 @@ export function FloatingAICoach() {
   return (
     <>
       {/* Floating Button */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className={`fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-tr from-primary to-accent text-primary-foreground shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 ${isOpen ? "scale-0 opacity-0 pointer-events-none" : "scale-100 opacity-100 glow-primary"}`}
-        aria-label="Open AI Coach"
-      >
-        <Bot className="size-6" />
-      </button>
+      {isAICoachPage && (
+        <button
+          onClick={() => setIsOpen(true)}
+          className={`fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-tr from-primary to-accent text-primary-foreground shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 ${isOpen ? "scale-0 opacity-0 pointer-events-none" : "scale-100 opacity-100 glow-primary"}`}
+          aria-label="Open AI Coach"
+        >
+          <Bot className="size-6" />
+        </button>
+      )}
 
       {/* Backdrop */}
       <div 
