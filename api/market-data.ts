@@ -2,8 +2,9 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "";
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "";
-const internalSecret = "tn_backend_oauth_secure_99";
+// CRITICAL: We MUST use the service role key to bypass RLS and securely read the token
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+
 
 
 // In-memory cache to prevent Finnhub/Upstox rate limits (60/min) on Vercel
@@ -68,13 +69,19 @@ export default async function handler(req: any, res: any) {
     let indianData: any = { status: "unconfigured", message: "Upstox OAuth Login Required.", data: null };
     
     let dbToken: string | null = null;
-    if (supabaseUrl && supabaseKey) {
-      const supabase = createClient(supabaseUrl, supabaseKey);
-      const { data: tokenData, error: rpcError } = await supabase.rpc("get_upstox_token", {
-        internal_secret: internalSecret
-      });
-      if (!rpcError && tokenData) {
-        dbToken = tokenData;
+    if (supabaseUrl && supabaseServiceKey) {
+      // Initialize client with SERVICE ROLE KEY to bypass RLS
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+      
+      const { data: tokenData, error: dbError } = await supabase
+        .from("upstox_tokens")
+        .select("access_token")
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .single();
+        
+      if (!dbError && tokenData) {
+        dbToken = tokenData.access_token;
       }
     }
 

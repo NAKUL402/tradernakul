@@ -2,8 +2,9 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "";
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "";
-const internalSecret = "tn_backend_oauth_secure_99";
+// CRITICAL: We MUST use the service role key to bypass RLS and securely write the token
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+
 
 
 export default async function handler(req: any, res: any) {
@@ -52,22 +53,28 @@ export default async function handler(req: any, res: any) {
 
     const data = await tokenResponse.json();
     
-    // Securely store token server-side in Supabase using the secure RPC
+    // Securely store token server-side in Supabase using the service role key
     if (data.access_token) {
-      if (supabaseUrl && supabaseKey) {
-        const supabase = createClient(supabaseUrl, supabaseKey);
-        const { error: rpcError } = await supabase.rpc("set_upstox_token", {
-          internal_secret: internalSecret,
-          new_token: data.access_token
+      if (supabaseUrl && supabaseServiceKey) {
+        // Initialize client with SERVICE ROLE KEY to bypass RLS
+        const supabase = createClient(supabaseUrl, supabaseServiceKey);
+        
+        // 1. Delete old tokens (keep it single-row for simplicity)
+        await supabase.from("upstox_tokens").delete().neq("id", "00000000-0000-0000-0000-000000000000"); // deletes all
+        
+        // 2. Insert new token
+        const { error: insertError } = await supabase.from("upstox_tokens").insert({
+          access_token: data.access_token,
+          updated_at: new Date().toISOString()
         });
 
-        if (rpcError) {
-          console.error("[upstox-callback] Supabase RPC Error:", rpcError);
+        if (insertError) {
+          console.error("[upstox-callback] Supabase Insert Error:", insertError);
         } else {
-          console.log("[upstox-callback] Successfully secured Upstox access token in Supabase DB.");
+          console.log("[upstox-callback] Successfully secured Upstox access token in Supabase DB via Service Role.");
         }
       } else {
-        console.warn("[upstox-callback] Supabase not configured in .env, token not persisted.");
+        console.warn("[upstox-callback] SUPABASE_SERVICE_ROLE_KEY not configured in .env, token not persisted.");
       }
     }
 
