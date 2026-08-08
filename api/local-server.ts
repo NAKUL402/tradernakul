@@ -12,7 +12,7 @@
  *   npm run dev:full
  */
 
-import http from "node:http";
+import http, { IncomingMessage, ServerResponse } from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -25,7 +25,7 @@ function loadEnv() {
   const envPath = path.resolve(__dirname, "../.env");
   if (!fs.existsSync(envPath)) {
     console.warn("[api-server] WARNING: No .env file found at project root.");
-    console.warn("[api-server] Create .env from .env.example and add your GEMINI_API_KEY.");
+    console.warn("[api-server] Create .env from .env.example and add your GROQ_API_KEY.");
     return;
   }
   const content = fs.readFileSync(envPath, "utf8");
@@ -38,7 +38,7 @@ function loadEnv() {
     const key = trimmed.slice(0, eqIdx).trim();
     const raw = trimmed.slice(eqIdx + 1).trim();
     const val = raw.replace(/^["']|["']$/g, "");
-    if (key && !process.env[key]) {
+    if (key) {
       process.env[key] = val;
       loaded++;
     }
@@ -47,10 +47,10 @@ function loadEnv() {
 }
 
 // ── Parse request body ────────────────────────────────────────────────────────
-function parseBody(req) {
+function parseBody(req: IncomingMessage): Promise<any> {
   return new Promise((resolve, reject) => {
     let data = "";
-    req.on("data", (chunk) => (data += chunk.toString()));
+    req.on("data", (chunk: Buffer) => (data += chunk.toString()));
     req.on("end", () => {
       try {
         resolve(data.trim() ? JSON.parse(data) : {});
@@ -63,19 +63,19 @@ function parseBody(req) {
 }
 
 // ── Mock Vercel response object ───────────────────────────────────────────────
-function createMockResponse(res) {
+function createMockResponse(res: ServerResponse) {
   let statusCode = 200;
-  const headers = {};
+  const headers: Record<string, string> = {};
 
   return {
-    setHeader(key, value) {
+    setHeader(key: string, value: string) {
       headers[key] = value;
     },
-    status(code) {
+    status(code: number) {
       statusCode = code;
       return this;
     },
-    json(data) {
+    json(data: any) {
       const body = JSON.stringify(data);
       headers["Content-Type"] = "application/json";
       headers["Content-Length"] = String(Buffer.byteLength(body));
@@ -90,7 +90,7 @@ function createMockResponse(res) {
 }
 
 // ── Route map: path → handler file ───────────────────────────────────────────
-const ROUTES = {
+const ROUTES: Record<string, string> = {
   "/api/ai-coach": "./ai-coach.ts",
   "/api/health": "./health.ts",
   "/api/send-otp": "./send-otp.ts",
@@ -100,10 +100,10 @@ const ROUTES = {
 };
 
 // Cache for loaded modules
-const moduleCache = new Map();
+const moduleCache = new Map<string, any>();
 
 // ── Main request handler ──────────────────────────────────────────────────────
-async function handleRequest(req, res) {
+async function handleRequest(req: IncomingMessage, res: ServerResponse) {
   const url = new URL(req.url ?? "/", `http://localhost:${PORT}`);
   const pathname = url.pathname;
 
@@ -169,15 +169,19 @@ server.listen(PORT, "127.0.0.1", () => {
   for (const route of Object.keys(ROUTES)) {
     console.log(`[api-server]   ${route}`);
   }
-  const keySet = !!process.env["GEMINI_API_KEY"] || !!process.env["VITE_GEMINI_API_KEY"];
+  const groqSet = !!process.env["GROQ_API_KEY"];
+  const groqLen = process.env["GROQ_API_KEY"] ? process.env["GROQ_API_KEY"]?.length : 0;
+  const orSet = !!process.env["OPENROUTER_API_KEY"];
+  const orLen = process.env["OPENROUTER_API_KEY"] ? process.env["OPENROUTER_API_KEY"]?.length : 0;
   console.log(
-    `[api-server] GEMINI_API_KEY: ${keySet ? "SET (AI Coach ready)" : "MISSING (add to .env file)"}\n`
+    `[api-server] GROQ_API_KEY:        ${groqSet ? `SET (length ${groqLen}, primary AI ready)` : "MISSING (add to .env file)"}\n` +
+    `[api-server] OPENROUTER_API_KEY:  ${orSet ? `SET (length ${orLen}, fallback AI ready)` : "NOT SET (fallback unavailable — add to .env for resilience)"}\n`
   );
 });
 
-server.on("error", (err) => {
+server.on("error", (err: Error) => {
   console.error("[api-server] Server error:", err.message);
-  const errWithCode = err;
+  const errWithCode = err as Error & { code?: string };
   if (errWithCode.code === "EADDRINUSE") {
     console.error(`[api-server] Port ${PORT} already in use. Kill the other process.`);
     process.exit(1);

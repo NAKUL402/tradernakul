@@ -23,7 +23,8 @@ export default function handler(_req: VercelRequest, res: VercelResponse) {
   const siteUrl = process.env["VITE_SITE_URL"] || "";
 
   // AI vars
-  const geminiKey = process.env["GEMINI_API_KEY"] || "";
+  const groqKey = process.env["GROQ_API_KEY"] || "";
+  const openRouterKey = process.env["OPENROUTER_API_KEY"] || "";
 
   const urlOk = supabaseUrl.startsWith("https://") && supabaseUrl.includes(".supabase.co");
   const keyOk = supabaseKey.length > 20;
@@ -33,9 +34,12 @@ export default function handler(_req: VercelRequest, res: VercelResponse) {
     timestamp: new Date().toISOString(),
     nodeVersion: process.version,
     ai: {
-      GEMINI_API_KEY: geminiKey
-        ? `✅ SET — length: ${geminiKey.length} chars`
-        : "❌ NOT SET — Add GEMINI_API_KEY to Vercel Environment Variables to enable live Gemini AI",
+      GROQ_API_KEY: groqKey
+        ? `✅ SET — length: ${groqKey.length} chars (primary AI, AI Coach ready)`
+        : "❌ NOT SET — Add GROQ_API_KEY to Vercel Environment Variables to enable live Groq AI",
+      OPENROUTER_API_KEY: openRouterKey
+        ? `✅ SET — length: ${openRouterKey.length} chars (backup AI, automatic fallback ready)`
+        : "⚠️ NOT SET — Optional: Add OPENROUTER_API_KEY for automatic fallback when Groq is unavailable",
     },
     supabase: {
       VITE_SUPABASE_URL: urlOk

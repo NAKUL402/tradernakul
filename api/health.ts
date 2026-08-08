@@ -39,7 +39,8 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
       EMAIL_PASS: smtpPass ? "✅ SET" : "❌ NOT SET",
       OWNER_EMAIL: process.env['OWNER_EMAIL'] || "nakultrader007@gmail.com (default)",
       VITE_SITE_URL: process.env['VITE_SITE_URL'] || "❌ NOT SET (email links may be wrong)",
-      GEMINI_API_KEY: (process.env['GEMINI_API_KEY'] || process.env['VITE_GEMINI_API_KEY']) ? "✅ SET" : "❌ NOT SET",
+      GROQ_API_KEY: process.env['GROQ_API_KEY'] ? "✅ SET (primary AI)" : "❌ NOT SET",
+      OPENROUTER_API_KEY: process.env['OPENROUTER_API_KEY'] ? "✅ SET (backup AI)" : "❌ NOT SET",
       APPROVAL_SECRET: process.env['APPROVAL_SECRET'] ? "✅ SET" : "using default",
     },
     notes: [
