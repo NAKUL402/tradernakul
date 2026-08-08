@@ -78,9 +78,9 @@ function Dashboard() {
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         {/* Premium AI Mentor Card */}
         <Panel title="AI Trading Mentor" className="flex flex-col h-full">
-          <div className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-primary/20 bg-card p-5 sm:p-6 flex-1 transition hover:border-primary/40 hover:shadow-[0_0_30px_-5px_var(--color-primary)]">
+          <div className="relative flex flex-col justify-between overflow-hidden rounded-2xl border border-primary/20 bg-card p-5 sm:p-6 flex-1 transition">
             
-            <div className="relative z-10 flex items-start gap-4">
+            <div className="flex items-start gap-4">
               <div className="grid shrink-0 size-12 place-items-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/30">
                 <Brain className="size-6" />
               </div>
@@ -94,7 +94,7 @@ function Dashboard() {
               </div>
             </div>
 
-            <div className="relative z-10 mt-6 sm:mt-auto">
+            <div className="mt-6 sm:mt-auto">
               <button 
                 onClick={() => window.dispatchEvent(new CustomEvent("open-ai-coach"))}
                 className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-muted/50 px-4 py-3 text-sm font-medium transition hover:bg-primary hover:text-primary-foreground"

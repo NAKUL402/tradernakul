@@ -94,7 +94,7 @@ export function DecisionReplayCard({ trades }: { trades: Trade[] }) {
   if (!insight) {
     return (
       <Panel title="Decision Replay" className="flex flex-col h-full shadow-lg">
-        <div className="flex flex-col items-center justify-center text-center p-6 sm:p-8 flex-1">
+        <div className="flex min-h-[280px] flex-col items-center justify-center text-center p-6 sm:p-8 flex-1">
           <div className="grid size-12 place-items-center rounded-xl bg-primary/10 text-primary mb-4">
             <Target className="size-6" />
           </div>
@@ -116,12 +116,10 @@ export function DecisionReplayCard({ trades }: { trades: Trade[] }) {
       action={<span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">See the trader</span>}
     >
       <div 
-        className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/50 bg-card p-5 transition hover:border-primary/40 hover:shadow-[0_0_30px_-5px_var(--color-primary)] cursor-pointer flex-1"
+        className="relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/50 bg-card p-5 transition hover:border-primary/30 cursor-pointer flex-1 min-h-[280px]"
         onClick={() => !isOpen && setIsOpen(true)}
       >
-        <div className="absolute -right-10 -bottom-10 size-40 rounded-full bg-primary/5 blur-3xl transition group-hover:bg-primary/10" />
-        
-        <div className="relative z-10 flex flex-col h-full">
+        <div className="flex flex-col h-full">
           {!isOpen ? (
             <>
               {/* Closed State */}
@@ -141,10 +139,8 @@ export function DecisionReplayCard({ trades }: { trades: Trade[] }) {
                   <p className="text-sm font-medium text-foreground">{insight.plan}</p>
                 </div>
                 
-                <div className="flex justify-center -my-3 relative z-10">
-                  <div className="bg-card px-2">
-                    <ArrowRight className="size-4 text-muted-foreground rotate-90" />
-                  </div>
+                <div className="flex justify-center py-1">
+                  <ArrowRight className="size-4 text-muted-foreground rotate-90" />
                 </div>
 
                 <div className="rounded-xl bg-destructive/10 p-3.5 border border-destructive/20">
