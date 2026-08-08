@@ -41,7 +41,13 @@ export default async function handler(req: any, res: any) {
           FINNHUB_SYMBOLS.map(async (f) => {
             const fRes = await fetch(`https://finnhub.io/api/v1/quote?symbol=${f.symbol}&token=${finnhubKey}`);
             if (!fRes.ok) throw new Error("Finnhub error");
-            const data = await fRes.json();
+            interface FinnhubQuote {
+              c: number;
+              pc: number;
+              d: number;
+              dp: number;
+            }
+            const data = (await fRes.json()) as FinnhubQuote;
             // Finnhub response: { c: current, d: change, dp: percent, h: high, l: low, o: open, pc: prev close }
             return {
               symbol: f.id,
@@ -96,7 +102,14 @@ export default async function handler(req: any, res: any) {
         });
         
         if (uRes.ok) {
-          const json = await uRes.json();
+          interface UpstoxQuote {
+            last_price: number;
+            ohlc: { close: number; };
+          }
+          interface UpstoxResponse {
+            data: Record<string, UpstoxQuote>;
+          }
+          const json = (await uRes.json()) as UpstoxResponse;
           const instruments = Object.keys(json.data).map(key => {
             const quote = json.data[key];
             return {

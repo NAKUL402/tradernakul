@@ -51,7 +51,10 @@ export default async function handler(req: any, res: any) {
       return res.status(tokenResponse.status).json({ error: "Upstox Token Exchange Failed", details: errData });
     }
 
-    const data = await tokenResponse.json();
+    interface UpstoxTokenResponse {
+      access_token?: string;
+    }
+    const data = (await tokenResponse.json()) as UpstoxTokenResponse;
     
     // Securely store token server-side in Supabase using the service role key
     if (data.access_token) {
