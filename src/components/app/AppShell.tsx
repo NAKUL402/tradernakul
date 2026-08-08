@@ -1,13 +1,14 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, NotebookPen, BarChart3, Brain, CalendarDays, FileText,
-  Settings, User, Menu, Plus, Bell, Search, ShieldCheck,
+  Settings, User, Menu, Plus, Bell, Search, ShieldCheck, ActivitySquare
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 const nav = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/market", label: "Market", icon: ActivitySquare },
   { to: "/journal", label: "Journal", icon: NotebookPen },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/ai-coach", label: "AI Coach", icon: Brain },

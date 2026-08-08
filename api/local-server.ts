@@ -97,6 +97,8 @@ const ROUTES: Record<string, string> = {
   "/api/approve-user": "./approve-user.ts",
   "/api/send-approval": "./send-approval.ts",
   "/api/send-status-email": "./send-status-email.ts",
+  "/api/market-data": "./market-data.ts",
+  "/api/upstox-callback": "./upstox-callback.ts",
 };
 
 // Cache for loaded modules

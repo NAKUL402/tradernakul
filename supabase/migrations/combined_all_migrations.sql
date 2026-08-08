@@ -209,3 +209,47 @@ DROP POLICY IF EXISTS "Users delete own API keys" ON public.user_api_keys;
 CREATE POLICY "Users view own API keys" ON public.user_api_keys FOR SELECT TO authenticated USING (auth.uid() = user_id);
 CREATE POLICY "Users insert own API keys" ON public.user_api_keys FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users delete own API keys" ON public.user_api_keys FOR DELETE TO authenticated USING (auth.uid() = user_id);
+- -   C r e a t e   t h e   u p s t o x _ t o k e n s   t a b l e  
+ C R E A T E   T A B L E   I F   N O T   E X I S T S   p u b l i c . u p s t o x _ t o k e n s   (  
+         i d   U U I D   P R I M A R Y   K E Y   D E F A U L T   g e n _ r a n d o m _ u u i d ( ) ,  
+         a c c e s s _ t o k e n   T E X T   N O T   N U L L ,  
+         c r e a t e d _ a t   T I M E S T A M P T Z   N O T   N U L L   D E F A U L T   N O W ( ) ,  
+         u p d a t e d _ a t   T I M E S T A M P T Z   N O T   N U L L   D E F A U L T   N O W ( )  
+ ) ;  
+  
+ - -   E n a b l e   R L S   t o   b l o c k   A L L   d i r e c t   f r o n t e n d   a c c e s s  
+ A L T E R   T A B L E   p u b l i c . u p s t o x _ t o k e n s   E N A B L E   R O W   L E V E L   S E C U R I T Y ;  
+  
+ - -   N o   p o l i c i e s   c r e a t e d   - >   D e f a u l t   i s   d e n y   a l l   f o r   a n o n   a n d   a u t h e n t i c a t e d .  
+  
+ - -   C r e a t e   a   s e c u r e   R P C   f u n c t i o n   t o   S E T   t h e   t o k e n ,   b y p a s s i n g   R L S   ( S E C U R I T Y   D E F I N E R )  
+ - -   W e   r e q u i r e   a   b a s i c   i n t e r n a l   s e c r e t   t o   p r e v e n t   m a l i c i o u s   f r o n t e n d   u s e r s   f r o m   c a l l i n g   t h i s   R P C .  
+ C R E A T E   O R   R E P L A C E   F U N C T I O N   p u b l i c . s e t _ u p s t o x _ t o k e n ( i n t e r n a l _ s e c r e t   t e x t ,   n e w _ t o k e n   t e x t )  
+ R E T U R N S   v o i d   A S   $ $  
+ B E G I N  
+         - -   T h i s   s e c r e t   m a t c h e s   t h e   b a c k e n d   A P I   r o u t e s   ( s e r v e r - s i d e   o n l y )  
+         I F   i n t e r n a l _ s e c r e t   ! =   ' t n _ b a c k e n d _ o a u t h _ s e c u r e _ 9 9 '   T H E N  
+                 R A I S E   E X C E P T I O N   ' U n a u t h o r i z e d ' ;  
+         E N D   I F ;  
+  
+         - -   C l e a r   o l d   t o k e n s   a n d   i n s e r t   t h e   n e w   o n e  
+         D E L E T E   F R O M   p u b l i c . u p s t o x _ t o k e n s ;  
+         I N S E R T   I N T O   p u b l i c . u p s t o x _ t o k e n s   ( a c c e s s _ t o k e n ,   u p d a t e d _ a t )   V A L U E S   ( n e w _ t o k e n ,   N O W ( ) ) ;  
+ E N D ;  
+ $ $   L A N G U A G E   p l p g s q l   S E C U R I T Y   D E F I N E R ;  
+  
+ - -   C r e a t e   a   s e c u r e   R P C   f u n c t i o n   t o   G E T   t h e   t o k e n ,   b y p a s s i n g   R L S   ( S E C U R I T Y   D E F I N E R )  
+ C R E A T E   O R   R E P L A C E   F U N C T I O N   p u b l i c . g e t _ u p s t o x _ t o k e n ( i n t e r n a l _ s e c r e t   t e x t )  
+ R E T U R N S   t e x t   A S   $ $  
+ D E C L A R E  
+         t o k   t e x t ;  
+ B E G I N  
+         I F   i n t e r n a l _ s e c r e t   ! =   ' t n _ b a c k e n d _ o a u t h _ s e c u r e _ 9 9 '   T H E N  
+                 R A I S E   E X C E P T I O N   ' U n a u t h o r i z e d ' ;  
+         E N D   I F ;  
+  
+         S E L E C T   a c c e s s _ t o k e n   I N T O   t o k   F R O M   p u b l i c . u p s t o x _ t o k e n s   O R D E R   B Y   u p d a t e d _ a t   D E S C   L I M I T   1 ;  
+         R E T U R N   t o k ;  
+ E N D ;  
+ $ $   L A N G U A G E   p l p g s q l   S E C U R I T Y   D E F I N E R ;  
+ 
