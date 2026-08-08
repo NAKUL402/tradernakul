@@ -8,6 +8,7 @@ import {
   analyzeTradeDataWithAI,
 } from "@/lib/ai-coach-service";
 import { DAILY_QUOTES, getDailyQuoteIndex } from "@/lib/daily-quotes";
+import { TraderEdgeIntelligence } from "@/components/app/TraderEdgeIntelligence";
 import {
   AlertTriangle,
   Brain,
@@ -557,34 +558,37 @@ function CoachPage() {
         </Panel>
 
         {/* ── 6. Psychology & Risk Reviews ─────────────────────────────────── */}
-        <Panel title="Psychology Analysis">
+        <Panel title="Psychology Analysis" className="flex flex-col">
           <p className="text-sm leading-relaxed text-muted-foreground">{ai.psychologyText}</p>
-          <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs">
+          <div className="mt-auto pt-4 grid grid-cols-3 gap-2 sm:gap-3">
             {[
               ["FOMO Risk", "Low"],
               ["Revenge Tilt", "Controlled"],
               ["Overconfidence", "Low"],
             ].map(([k, v]) => (
-              <div key={k} className="rounded-xl border border-border/40 bg-muted/30 p-3">
-                <p className="text-muted-foreground">{k}</p>
-                <p className="mt-1 font-semibold text-foreground">{v}</p>
+              <div key={k} className="flex flex-col items-center justify-center text-center rounded-xl border border-border/40 bg-muted/30 p-2 sm:p-3 h-[72px] sm:h-[84px]">
+                <p className="text-[10px] sm:text-[11px] font-medium uppercase tracking-wider text-muted-foreground line-clamp-1 break-all w-full">{k}</p>
+                <p className="mt-1 sm:mt-1.5 text-xs sm:text-sm font-bold text-foreground">{v}</p>
               </div>
             ))}
           </div>
         </Panel>
 
-        <Panel title="Risk Management Review">
-          <div className="space-y-3 text-sm text-muted-foreground">
-            <p className="flex items-start gap-2.5">
-              <Shield className="mt-0.5 size-4 shrink-0 text-primary" />
-              <span>{ai.riskReviewText}</span>
+        <Panel title="Risk Management Review" className="flex flex-col">
+          <div className="space-y-4 text-sm text-muted-foreground my-auto">
+            <p className="flex items-start gap-3">
+              <Shield className="mt-0.5 size-5 shrink-0 text-primary" />
+              <span className="leading-relaxed">{ai.riskReviewText}</span>
             </p>
-            <p className="flex items-start gap-2.5">
-              <Target className="mt-0.5 size-4 shrink-0 text-accent" />
-              <span>Target minimum 1:2.0 Risk:Reward ratio on all high-conviction entries.</span>
+            <p className="flex items-start gap-3">
+              <Target className="mt-0.5 size-5 shrink-0 text-accent" />
+              <span className="leading-relaxed">Target minimum 1:2.0 Risk:Reward ratio on all high-conviction entries.</span>
             </p>
           </div>
         </Panel>
+
+        {/* ── Trader Edge Intelligence (Fills empty 3rd column) ──────────── */}
+        <TraderEdgeIntelligence trades={userTrades} />
 
         {/* ── 7. Final Coach Verdict ───────────────────────────────────────── */}
         <Panel className="lg:col-span-3 border-primary/30 bg-gradient-to-r from-card via-card/80 to-primary/5 shadow-2xl">
