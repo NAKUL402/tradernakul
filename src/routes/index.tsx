@@ -76,8 +76,8 @@ function Dashboard() {
       {/* Interactive AI & Psychology Section */}
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         {/* Premium AI Mentor Card */}
-        <Panel title="AI Trading Mentor">
-          <div className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-primary/20 bg-card p-5 sm:p-6 sm:h-full transition hover:border-primary/40 hover:shadow-[0_0_30px_-5px_var(--color-primary)]">
+        <Panel title="AI Trading Mentor" className="flex flex-col h-full">
+          <div className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-primary/20 bg-card p-5 sm:p-6 flex-1 transition hover:border-primary/40 hover:shadow-[0_0_30px_-5px_var(--color-primary)]">
             <div className="absolute -right-10 -top-10 size-40 rounded-full bg-primary/10 blur-3xl transition group-hover:bg-primary/20" />
             
             <div className="relative z-10 flex items-start gap-4">
@@ -107,17 +107,17 @@ function Dashboard() {
         </Panel>
 
         {/* Dynamic Golden Rule Section */}
-        <Panel title="Golden Rule">
-          <div className="flex flex-col justify-center h-full gap-4 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/10 p-5 sm:p-6 sm:items-center sm:flex-row sm:justify-start overflow-hidden">
-            <div className="grid shrink-0 size-12 place-items-center rounded-full bg-primary/20 text-primary">
+        <Panel title="Golden Rule" className="flex flex-col h-full">
+          <div className="group relative flex flex-col justify-center flex-1 gap-4 rounded-2xl border border-primary/20 bg-card p-5 sm:p-6 sm:items-center sm:flex-row sm:justify-start overflow-hidden transition hover:border-primary/40 hover:shadow-[0_0_30px_-5px_var(--color-primary)]">
+            <div className="absolute -left-10 -bottom-10 size-40 rounded-full bg-primary/10 blur-3xl transition group-hover:bg-primary/20" />
+            
+            <div className="relative z-10 grid shrink-0 size-12 place-items-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/30">
               <Crown className="size-6" />
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="font-display text-lg font-semibold sm:text-xl text-foreground leading-snug break-words">
+            
+            <div className="relative z-10 min-w-0 flex-1">
+              <p className="font-display text-lg font-medium sm:text-xl text-foreground leading-relaxed break-words italic">
                 "{todaysRule}"
-              </p>
-              <p className="mt-2 text-xs font-medium uppercase tracking-wider text-primary/70">
-                Daily Trading Psychology
               </p>
             </div>
           </div>
