@@ -45,14 +45,15 @@ export function StatCard({
   );
 }
 
-export function Badge({ children, tone = "muted" }: { children: ReactNode; tone?: "win" | "loss" | "muted" | "primary" }) {
+export function Badge({ children, tone = "muted", className }: { children: ReactNode; tone?: "win" | "loss" | "muted" | "primary" | "accent"; className?: string }) {
   const tones = {
     win: "bg-[oklch(0.72_0.19_155)]/15 text-[oklch(0.78_0.17_155)] border-[oklch(0.72_0.19_155)]/30",
     loss: "bg-destructive/15 text-destructive border-destructive/30",
     primary: "bg-primary/15 text-primary border-primary/30",
+    accent: "bg-accent/15 text-accent border-accent/30",
     muted: "bg-muted/60 text-muted-foreground border-border",
   }[tone];
-  return <span className={cn("inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium", tones)}>{children}</span>;
+  return <span className={cn("inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium", tones, className)}>{children}</span>;
 }
 
 export function EmptyState({ title, hint }: { title: string; hint: string }) {

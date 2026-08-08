@@ -151,7 +151,7 @@ function Journal() {
     l = [...l].sort((a, b) =>
       sort === "newest" ? (a.date < b.date ? 1 : -1)
       : sort === "oldest" ? (a.date > b.date ? 1 : -1)
-      : sort === "rrr" ? b.rrr - a.rrr
+      : sort === "rrr" ? parseFloat(b.rrr || "0") - parseFloat(a.rrr || "0")
       : pnlUsd(b) - pnlUsd(a),
     );
     return l;

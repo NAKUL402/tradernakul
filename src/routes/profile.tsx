@@ -20,14 +20,14 @@ import { useAuth } from "@/lib/auth-context";
 function Profile() {
   const s = stats();
   const { user, profile, signOut } = useAuth();
-  const name = profile?.full_name || user?.user_metadata?.full_name || user?.user_metadata?.name || "Trader";
+  const name = profile?.full_name || user?.user_metadata?.["full_name"] || user?.user_metadata?.["name"] || "Trader";
   const email = profile?.email || user?.email || "";
   const roleLabel = profile?.is_owner ? "Owner Admin" : profile?.role === "admin" ? "Admin" : "Trader";
   const statusLabel = profile?.status ? profile.status.toUpperCase() : "APPROVED";
 
   const initials = name
     .split(" ")
-    .map((part) => part[0])
+    .map((part: string) => part[0])
     .join("")
     .slice(0, 2)
     .toUpperCase();

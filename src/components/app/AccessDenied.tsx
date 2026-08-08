@@ -4,7 +4,7 @@ import { LogOut, XCircle } from "lucide-react";
 
 export function AccessDenied() {
   const { user, profile, signOut } = useAuth();
-  const name = profile?.full_name || user?.user_metadata?.full_name || user?.user_metadata?.name || "Trader";
+  const name = profile?.full_name || user?.user_metadata?.["full_name"] || user?.user_metadata?.["name"] || "Trader";
   const email = profile?.email || user?.email || "";
 
   return (

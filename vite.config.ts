@@ -7,7 +7,7 @@ export default defineConfig({
       crawlLinks: false,
       routes: [],
     },
-  },
+  } as any,
   vite: {
     server: {
       proxy: {

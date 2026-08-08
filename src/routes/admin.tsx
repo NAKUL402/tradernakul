@@ -499,7 +499,7 @@ function AdminPage() {
               <div className="flex items-center gap-2 font-semibold text-[oklch(0.72_0.19_155)]">
                 <Megaphone className="size-4" /> Live AI Assistant Engine
               </div>
-              <p className="mt-1 text-muted-foreground">Gemini API context prompt builder pipeline structured.</p>
+              <p className="mt-1 text-muted-foreground">Groq API context prompt builder pipeline structured.</p>
               <Badge tone="win" className="mt-3">Phase 5 Ready</Badge>
             </div>
           </div>

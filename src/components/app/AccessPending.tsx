@@ -4,7 +4,7 @@ import { Clock, LogOut, ShieldAlert } from "lucide-react";
 
 export function AccessPending() {
   const { user, profile, signOut } = useAuth();
-  const name = profile?.full_name || user?.user_metadata?.full_name || user?.user_metadata?.name || "Trader";
+  const name = profile?.full_name || user?.user_metadata?.["full_name"] || user?.user_metadata?.["name"] || "Trader";
   const email = profile?.email || user?.email || "";
 
   return (

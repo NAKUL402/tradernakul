@@ -111,7 +111,7 @@ export function LogTradeModal({ isOpen, onClose, onSave, initialTrade, nextTrade
       const risk = parseFloat(riskPct) || 1.0;
 
       const tradePayload: Partial<Trade> = {
-        id: initialTrade?.id,
+        ...(initialTrade?.id ? { id: initialTrade.id } : {}),
         tradeNo,
         date,
         pair: pair.toUpperCase().trim(),

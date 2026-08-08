@@ -182,7 +182,7 @@ export const supabase = {
 
   storage: realClient.storage,
 
-  from: (tableName: string) => {
+  from: (tableName: string): any => {
     if (tableName !== "profiles") {
       return realClient.from(tableName);
     }

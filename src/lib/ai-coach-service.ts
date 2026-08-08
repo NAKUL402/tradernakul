@@ -161,7 +161,7 @@ export type ChatMessage = {
 import { supabase } from "./supabase";
 
 /**
- * Send user message to live Gemini API via backend /api/ai-coach endpoint.
+ * Send user message to live Groq API via backend /api/ai-coach endpoint.
  *
  * IMPORTANT: `history` must be the conversation BEFORE the current `message`.
  * The API handler appends the current message itself — do not include it in history.
@@ -190,46 +190,80 @@ export async function sendChatMessageToAI(
     .filter((h) => !h.isError && h.id !== "init-1")
     .map((h) => ({ role: h.role, content: h.content }));
 
-  let res: Response;
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token;
-    
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
+  let res: Response | null = null;
+  let attempts = 0;
+  const maxAttempts = 2; // Try once, retry once if network/5xx error
+  let lastErrorMsg = "";
 
-    res = await fetch("/api/ai-coach", {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        message,
-        history: historyToSend,
-        tradeContext: summaryContext,
-      }),
-    });
-  } catch (networkErr: unknown) {
-    const msg = networkErr instanceof Error ? networkErr.message : String(networkErr);
-    throw new Error(
-      `Network Error: Cannot reach /api/ai-coach. ` +
-        `If running locally, start the API server: npm run dev:api. ` +
-        `Original error: ${msg}`
-    );
+  while (attempts < maxAttempts) {
+    attempts++;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const isDev = import.meta.env.DEV;
+      const baseUrl = isDev ? "http://localhost:3001" : "";
+
+      res = await fetch(`${baseUrl}/api/ai-coach`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          message,
+          history: historyToSend,
+          tradeContext: summaryContext,
+        }),
+        signal: AbortSignal.timeout(20000)
+      });
+      
+      // If success or 4xx error (like 400, 401, 403, 404, 429), break immediately and handle below
+      if (res.ok || (res.status >= 400 && res.status < 500)) {
+        break;
+      }
+      
+      // If 5xx error, we will retry (if attempts < maxAttempts)
+      lastErrorMsg = `Server returned HTTP ${res.status}`;
+      if (attempts < maxAttempts) {
+        console.warn(`[ai-coach-service] HTTP ${res.status}. Retrying (${attempts}/${maxAttempts})...`);
+        await new Promise(r => setTimeout(r, 1000));
+      }
+      
+    } catch (networkErr: unknown) {
+      const msg = networkErr instanceof Error ? networkErr.message : String(networkErr);
+      lastErrorMsg = `Network/Timeout Error: ${msg}`;
+      if (attempts < maxAttempts) {
+        console.warn(`[ai-coach-service] Network error. Retrying (${attempts}/${maxAttempts})...`, msg);
+        await new Promise(r => setTimeout(r, 1000));
+      } else {
+        throw new Error(
+          `Cannot reach AI Coach API after ${maxAttempts} attempts. ` +
+          (msg.includes("Timeout") || msg.includes("abort") ? "Request timed out." : `Original error: ${msg}`)
+        );
+      }
+    }
   }
 
-  let data: {
+  if (!res) {
+    throw new Error(`Failed to communicate with AI Coach: ${lastErrorMsg}`);
+  }
+
+  type CoachResponse = {
     reply?: string;
     error?: string;
-    blocked?: boolean;
+    code?: string;
     modelUsed?: string;
-    note?: string;
-    retryAfterSeconds?: number;
     rateLimited?: boolean;
-  } | null = null;
+    retryAfterSeconds?: number;
+  };
+  
+  let data: CoachResponse | null = null;
 
   try {
-    data = (await res.json()) as typeof data;
+    data = (await res.json()) as CoachResponse;
   } catch {
     throw new Error(
       `Server returned non-JSON response (HTTP ${res.status}). ` +
@@ -239,12 +273,12 @@ export async function sendChatMessageToAI(
 
   if (!res.ok) {
     // ── Rate limit: show helpful countdown message ────────────────────────
-    if (res.status === 429 || data?.rateLimited) {
+    if (res.status === 429 || data?.code === "RATE_LIMIT" || data?.rateLimited) {
       const waitSec = data?.retryAfterSeconds ?? 60;
       throw new Error(
-        `⏱ Gemini API rate limit reached (free tier: ~10 requests/minute). ` +
+        `⏱ Groq API rate limit reached. ` +
           `Please wait ${waitSec} seconds before sending another message. ` +
-          `This is a Google API quota limit, not an app error.`
+          `This is an API quota limit, not an app error.`
       );
     }
 
@@ -257,7 +291,7 @@ export async function sendChatMessageToAI(
   }
 
   if (!data?.reply) {
-    throw new Error("Gemini AI returned an empty response. Please try again.");
+    throw new Error("Groq AI returned an empty response. Please try again.");
   }
 
   return data.reply;
@@ -323,8 +357,8 @@ export function analyzeTradeDataWithAI(userTrades: Trade[]): AICoachAnalysis {
   const bestSetup = bySetup.sort((a, b) => b.winRate - a.winRate)[0]?.name || "Order Block";
 
   const mistakes: string[] = [];
-  if (str.lossStreak >= 3) {
-    mistakes.push(`Max loss streak reached ${str.lossStreak} trades. Acknowledge emotional tilt and enforce a 30-min post-loss break.`);
+  if (str.loss >= 3) {
+    mistakes.push(`Max loss streak reached ${str.loss} trades. Acknowledge emotional tilt and enforce a 30-min post-loss break.`);
   }
   if (worstPair && worstPair !== bestPair) {
     mistakes.push(`Suboptimal performance on ${worstPair}. Reduce lot size or eliminate setups on this asset.`);

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app/AppShell";
 import { Badge, Panel } from "@/components/app/ui-kit";
 import { fetchUserTrades, type Trade } from "@/lib/trades";
+import { useAuth } from "@/lib/auth-context";
 import {
   analyzeTradeDataWithAI,
   WEEKLY_GOLDEN_RULES,
@@ -89,17 +90,13 @@ function List3D({ items, tone }: { items: string[]; tone: "good" | "bad" }) {
 }
 
 function CoachPage() {
+  const { session } = useAuth();
   const [userTrades, setUserTrades] = useState<Trade[]>([]);
   const [activeWeekIdx, setActiveWeekIdx] = useState<number>(getCurrentWeekIndex());
 
   // Interactive AI Assistant Chat State
   const [customQuestion, setCustomQuestion] = useState("");
-  const [chatMessages, setChatMessages] = useState<Array<{ role: "user" | "coach"; text: string }>>([
-    {
-      role: "coach",
-      text: "Welcome to your AI Performance Lab. Select a quick prompt below or ask me any question about risk management, psychology, or execution.",
-    },
-  ]);
+  const [chatMessages, setChatMessages] = useState<Array<{ role: "user" | "coach"; text: string }>>([]);
   const [isAnswering, setIsAnswering] = useState(false);
 
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
@@ -129,24 +126,39 @@ function CoachPage() {
     setIsAnswering(true);
 
     try {
-      const res = await fetch("/api/chat", {
+      const headers: HeadersInit = { "Content-Type": "application/json" };
+      if (session?.access_token) {
+        headers["Authorization"] = `Bearer ${session.access_token}`;
+      }
+
+      const isDev = import.meta.env.DEV;
+      const baseUrl = isDev ? "http://localhost:3001" : "";
+
+      const res = await fetch(`${baseUrl}/api/ai-coach`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
-          prompt: userMsg,
-          context: `Current Weekly Rule: ${selectedRule.title}. Win Rate: ${ai.qualityScore}%. Overall Grade: ${ai.overallGrade}.`,
+          message: userMsg,
+          history: chatMessages.map(m => ({ role: m.role, content: m.text })),
+          tradeContext: `Current Weekly Rule: ${selectedRule.title}. Win Rate: ${ai.qualityScore}%. Overall Grade: ${ai.overallGrade}.`,
         }),
+        signal: AbortSignal.timeout(20000)
       });
 
       const data = await res.json();
-      if (res.ok && data.success && data.response) {
-        setChatMessages((prev) => [...prev, { role: "coach", text: data.response }]);
-        if (data.warning) {
-          console.warn("[Gemini API Notice]:", data.warning);
+      
+      console.log(`[Diagnostic] Request: POST /api/ai-coach`);
+      console.log(`[Diagnostic] HTTP Status: ${res.status}`);
+      console.log(`[Diagnostic] JSON Keys: ${Object.keys(data).join(", ")}`);
+      
+      if (res.ok && data.reply) {
+        setChatMessages((prev) => [...prev, { role: "coach", text: data.reply }]);
+        if (data.modelUsed) {
+          console.log(`[Groq AI] Responded via ${data.modelUsed}`);
         }
       } else {
         const errReply = data.error || "Sorry, I am unable to generate a response right now. Please try again.";
-        setChatMessages((prev) => [...prev, { role: "coach", text: errReply }]);
+        setChatMessages((prev) => [...prev, { role: "coach", text: `⚠️ ${errReply}` }]);
       }
     } catch {
       setChatMessages((prev) => [

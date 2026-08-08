@@ -44,10 +44,10 @@ export function AppShell({ title, subtitle, children }: { title: string; subtitl
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { user, profile } = useAuth();
 
-  const name = profile?.full_name || user?.user_metadata?.full_name || user?.user_metadata?.name || "TN";
+  const name = profile?.full_name || user?.user_metadata?.["full_name"] || user?.user_metadata?.["name"] || "TN";
   const initials = name
     .split(" ")
-    .map((part) => part[0])
+    .map((part: string) => part[0])
     .join("")
     .slice(0, 2)
     .toUpperCase();
@@ -175,8 +175,8 @@ export function AppShell({ title, subtitle, children }: { title: string; subtitl
       </div>
 
       {pathname === "/journal" && (
-        <Link
-          to="/journal?openModal=true"
+        <a
+          href="/journal?openModal=true"
           onClick={() => {
             if (typeof window !== "undefined" && window.location.pathname === "/journal") {
               window.dispatchEvent(new CustomEvent("open_log_trade_modal"));
@@ -186,7 +186,7 @@ export function AppShell({ title, subtitle, children }: { title: string; subtitl
           className="fixed bottom-24 right-5 z-40 grid size-14 place-items-center rounded-2xl bg-gradient-to-br from-primary to-accent text-primary-foreground glow-primary transition active:scale-95 lg:bottom-8"
         >
           <Plus className="size-6" />
-        </Link>
+        </a>
       )}
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/60 bg-background/85 backdrop-blur-xl lg:hidden">

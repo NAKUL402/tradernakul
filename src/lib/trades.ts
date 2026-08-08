@@ -2,7 +2,7 @@ import { supabase, isSupabaseConfigured } from "./supabase";
 
 export type Trade = {
   id: string;
-  tradeNo?: number;
+  tradeNo?: number | undefined;
   date: string; // ISO yyyy-mm-dd
   pair: string;
   side: "Buy" | "Sell";
@@ -20,10 +20,10 @@ export type Trade = {
   notes: string;
   screenshot: string;
   tags: string[];
-  lots?: string;      // Lot size
-  mistakes?: string;  // Mistakes section
-  rating?: number;    // 1-5 Star rating
-  reason?: string;    // Reason for taking trade
+  lots?: string | undefined;      // Lot size
+  mistakes?: string | undefined;  // Mistakes section
+  rating?: number | undefined;    // 1-5 Star rating
+  reason?: string | undefined;    // Reason for taking trade
 };
 
 export const PAIRS = ["XAUUSD", "EURUSD", "GBPUSD", "USDJPY", "BTCUSD", "NAS100"];

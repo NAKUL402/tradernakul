@@ -12,7 +12,7 @@ export function FloatingAICoach() {
       id: "init-1",
       role: "assistant",
       content:
-        "Welcome! I am your live Gemini AI Trading Coach. Ask me anything about trading concepts, strategy, math, or ask me to analyze your logged trade history.",
+        "Welcome! I am your live Groq AI Trading Coach. Ask me anything about trading concepts, strategy, math, or ask me to analyze your logged trade history.",
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     },
   ]);
