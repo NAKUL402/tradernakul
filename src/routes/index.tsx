@@ -8,10 +8,6 @@ import { equityCurve, fetchUserTrades, monthly, money, pct, pnlUsd, stats, type 
 import { Activity, Flame, Percent, Scale, Snowflake, Target, TrendingDown, TrendingUp, Trophy, Wallet, Crown, Brain, ChevronRight } from "lucide-react";
 import { goldenRules } from "@/lib/golden-rules";
 import { DecisionReplayCard } from "@/components/app/DecisionReplayCard";
-import { ForexMarketLive } from "@/components/app/ForexMarketLive";
-import { IndianMarketLive } from "@/components/app/IndianMarketLive";
-import { TopGainers } from "@/components/app/TopGainers";
-import { TopLosers } from "@/components/app/TopLosers";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -194,20 +190,6 @@ function Dashboard() {
         </div>
         </Panel>
         <DecisionReplayCard trades={userTrades} />
-      </div>
-
-      {/* Premium Market Intelligence Section */}
-      <div className="mt-12 pt-8 border-t border-border/40">
-        <div className="mb-6 flex items-center gap-3">
-          <h2 className="text-2xl font-display font-bold bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">Market Intelligence</h2>
-          <span className="rounded-full bg-primary/10 border border-primary/20 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-primary">Live Data</span>
-        </div>
-        <div className="grid gap-4 lg:grid-cols-2">
-          <ForexMarketLive />
-          <IndianMarketLive />
-          <TopGainers />
-          <TopLosers />
-        </div>
       </div>
     </AppShell>
   );
