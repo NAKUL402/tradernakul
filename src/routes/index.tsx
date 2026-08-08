@@ -34,7 +34,7 @@ function Dashboard() {
   const weekly = months.slice(-7).map((m, i) => ({ label: `W${i + 1}`, pnl: Math.round(m.pnl / 4) }));
 
   const dayIndex = Math.floor(Date.now() / 86400000);
-  const todaysRule = goldenRules[dayIndex % goldenRules.length];
+  const todaysRule = "The goal of a successful trader is to make good trades. Money is secondary.";
 
   return (
     <AppShell title="Dashboard" subtitle="Track. Analyze. Improve.">
@@ -84,11 +84,11 @@ function Dashboard() {
               <div className="grid shrink-0 size-12 place-items-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/30">
                 <Brain className="size-6" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="font-display text-lg font-semibold text-foreground">
                   Consult AI Mentor
                 </p>
-                <p className="mt-1 text-sm text-muted-foreground">
+                <p className="mt-1 text-sm text-muted-foreground break-words">
                   Ask questions, analyze your trading, and improve your performance instantly.
                 </p>
               </div>
@@ -108,12 +108,12 @@ function Dashboard() {
 
         {/* Dynamic Golden Rule Section */}
         <Panel title="Golden Rule">
-          <div className="flex flex-col justify-center h-full gap-4 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/10 p-5 sm:p-6 sm:items-center sm:flex-row sm:justify-start">
+          <div className="flex flex-col justify-center h-full gap-4 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/10 p-5 sm:p-6 sm:items-center sm:flex-row sm:justify-start overflow-hidden">
             <div className="grid shrink-0 size-12 place-items-center rounded-full bg-primary/20 text-primary">
               <Crown className="size-6" />
             </div>
-            <div>
-              <p className="font-display text-lg font-semibold sm:text-xl text-foreground leading-snug">
+            <div className="min-w-0 flex-1">
+              <p className="font-display text-lg font-semibold sm:text-xl text-foreground leading-snug break-words">
                 "{todaysRule}"
               </p>
               <p className="mt-2 text-xs font-medium uppercase tracking-wider text-primary/70">
