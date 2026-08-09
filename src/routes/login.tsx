@@ -42,6 +42,7 @@ function LoginPage() {
 
   const handleSendOtp = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    if (isLoading) return;
     if (!name.trim()) {
       toast.error("Please enter your name.");
       return;
@@ -69,7 +70,11 @@ function LoginPage() {
       setStep("otp");
       setCooldown(60);
     } catch (err: any) {
-      toast.error(err.message || "Failed to send verification code.");
+      if (err.message?.toLowerCase().includes("rate limit")) {
+        toast.error("Too many verification requests. Please wait a few minutes and try again.");
+      } else {
+        toast.error(err.message || "Failed to send verification code.");
+      }
     } finally {
       setIsLoading(false);
     }
