@@ -3,6 +3,7 @@ import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { ArrowRight, Lock, Mail, User } from "lucide-react";
+import { sendOwnerApprovalEmail } from "@/lib/email-service";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({
@@ -45,6 +46,12 @@ function SignupPage() {
       }
 
       if (data.user) {
+        // Dispatch owner approval notification in the background
+        sendOwnerApprovalEmail({
+          userEmail: email,
+          userName: name,
+        }).catch(console.error);
+
         toast.success("Account request submitted successfully!");
         navigate({ to: "/" });
       }

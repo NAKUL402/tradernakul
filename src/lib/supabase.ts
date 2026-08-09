@@ -135,6 +135,20 @@ export const supabase = {
       if (!isSupabaseConfigured) return { data: { subscription: { unsubscribe: () => {} } } };
       return realClient.auth.onAuthStateChange(callback);
     },
+
+    resetPasswordForEmail: async (email: string, options?: any) => {
+      if (!isSupabaseConfigured) {
+        return { data: null, error: new Error("Supabase is not configured. Cannot reset password.") };
+      }
+      return await realClient.auth.resetPasswordForEmail(email, options);
+    },
+
+    updateUser: async (attributes: any, options?: any) => {
+      if (!isSupabaseConfigured) {
+        return { data: { user: null }, error: new Error("Supabase is not configured. Cannot update user.") };
+      }
+      return await realClient.auth.updateUser(attributes, options);
+    },
   },
 
   storage: realClient.storage,
