@@ -127,12 +127,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: ReactNode }) {
+  // Resolve environment variables on the server (handling the Vercel typo "ANOM_KEY")
+  const envUrl = typeof process !== 'undefined' && process.env.VITE_SUPABASE_URL 
+    ? process.env.VITE_SUPABASE_URL 
+    : (import.meta as any).env?.VITE_SUPABASE_URL || '';
+    
+  const envKey = typeof process !== 'undefined' && (process.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANOM_KEY)
+    ? (process.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANOM_KEY)
+    : (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || (import.meta as any).env?.VITE_SUPABASE_ANOM_KEY || '';
+
   const envScript = `
   window.__TRADERNAKUL_ENV__ = {
-    VITE_SUPABASE_URL: ${JSON.stringify(typeof process !== 'undefined' && process.env.VITE_SUPABASE_URL ? process.env.VITE_SUPABASE_URL : (import.meta as any).env?.VITE_SUPABASE_URL || '')},
-    VITE_SUPABASE_ANON_KEY: ${JSON.stringify(typeof process !== 'undefined' && process.env.VITE_SUPABASE_ANON_KEY ? process.env.VITE_SUPABASE_ANON_KEY : (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '')}
+    VITE_SUPABASE_URL: ${JSON.stringify(envUrl)},
+    VITE_SUPABASE_ANON_KEY: ${JSON.stringify(envKey)}
   };
-  window.__DIAGNOSTIC_KEYS__ = ${JSON.stringify(typeof process !== 'undefined' ? Object.keys(process.env).filter(k => k.includes('SUPABASE') || k.includes('VITE')) : [])};
   `;
 
   return (

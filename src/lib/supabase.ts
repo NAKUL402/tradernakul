@@ -16,12 +16,21 @@ const getEnvVar = (key: string): string => {
       return (window as any).__TRADERNAKUL_ENV__[key];
     }
   }
-  if (typeof process !== "undefined" && process.env && process.env[key]) {
-    return process.env[key] as string;
+  
+  if (typeof process !== "undefined" && process.env) {
+    if (process.env[key]) return process.env[key] as string;
+    if (key === "VITE_SUPABASE_ANON_KEY" && process.env.VITE_SUPABASE_ANOM_KEY) {
+      return process.env.VITE_SUPABASE_ANOM_KEY as string;
+    }
   }
-  if (typeof import.meta !== "undefined" && (import.meta as any).env && (import.meta as any).env[key]) {
-    return (import.meta as any).env[key];
+  
+  if (typeof import.meta !== "undefined" && (import.meta as any).env) {
+    if ((import.meta as any).env[key]) return (import.meta as any).env[key];
+    if (key === "VITE_SUPABASE_ANON_KEY" && (import.meta as any).env.VITE_SUPABASE_ANOM_KEY) {
+      return (import.meta as any).env.VITE_SUPABASE_ANOM_KEY;
+    }
   }
+  
   return "";
 };
 
