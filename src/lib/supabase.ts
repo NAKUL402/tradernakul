@@ -10,8 +10,23 @@ type ViteEnv = {
   [key: string]: string | undefined;
 };
 
-const rawUrl = import.meta.env.VITE_SUPABASE_URL || (typeof process !== "undefined" ? process.env.VITE_SUPABASE_URL : "") || "";
-const rawKey = import.meta.env.VITE_SUPABASE_ANON_KEY || (typeof process !== "undefined" ? process.env.VITE_SUPABASE_ANON_KEY : "") || "";
+const getEnvVar = (key: string): string => {
+  if (typeof window !== "undefined" && (window as any).__TRADERNAKUL_ENV__) {
+    if ((window as any).__TRADERNAKUL_ENV__[key]) {
+      return (window as any).__TRADERNAKUL_ENV__[key];
+    }
+  }
+  if (typeof process !== "undefined" && process.env && process.env[key]) {
+    return process.env[key] as string;
+  }
+  if (typeof import.meta !== "undefined" && (import.meta as any).env && (import.meta as any).env[key]) {
+    return (import.meta as any).env[key];
+  }
+  return "";
+};
+
+const rawUrl = getEnvVar("VITE_SUPABASE_URL");
+const rawKey = getEnvVar("VITE_SUPABASE_ANON_KEY");
 
 export const supabaseUrl = rawUrl.trim();
 export const supabaseAnonKey = rawKey.trim();
@@ -28,8 +43,7 @@ export const isSupabaseConfigured = Boolean(
 if (typeof window !== "undefined") {
   console.log(
     "[TraderNakul Auth Engine]",
-    isSupabaseConfigured ? "✅ Live Supabase Cloud Connected:" : "⚡ Unified Resilient Auth Active:",
-    supabaseUrl ? supabaseUrl.substring(0, 35) + "..." : "(No external DB URL)"
+    isSupabaseConfigured ? "✅ Live Supabase Cloud Connected" : "⚡ Unified Resilient Auth Active"
   );
 }
 

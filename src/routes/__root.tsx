@@ -127,10 +127,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: ReactNode }) {
+  const envScript = `window.__TRADERNAKUL_ENV__ = {
+    VITE_SUPABASE_URL: ${JSON.stringify(typeof process !== 'undefined' ? process.env.VITE_SUPABASE_URL || '' : '')},
+    VITE_SUPABASE_ANON_KEY: ${JSON.stringify(typeof process !== 'undefined' ? process.env.VITE_SUPABASE_ANON_KEY || '' : '')}
+  };`;
+
   return (
     <html lang="en" className="dark">
       <head>
         <HeadContent />
+        <script dangerouslySetInnerHTML={{ __html: envScript }} />
       </head>
       <body>
         {children}
