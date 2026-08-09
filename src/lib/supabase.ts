@@ -10,9 +10,8 @@ type ViteEnv = {
   [key: string]: string | undefined;
 };
 
-const env = import.meta.env as unknown as ViteEnv;
-export const supabaseUrl = env.VITE_SUPABASE_URL || "";
-export const supabaseAnonKey = env.VITE_SUPABASE_ANON_KEY || "";
+export const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
+export const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 
 export const isSupabaseConfigured = Boolean(
   supabaseUrl &&
