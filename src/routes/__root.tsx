@@ -202,7 +202,7 @@ function RejectedComponent() {
 function AuthGuard({ children }: { children: ReactNode }) {
   const { user, profile, isLoading, isAdmin, fetchError, signOut } = useAuth();
   const { location } = useRouterState();
-  const isAuthRoute = ["/login", "/signup", "/forgot-password", "/reset-password"].includes(location.pathname);
+  const isAuthRoute = ["/login"].includes(location.pathname);
 
   if (isLoading) {
     return (

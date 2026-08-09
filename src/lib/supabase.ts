@@ -100,25 +100,18 @@ const realClient = createClient(
 // ── Unified Resilient Supabase Wrapper ─────────────────────────────────────
 export const supabase = {
   auth: {
-    signUp: async (options: { email: string; password: string; options?: any }) => {
+    signInWithOtp: async (options: { email: string; options?: any }) => {
       if (!isSupabaseConfigured) {
         return { data: { user: null, session: null }, error: new Error("Supabase is not configured.") };
       }
-      return await realClient.auth.signUp(options);
+      return await realClient.auth.signInWithOtp(options);
     },
 
-    signInWithPassword: async (options: { email: string; password: string }) => {
+    verifyOtp: async (options: { email: string; token: string; type: any }) => {
       if (!isSupabaseConfigured) {
         return { data: { user: null, session: null }, error: new Error("Supabase is not configured.") };
       }
-      return await realClient.auth.signInWithPassword(options);
-    },
-
-    signInWithOAuth: async (options: { provider: 'google' | string, options?: any }) => {
-      if (!isSupabaseConfigured) {
-        return { data: { provider: options.provider, url: null }, error: new Error("Supabase is not configured. Cannot login with Google.") };
-      }
-      return await realClient.auth.signInWithOAuth({ provider: options.provider as any, options: options.options });
+      return await realClient.auth.verifyOtp(options);
     },
 
     signOut: async () => {
@@ -134,20 +127,6 @@ export const supabase = {
     onAuthStateChange: (callback: any) => {
       if (!isSupabaseConfigured) return { data: { subscription: { unsubscribe: () => {} } } };
       return realClient.auth.onAuthStateChange(callback);
-    },
-
-    resetPasswordForEmail: async (email: string, options?: any) => {
-      if (!isSupabaseConfigured) {
-        return { data: null, error: new Error("Supabase is not configured. Cannot reset password.") };
-      }
-      return await realClient.auth.resetPasswordForEmail(email, options);
-    },
-
-    updateUser: async (attributes: any, options?: any) => {
-      if (!isSupabaseConfigured) {
-        return { data: { user: null }, error: new Error("Supabase is not configured. Cannot update user.") };
-      }
-      return await realClient.auth.updateUser(attributes, options);
     },
   },
 
