@@ -31,8 +31,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const secret = process.env['APPROVAL_SECRET'] || "tn-approve-2026";
   const resendFrom = process.env['RESEND_FROM_EMAIL'] || "TraderNakul AI <onboarding@resend.dev>";
 
-  const approveLink = `${baseUrl}/api/approve-user?action=approve&email=${encodeURIComponent(userEmail)}&secret=${encodeURIComponent(secret)}`;
-  const rejectLink = `${baseUrl}/api/approve-user?action=reject&email=${encodeURIComponent(userEmail)}&secret=${encodeURIComponent(secret)}`;
+  const adminLink = `${baseUrl}/admin`;
   const requestTime = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
 
   console.log(`[send-approval] Notifying owner: ${ownerEmail} about new user: ${userEmail}`);
@@ -54,17 +53,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           <tr><td style="padding:14px 18px;color:#94a3b8;font-size:13px;">Time</td><td style="padding:14px 18px;">${requestTime} IST</td></tr>
         </table>
         <div style="text-align:center;">
-          <a href="${approveLink}" style="display:inline-block;background:#059669;color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;margin-right:12px;">✅ Approve</a>
-          <a href="${rejectLink}" style="display:inline-block;background:#dc2626;color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;">❌ Reject</a>
+          <a href="${adminLink}" style="display:inline-block;background:#059669;color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;margin-right:12px;">Go to Admin Panel</a>
         </div>
         <p style="font-size:11px;color:#475569;text-align:center;margin:20px 0 0;">
+          Log in with your Owner email to securely review and approve this request.
           You can also manage users from the <a href="${baseUrl}/admin" style="color:#6366f1;">Admin Panel</a>.
         </p>
       </div>
     </div>
   `;
 
-  const textBody = `New access request:\nName: ${userName}\nEmail: ${userEmail}\nTime: ${requestTime}\n\nApprove: ${approveLink}\nReject: ${rejectLink}`;
+  const textBody = `New access request:\nName: ${userName}\nEmail: ${userEmail}\nTime: ${requestTime}\n\nReview this request securely in the Admin Panel:\n${adminLink}`;
 
   // ── Option 1: Resend API ──────────────────────────────────────────────────
   if (resendApiKey) {

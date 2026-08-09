@@ -42,36 +42,8 @@ function AdminPage() {
     fetchSettings();
   }, []);
 
-  // Handle approve/reject query params from email links
-  useEffect(() => {
-    if (isLoading || !isAdmin) return;
-    const params = new URLSearchParams(window.location.search);
-    const approveEmail = params.get("approve");
-    const rejectEmail = params.get("reject");
-    const fromEmail = params.get("fromEmail");
-
-    if (fromEmail !== "1") return;
-
-    const applyEmailAction = async (targetEmail: string, action: "approved" | "rejected") => {
-      const { data: profiles } = await supabase.from("profiles").select("*");
-      const target = (profiles || []).find(
-        (p: Profile) => p.email.toLowerCase() === targetEmail.toLowerCase()
-      );
-      if (!target) {
-        toast.error(`User not found: ${targetEmail}`);
-        return;
-      }
-      await updateUserStatus(target.id, action);
-      // Clean URL
-      window.history.replaceState({}, document.title, "/admin");
-    };
-
-    if (approveEmail) {
-      applyEmailAction(decodeURIComponent(approveEmail), "approved");
-    } else if (rejectEmail) {
-      applyEmailAction(decodeURIComponent(rejectEmail), "rejected");
-    }
-  }, [isLoading, user, usersList]);
+  // The insecure ?approve= email query param listener has been removed.
+  // Admins must now manually click the Approve or Reject buttons in the UI.
 
   const fetchUsers = async () => {
     setIsFetchingUsers(true);

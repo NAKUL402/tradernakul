@@ -1,0 +1,2 @@
+.vercel\output\functions\__server.func\_ssr\supabase-feLz_sHI.mjs
+.vercel\output\static\assets\index-BC0ye2as.js
