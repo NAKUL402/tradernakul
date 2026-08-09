@@ -20,15 +20,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const resendApiKey = process.env['RESEND_API_KEY'];
-  const smtpUser = process.env['EMAIL_USER'];
-  const smtpPass = process.env['EMAIL_PASS'];
   const ownerEmail = process.env['OWNER_EMAIL'];
   if (!ownerEmail) {
     console.error("[send-approval] FATAL: OWNER_EMAIL environment variable is missing.");
     return res.status(500).json({ success: false, error: "OWNER_EMAIL environment variable not set." });
   }
   const baseUrl = process.env['VITE_SITE_URL'] || "https://tradernakul.vercel.app";
-  const secret = process.env['APPROVAL_SECRET'] || "tn-approve-2026";
   const resendFrom = process.env['RESEND_FROM_EMAIL'] || "TraderNakul AI <onboarding@resend.dev>";
 
   const adminLink = `${baseUrl}/admin`;
@@ -65,85 +62,42 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const textBody = `New access request:\nName: ${userName}\nEmail: ${userEmail}\nTime: ${requestTime}\n\nReview this request securely in the Admin Panel:\n${adminLink}`;
 
-  // ── Option 1: Resend API ──────────────────────────────────────────────────
-  if (resendApiKey) {
-    console.log("[send-approval] Attempting Resend API...");
-    try {
-      const response = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${resendApiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: resendFrom,
-          to: [ownerEmail],
-          subject: `🔔 Access Request — ${userName} (${userEmail})`,
-          html: htmlBody,
-          text: textBody,
-        }),
-      });
-
-      const data = (await response.json().catch(() => ({}))) as Record<string, any>;
-      console.log(`[send-approval] Resend status: ${response.status}`, JSON.stringify(data));
-
-      if (response.ok) {
-        console.log(`[send-approval] ✅ Sent via Resend to owner: ${ownerEmail}`);
-        return res.status(200).json({ success: true, provider: "resend" });
-      }
-
-      const errMsg: string = data['message'] || data['error'] || `Resend error ${response.status}`;
-      const isDomainError =
-        errMsg.toLowerCase().includes("domain") ||
-        errMsg.toLowerCase().includes("verify") ||
-        errMsg.toLowerCase().includes("own email");
-
-      if (isDomainError && smtpUser && smtpPass) {
-        console.warn("[send-approval] Resend domain not verified — falling back to Gmail SMTP");
-        // fall through
-      } else {
-        console.error("[send-approval] Resend failed:", errMsg);
-        return res.status(500).json({ success: false, error: `Resend: ${errMsg}` });
-      }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error("[send-approval] Resend exception:", msg);
-      if (!(smtpUser && smtpPass)) {
-        return res.status(500).json({ success: false, error: `Resend error: ${msg}` });
-      }
-    }
+  if (!resendApiKey) {
+    console.error("[send-approval] FATAL: RESEND_API_KEY missing.");
+    return res.status(500).json({ success: false, error: "RESEND_API_KEY environment variable not set." });
   }
 
-  // ── Option 2: Gmail SMTP ──────────────────────────────────────────────────
-  if (smtpUser && smtpPass) {
-    console.log("[send-approval] Attempting Gmail SMTP...");
-    try {
-      const nodemailer = (await import("nodemailer")).default;
-      const transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: { user: smtpUser, pass: smtpPass },
-      });
-      await transporter.verify().catch((e: Error) => {
-        throw new Error(`Gmail SMTP auth failed: ${e.message}`);
-      });
-      await transporter.sendMail({
-        from: `"TraderNakul AI" <${smtpUser}>`,
-        to: ownerEmail,
-        subject: `🔔 Access Request — ${userName}`,
+  console.log("[send-approval] Attempting Resend API...");
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${resendApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: resendFrom,
+        to: [ownerEmail],
+        subject: `🔔 Access Request — ${userName} (${userEmail})`,
         html: htmlBody,
         text: textBody,
-      });
-      console.log(`[send-approval] ✅ Sent via Gmail SMTP to owner: ${ownerEmail}`);
-      return res.status(200).json({ success: true, provider: "gmail_smtp" });
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error("[send-approval] Gmail SMTP failed:", msg);
-      return res.status(500).json({ success: false, error: `SMTP error: ${msg}` });
-    }
-  }
+      }),
+    });
 
-  const noProviderMsg =
-    "No email provider configured. Add RESEND_API_KEY + verify domain, or add EMAIL_USER + EMAIL_PASS.";
-  console.error("[send-approval] FATAL:", noProviderMsg);
-  return res.status(500).json({ success: false, error: noProviderMsg });
+    const data = (await response.json().catch(() => ({}))) as Record<string, any>;
+    console.log(`[send-approval] Resend status: ${response.status}`, JSON.stringify(data));
+
+    if (response.ok) {
+      console.log(`[send-approval] ✅ Sent via Resend to owner: ${ownerEmail}`);
+      return res.status(200).json({ success: true, provider: "resend" });
+    }
+
+    const errMsg: string = data['message'] || data['error'] || `Resend error ${response.status}`;
+    console.error("[send-approval] Resend failed:", errMsg);
+    return res.status(500).json({ success: false, error: `Resend: ${errMsg}` });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[send-approval] Resend exception:", msg);
+    return res.status(500).json({ success: false, error: `Resend error: ${msg}` });
+  }
 }

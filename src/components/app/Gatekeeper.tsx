@@ -11,10 +11,10 @@ export function Gatekeeper({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isLoading && (!user || !profile || !isApproved)) {
+    if (!isLoading && !user) {
       navigate({ to: "/login" });
     }
-  }, [user, profile, isLoading, isApproved, navigate]);
+  }, [user, isLoading, navigate]);
 
   if (isLoading) {
     return (
@@ -27,16 +27,16 @@ export function Gatekeeper({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!user || !profile || !isApproved) {
+  if (!user) {
     return null; // Will redirect via useEffect
   }
 
-  // Double check status rules
-  if (profile.status === "pending" && !profile.is_owner) {
+  // Double check status rules with strict deny-by-default
+  if (!isApproved) {
+    if (profile?.status === "rejected" || profile?.status === "suspended") {
+      return <AccessDenied />;
+    }
     return <AccessPending />;
-  }
-  if ((profile.status === "rejected" || profile.status === "suspended") && !profile.is_owner) {
-    return <AccessDenied />;
   }
 
   return <>{children}</>;

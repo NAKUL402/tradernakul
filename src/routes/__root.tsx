@@ -200,7 +200,7 @@ function RejectedComponent() {
 }
 
 function AuthGuard({ children }: { children: ReactNode }) {
-  const { user, profile, isLoading, isAdmin, fetchError, signOut } = useAuth();
+  const { user, profile, isLoading, isAdmin, isApproved, fetchError, signOut } = useAuth();
   const { location } = useRouterState();
   const isAuthRoute = ["/login"].includes(location.pathname);
 
@@ -246,11 +246,11 @@ function AuthGuard({ children }: { children: ReactNode }) {
         return <Navigate to="/" />;
       }
     } else {
-      if (profile?.status === "pending") {
+      if (!isApproved) {
+        if (profile?.status === "rejected" || profile?.status === "suspended") {
+          return <RejectedComponent />;
+        }
         return <PendingApprovalComponent />;
-      }
-      if (profile?.status === "rejected" || profile?.status === "suspended") {
-        return <RejectedComponent />;
       }
     }
   }
