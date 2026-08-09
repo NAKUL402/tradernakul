@@ -127,10 +127,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: ReactNode }) {
-  const envScript = `window.__TRADERNAKUL_ENV__ = {
-    VITE_SUPABASE_URL: ${JSON.stringify(typeof process !== 'undefined' ? process.env.VITE_SUPABASE_URL || '' : '')},
-    VITE_SUPABASE_ANON_KEY: ${JSON.stringify(typeof process !== 'undefined' ? process.env.VITE_SUPABASE_ANON_KEY || '' : '')}
-  };`;
+  const envScript = `
+  window.__TRADERNAKUL_ENV__ = {
+    VITE_SUPABASE_URL: ${JSON.stringify(typeof process !== 'undefined' && process.env.VITE_SUPABASE_URL ? process.env.VITE_SUPABASE_URL : (import.meta as any).env?.VITE_SUPABASE_URL || '')},
+    VITE_SUPABASE_ANON_KEY: ${JSON.stringify(typeof process !== 'undefined' && process.env.VITE_SUPABASE_ANON_KEY ? process.env.VITE_SUPABASE_ANON_KEY : (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '')}
+  };
+  window.__DIAGNOSTIC_KEYS__ = ${JSON.stringify(typeof process !== 'undefined' ? Object.keys(process.env).filter(k => k.includes('SUPABASE') || k.includes('VITE')) : [])};
+  `;
 
   return (
     <html lang="en" className="dark">
