@@ -10,8 +10,11 @@ type ViteEnv = {
   [key: string]: string | undefined;
 };
 
-export const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
-export const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+const rawUrl = import.meta.env.VITE_SUPABASE_URL || (typeof process !== "undefined" ? process.env.VITE_SUPABASE_URL : "") || "";
+const rawKey = import.meta.env.VITE_SUPABASE_ANON_KEY || (typeof process !== "undefined" ? process.env.VITE_SUPABASE_ANON_KEY : "") || "";
+
+export const supabaseUrl = rawUrl.trim();
+export const supabaseAnonKey = rawKey.trim();
 
 export const isSupabaseConfigured = Boolean(
   supabaseUrl &&
