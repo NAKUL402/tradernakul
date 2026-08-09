@@ -1,16 +1,80 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
+import { ArrowRight, Lock, Mail, User } from "lucide-react";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({
     meta: [
-      { title: "Open Access — Trading Journal AI" },
-      { name: "description", content: "Free Instant Access to Trading Journal AI dashboard and tools." },
+      { title: "Request Access — Trading Journal AI" },
+      { name: "description", content: "Request access to Trading Journal AI dashboard." },
     ],
   }),
   component: SignupPage,
 });
 
 function SignupPage() {
+  const navigate = useNavigate();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name || !email || !password) {
+      toast.error("Please fill in all fields.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: name,
+          },
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data.user) {
+        toast.success("Account request submitted successfully!");
+        navigate({ to: "/" });
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to sign up. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignup = async () => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: window.location.origin,
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+      // Browser will redirect to Google
+    } catch (err: any) {
+      toast.error(err.message || "Failed to sign up with Google.");
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10">
       <div className="pointer-events-none absolute -left-32 top-0 size-[28rem] animate-float-slow rounded-full bg-primary/25 blur-[120px]" />
@@ -26,19 +90,107 @@ function SignupPage() {
           </span>
         </Link>
 
-        <div className="mt-8">
-          <div className="mx-auto size-16 grid place-items-center rounded-2xl bg-primary/20 text-3xl">🎉</div>
-          <h1 className="mt-4 font-display text-2xl font-semibold">Instant Access Unlocked</h1>
+        <div className="mt-8 text-left">
+          <h1 className="font-display text-2xl font-semibold">Request Access</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            No signup or approval required. Start logging trades and exploring AI insights right away.
+            Create an account to request approval from the administrator.
           </p>
 
-          <Link
-            to="/"
-            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-accent px-4 py-3.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 active:scale-[0.99] glow-primary"
+          <form onSubmit={handleSignup} className="mt-6 space-y-4">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-foreground">Full Name</label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="John Doe"
+                  className="w-full rounded-xl border border-border bg-background/50 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-foreground">Email Address</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@example.com"
+                  className="w-full rounded-xl border border-border bg-background/50 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-foreground">Password</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full rounded-xl border border-border bg-background/50 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
+                  required
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-accent px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90 active:scale-[0.99] disabled:opacity-50 glow-primary"
+            >
+              {isLoading ? "Submitting..." : "Submit Request"}
+              {!isLoading && <ArrowRight className="size-4" />}
+            </button>
+          </form>
+
+          <div className="mt-6 flex items-center gap-3">
+            <div className="h-px flex-1 bg-border" />
+            <span className="text-xs text-muted-foreground uppercase tracking-wider">Or</span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+
+          <button
+            type="button"
+            onClick={handleGoogleSignup}
+            disabled={isLoading}
+            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card/40 px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-card/70 active:scale-[0.99] disabled:opacity-50"
           >
-            Enter Dashboard Directly
-          </Link>
+            <svg viewBox="0 0 24 24" className="size-5">
+              <path
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                fill="#4285F4"
+              />
+              <path
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                fill="#34A853"
+              />
+              <path
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                fill="#FBBC05"
+              />
+              <path
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                fill="#EA4335"
+              />
+            </svg>
+            Continue with Google
+          </button>
+
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            Already have an account?{" "}
+            <Link to="/login" className="font-semibold text-primary hover:underline">
+              Sign In
+            </Link>
+          </p>
         </div>
       </div>
     </div>

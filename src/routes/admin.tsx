@@ -44,8 +44,7 @@ function AdminPage() {
 
   // Handle approve/reject query params from email links
   useEffect(() => {
-    const isStrictAdmin = user?.email?.toLowerCase().trim() === "nakultrader007@gmail.com";
-    if (isLoading || !isStrictAdmin) return;
+    if (isLoading || !isAdmin) return;
     const params = new URLSearchParams(window.location.search);
     const approveEmail = params.get("approve");
     const rejectEmail = params.get("reject");
@@ -265,14 +264,13 @@ function AdminPage() {
     );
   }
 
-  const isStrictAdmin = user.email?.toLowerCase().trim() === "nakultrader007@gmail.com";
-  if (!isStrictAdmin) {
+  if (!isAdmin) {
     return (
       <AppShell title="Access Denied">
         <div className="flex min-h-[60vh] flex-col items-center justify-center text-center">
           <ShieldAlert className="size-16 text-destructive" />
           <h1 className="mt-4 font-display text-2xl font-bold">403 Forbidden</h1>
-          <p className="mt-2 text-sm text-muted-foreground">Only the administrator nakultrader007@gmail.com can access this portal.</p>
+          <p className="mt-2 text-sm text-muted-foreground">Only authorized administrators can access this portal.</p>
         </div>
       </AppShell>
     );

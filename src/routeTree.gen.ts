@@ -14,10 +14,12 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AiCoachRouteImport } from './routes/ai-coach'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as CalendarRouteImport } from './routes/calendar'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as JournalRouteImport } from './routes/journal'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SignupRouteImport } from './routes/signup'
 
@@ -46,6 +48,11 @@ const CalendarRoute = CalendarRouteImport.update({
   path: '/calendar',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const JournalRoute = JournalRouteImport.update({
   id: '/journal',
   path: '/journal',
@@ -66,6 +73,11 @@ const ReportsRoute = ReportsRouteImport.update({
   path: '/reports',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -83,10 +95,12 @@ export interface FileRoutesByFullPath {
   '/ai-coach': typeof AiCoachRoute
   '/analytics': typeof AnalyticsRoute
   '/calendar': typeof CalendarRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/journal': typeof JournalRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/reports': typeof ReportsRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
 }
@@ -96,10 +110,12 @@ export interface FileRoutesByTo {
   '/ai-coach': typeof AiCoachRoute
   '/analytics': typeof AnalyticsRoute
   '/calendar': typeof CalendarRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/journal': typeof JournalRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/reports': typeof ReportsRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
 }
@@ -110,10 +126,12 @@ export interface FileRoutesById {
   '/ai-coach': typeof AiCoachRoute
   '/analytics': typeof AnalyticsRoute
   '/calendar': typeof CalendarRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/journal': typeof JournalRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/reports': typeof ReportsRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
 }
@@ -125,10 +143,12 @@ export interface FileRouteTypes {
     | '/ai-coach'
     | '/analytics'
     | '/calendar'
+    | '/forgot-password'
     | '/journal'
     | '/login'
     | '/profile'
     | '/reports'
+    | '/reset-password'
     | '/settings'
     | '/signup'
   fileRoutesByTo: FileRoutesByTo
@@ -138,10 +158,12 @@ export interface FileRouteTypes {
     | '/ai-coach'
     | '/analytics'
     | '/calendar'
+    | '/forgot-password'
     | '/journal'
     | '/login'
     | '/profile'
     | '/reports'
+    | '/reset-password'
     | '/settings'
     | '/signup'
   id:
@@ -151,10 +173,12 @@ export interface FileRouteTypes {
     | '/ai-coach'
     | '/analytics'
     | '/calendar'
+    | '/forgot-password'
     | '/journal'
     | '/login'
     | '/profile'
     | '/reports'
+    | '/reset-password'
     | '/settings'
     | '/signup'
   fileRoutesById: FileRoutesById
@@ -165,10 +189,12 @@ export interface RootRouteChildren {
   AiCoachRoute: typeof AiCoachRoute
   AnalyticsRoute: typeof AnalyticsRoute
   CalendarRoute: typeof CalendarRoute
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   JournalRoute: typeof JournalRoute
   LoginRoute: typeof LoginRoute
   ProfileRoute: typeof ProfileRoute
   ReportsRoute: typeof ReportsRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   SettingsRoute: typeof SettingsRoute
   SignupRoute: typeof SignupRoute
 }
@@ -210,6 +236,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CalendarRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/journal': {
       id: '/journal'
       path: '/journal'
@@ -238,6 +271,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReportsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings': {
       id: '/settings'
       path: '/settings'
@@ -261,10 +301,12 @@ const rootRouteChildren: RootRouteChildren = {
   AiCoachRoute: AiCoachRoute,
   AnalyticsRoute: AnalyticsRoute,
   CalendarRoute: CalendarRoute,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   JournalRoute: JournalRoute,
   LoginRoute: LoginRoute,
   ProfileRoute: ProfileRoute,
   ReportsRoute: ReportsRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   SettingsRoute: SettingsRoute,
   SignupRoute: SignupRoute,
 }

@@ -19,7 +19,7 @@ export default function handler(_req: VercelRequest, res: VercelResponse) {
   const resendKey = process.env["RESEND_API_KEY"] || "";
   const emailUser = process.env["EMAIL_USER"] || "";
   const emailPass = process.env["EMAIL_PASS"] || "";
-  const ownerEmail = process.env["OWNER_EMAIL"] || "nakultrader007@gmail.com (default)";
+  const ownerEmail = process.env["OWNER_EMAIL"] || "";
   const siteUrl = process.env["VITE_SITE_URL"] || "";
 
   // AI vars
@@ -58,7 +58,7 @@ export default function handler(_req: VercelRequest, res: VercelResponse) {
       RESEND_API_KEY: resendKey ? "✅ SET" : "❌ NOT SET",
       EMAIL_USER: emailUser ? `✅ SET (${emailUser})` : "❌ NOT SET",
       EMAIL_PASS: emailPass ? "✅ SET" : "❌ NOT SET",
-      OWNER_EMAIL: ownerEmail,
+      OWNER_EMAIL: ownerEmail ? `✅ SET (${ownerEmail})` : "❌ NOT SET",
       VITE_SITE_URL: siteUrl ? `✅ SET (${siteUrl})` : "❌ NOT SET",
     },
     diagnosis: urlOk && keyOk

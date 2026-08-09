@@ -9,4 +9,4 @@ SET
     subscription_plan = 'enterprise',
     subscription_status = 'active',
     updated_at = NOW()
-WHERE email = 'nakultrader007@gmail.com';
+WHERE email = 'YOUR_OWNER_EMAIL_HERE';

@@ -42,7 +42,7 @@ import { useAuth } from "@/lib/auth-context";
 export function AppShell({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { user, profile } = useAuth();
+  const { user, profile, isAdmin } = useAuth();
 
   const name = profile?.full_name || user?.user_metadata?.["full_name"] || user?.user_metadata?.["name"] || "TN";
   const initials = name
@@ -105,7 +105,7 @@ export function AppShell({ title, subtitle, children }: { title: string; subtitl
             );
           })}
 
-          {user?.email?.toLowerCase().trim() === "nakultrader007@gmail.com" && (
+          {isAdmin && (
             <Link
               to="/admin"
               title="Admin Portal"

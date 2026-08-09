@@ -4,15 +4,18 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
+  Navigate,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/sonner";
-import { AuthProvider } from "@/lib/auth-context";
+import { AuthProvider, useAuth } from "@/lib/auth-context";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { Clock, ShieldAlert } from "lucide-react";
 
 function NotFoundComponent() {
   return (
@@ -137,13 +140,116 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+function PendingApprovalComponent() {
+  const { signOut } = useAuth();
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="max-w-md text-center glass p-8 rounded-3xl">
+        <Clock className="mx-auto size-16 text-accent animate-pulse" />
+        <h1 className="mt-4 font-display text-2xl font-bold text-foreground">Waiting for Approval</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Your account request has been received and is waiting for administrator approval. You will receive an email once your account is active.
+        </p>
+        <button
+          onClick={signOut}
+          className="mt-6 inline-flex items-center justify-center rounded-xl border border-border bg-card/40 px-5 py-2.5 text-sm font-medium text-foreground transition hover:bg-card/70"
+        >
+          Sign Out
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function RejectedComponent() {
+  const { signOut } = useAuth();
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="max-w-md text-center glass p-8 rounded-3xl">
+        <ShieldAlert className="mx-auto size-16 text-destructive" />
+        <h1 className="mt-4 font-display text-2xl font-bold text-foreground">Access Denied</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Your account request was declined by the administrator. Please contact support if you believe this is a mistake.
+        </p>
+        <button
+          onClick={signOut}
+          className="mt-6 inline-flex items-center justify-center rounded-xl border border-border bg-card/40 px-5 py-2.5 text-sm font-medium text-foreground transition hover:bg-card/70"
+        >
+          Sign Out
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function AuthGuard({ children }: { children: ReactNode }) {
+  const { user, profile, isLoading, isAdmin, fetchError, signOut } = useAuth();
+  const { location } = useRouterState();
+  const isAuthRoute = ["/login", "/signup", "/forgot-password", "/reset-password"].includes(location.pathname);
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="size-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <div className="max-w-md text-center glass p-8 rounded-3xl">
+          <ShieldAlert className="mx-auto size-16 text-destructive" />
+          <h1 className="mt-4 font-display text-2xl font-bold text-foreground">Database Error</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {fetchError}
+          </p>
+          <button
+            onClick={signOut}
+            className="mt-6 inline-flex items-center justify-center rounded-xl border border-border bg-card/40 px-5 py-2.5 text-sm font-medium text-foreground transition hover:bg-card/70"
+          >
+            Sign Out
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user && !isAuthRoute) {
+    return <Navigate to="/login" />;
+  }
+
+  if (user && isAuthRoute) {
+    return <Navigate to="/" />;
+  }
+
+  if (user && !isAuthRoute) {
+    if (location.pathname === "/admin") {
+      if (!isAdmin) {
+        return <Navigate to="/" />;
+      }
+    } else {
+      if (profile?.status === "pending") {
+        return <PendingApprovalComponent />;
+      }
+      if (profile?.status === "rejected" || profile?.status === "suspended") {
+        return <RejectedComponent />;
+      }
+    }
+  }
+
+  return <>{children}</>;
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClient}>
-        <Outlet />
+        <AuthGuard>
+          <Outlet />
+        </AuthGuard>
         <Toaster position="top-center" />
       </QueryClientProvider>
     </AuthProvider>

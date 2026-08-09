@@ -23,6 +23,19 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
+-- Create a SECURITY DEFINER function to check admin/owner status without triggering RLS recursively
+CREATE OR REPLACE FUNCTION public.is_admin_or_owner()
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN EXISTS (
+        SELECT 1 FROM public.profiles 
+        WHERE id = auth.uid() 
+        AND (role = 'admin' OR is_owner = TRUE)
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+
 DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
 DROP POLICY IF EXISTS "Admins can view all profiles" ON public.profiles;
 DROP POLICY IF EXISTS "Admins can update user status" ON public.profiles;
@@ -31,15 +44,15 @@ DROP POLICY IF EXISTS "Admins can delete user profiles" ON public.profiles;
 
 CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT TO authenticated USING (auth.uid() = id);
 CREATE POLICY "Admins can view all profiles" ON public.profiles FOR SELECT TO authenticated USING (
-    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (role = 'admin' OR is_owner = TRUE))
+    public.is_admin_or_owner()
 );
 CREATE POLICY "Admins can update user status" ON public.profiles FOR UPDATE TO authenticated USING (
-    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (role = 'admin' OR is_owner = TRUE))
+    public.is_admin_or_owner()
 ) WITH CHECK (
-    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (role = 'admin' OR is_owner = TRUE))
+    public.is_admin_or_owner()
 );
 CREATE POLICY "Admins can delete user profiles" ON public.profiles FOR DELETE TO authenticated USING (
-    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (role = 'admin' OR is_owner = TRUE))
+    public.is_admin_or_owner()
 );
 
 CREATE OR REPLACE FUNCTION public.prevent_owner_demotion_or_deletion()
@@ -69,12 +82,11 @@ CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 DECLARE
     user_count INT;
-    designated_owner_email TEXT := 'nakultrader007@gmail.com';
     is_first_or_owner BOOLEAN;
 BEGIN
     SELECT COUNT(*) INTO user_count FROM public.profiles;
 
-    IF LOWER(NEW.email) = 'nakultrader007@gmail.com' OR LOWER(NEW.email) = 'tradernakul@gmail.com' OR user_count = 0 THEN
+    IF user_count = 0 THEN
         is_first_or_owner := TRUE;
     ELSE
         is_first_or_owner := FALSE;
@@ -131,9 +143,9 @@ DROP POLICY IF EXISTS "Admins can update site settings" ON public.site_settings;
 
 CREATE POLICY "Anyone can view site settings" ON public.site_settings FOR SELECT USING (true);
 CREATE POLICY "Admins can update site settings" ON public.site_settings FOR UPDATE TO authenticated USING (
-    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (role = 'admin' OR is_owner = TRUE))
+    public.is_admin_or_owner()
 ) WITH CHECK (
-    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (role = 'admin' OR is_owner = TRUE))
+    public.is_admin_or_owner()
 );
 
 -- ----------------------------------------------------------------------------
@@ -172,7 +184,7 @@ CREATE POLICY "Users insert own trades" ON public.trades FOR INSERT TO authentic
 CREATE POLICY "Users update own trades" ON public.trades FOR UPDATE TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users delete own trades" ON public.trades FOR DELETE TO authenticated USING (auth.uid() = user_id);
 CREATE POLICY "Admins view all trades" ON public.trades FOR SELECT TO authenticated USING (
-    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (role = 'admin' OR is_owner = TRUE))
+    public.is_admin_or_owner()
 );
 
 INSERT INTO storage.buckets (id, name, public) VALUES ('trade-screenshots', 'trade-screenshots', true) ON CONFLICT (id) DO NOTHING;

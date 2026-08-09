@@ -11,82 +11,101 @@ type AuthContextType = {
   isApproved: boolean;
   isAdmin: boolean;
   isOwner: boolean;
-  sendOTP: (email: string) => Promise<void>;
-  verifyOTP: (email: string, token: string) => Promise<void>;
+  fetchError: string | null;
   signOut: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Open Access Default Profile
-const OPEN_ACCESS_USER: User = {
-  id: "open-access-trader-007",
-  app_metadata: { provider: "email" },
-  user_metadata: { name: "Trader Nakul" },
-  aud: "authenticated",
-  created_at: new Date().toISOString(),
-  email: "nakultrader007@gmail.com",
-} as unknown as User;
-
-const OPEN_ACCESS_PROFILE: Profile = {
-  id: "open-access-trader-007",
-  email: "nakultrader007@gmail.com",
-  full_name: "Trader Nakul",
-  avatar_url: null,
-  role: "admin",
-  status: "approved",
-  is_owner: true,
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
-};
-
-const OPEN_ACCESS_SESSION: Session = {
-  access_token: "open-access-token",
-  token_type: "bearer",
-  expires_in: 3600000,
-  refresh_token: "open-access-refresh",
-  user: OPEN_ACCESS_USER,
-};
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(OPEN_ACCESS_USER);
-  const [session, setSession] = useState<Session | null>(OPEN_ACCESS_SESSION);
-  const [profile, setProfile] = useState<Profile | null>(OPEN_ACCESS_PROFILE);
-  const [isLoading, setIsLoading] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Open Access Mode — immediately active for all visitors
-    setUser(OPEN_ACCESS_USER);
-    setSession(OPEN_ACCESS_SESSION);
-    setProfile(OPEN_ACCESS_PROFILE);
-    setIsLoading(false);
+    let mounted = true;
+
+    async function loadAuth() {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        
+        if (session && mounted) {
+          setSession(session);
+          setUser(session.user);
+          await fetchProfile(session.user.id);
+        } else if (mounted) {
+          setIsLoading(false);
+        }
+      } catch (err) {
+        console.error("Error loading auth session:", err);
+        if (mounted) setIsLoading(false);
+      }
+    }
+
+    loadAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: string, session: Session | null) => {
+      if (!mounted) return;
+
+      if (event === "SIGNED_OUT" || !session) {
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+        setFetchError(null);
+        setIsLoading(false);
+      } else if (session) {
+        setSession(session);
+        setUser(session.user);
+        await fetchProfile(session.user.id);
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
-  const sendOTP = async (email: string) => {
-    toast.success(`Open Access active! Verification code sent to ${email} (Instant Access Enabled).`);
-  };
+  async function fetchProfile(userId: string) {
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .single();
 
-  const verifyOTP = async (email: string, _token: string) => {
-    const cleanedEmail = email.toLowerCase().trim();
-    const activeProfile: Profile = {
-      id: `usr-${cleanedEmail.replace(/[^a-z0-9]/g, "")}`,
-      email: cleanedEmail,
-      full_name: cleanedEmail.split("@")[0] || "Trader",
-      avatar_url: null,
-      role: "admin",
-      status: "approved",
-      is_owner: true,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    setUser({ id: activeProfile.id, email: cleanedEmail } as User);
-    setProfile(activeProfile);
-    toast.success("Welcome to TraderNakul AI! Instant Open Access Granted.");
-  };
+      if (error) {
+        console.warn("Failed to fetch profile:", error);
+      } else if (data) {
+        setProfile(data as Profile);
+        setFetchError(null);
+      }
+    } catch (err: any) {
+      console.error("Exception fetching profile:", err);
+      setFetchError(err?.message || "Failed to fetch profile");
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   const signOut = async () => {
-    toast.info("Open Access Mode: You are free to browse and use all features.");
+    setIsLoading(true);
+    try {
+      await supabase.auth.signOut();
+      toast.success("Successfully logged out");
+    } catch (err) {
+      toast.error("Failed to log out");
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const isApproved = profile?.status === "approved" || profile?.is_owner === true;
+  const isAdmin = profile?.role === "admin" || profile?.is_owner === true;
+  const isOwner = profile?.is_owner === true;
 
   return (
     <AuthContext.Provider
@@ -94,12 +113,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         session,
         profile,
-        isLoading: false,
-        isApproved: true,
-        isAdmin: true,
-        isOwner: true,
-        sendOTP,
-        verifyOTP,
+        isLoading,
+        isApproved,
+        isAdmin,
+        isOwner,
+        fetchError,
         signOut,
       }}
     >

@@ -37,7 +37,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
       RESEND_FROM_EMAIL: resendFrom,
       EMAIL_USER: smtpUser ? "✅ SET" : "❌ NOT SET",
       EMAIL_PASS: smtpPass ? "✅ SET" : "❌ NOT SET",
-      OWNER_EMAIL: process.env['OWNER_EMAIL'] || "nakultrader007@gmail.com (default)",
+      OWNER_EMAIL: process.env['OWNER_EMAIL'] || "❌ NOT SET",
       VITE_SITE_URL: process.env['VITE_SITE_URL'] || "❌ NOT SET (email links may be wrong)",
       GROQ_API_KEY: process.env['GROQ_API_KEY'] ? "✅ SET (primary AI)" : "❌ NOT SET",
       OPENROUTER_API_KEY: process.env['OPENROUTER_API_KEY'] ? "✅ SET (backup AI)" : "❌ NOT SET",

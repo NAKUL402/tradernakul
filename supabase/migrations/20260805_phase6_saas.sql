@@ -14,13 +14,12 @@ CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 DECLARE
     user_count INT;
-    designated_owner_email TEXT := 'nakultrader007@gmail.com';
     is_first_or_owner BOOLEAN;
 BEGIN
     SELECT COUNT(*) INTO user_count FROM public.profiles;
 
-    -- If email matches designated owner nakultrader007@gmail.com or tradernakul@gmail.com OR table is empty, assign owner/admin
-    IF LOWER(NEW.email) = 'nakultrader007@gmail.com' OR LOWER(NEW.email) = 'tradernakul@gmail.com' OR user_count = 0 THEN
+    -- If table is empty, assign owner/admin to the first user
+    IF user_count = 0 THEN
         is_first_or_owner := TRUE;
     ELSE
         is_first_or_owner := FALSE;
