@@ -100,6 +100,20 @@ const realClient = createClient(
 // ── Unified Resilient Supabase Wrapper ─────────────────────────────────────
 export const supabase = {
   auth: {
+    signUp: async (options: any) => {
+      if (!isSupabaseConfigured) {
+        return { data: { user: null, session: null }, error: new Error("Supabase is not configured.") };
+      }
+      return await realClient.auth.signUp(options);
+    },
+
+    signInWithPassword: async (options: any) => {
+      if (!isSupabaseConfigured) {
+        return { data: { user: null, session: null }, error: new Error("Supabase is not configured.") };
+      }
+      return await realClient.auth.signInWithPassword(options);
+    },
+
     signInWithOtp: async (options: { email: string; options?: any }) => {
       if (!isSupabaseConfigured) {
         return { data: { user: null, session: null }, error: new Error("Supabase is not configured.") };
