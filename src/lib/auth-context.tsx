@@ -138,6 +138,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // Separate useEffect strictly for realtime profile updates
+  useEffect(() => {
+    let realtimeChannel: ReturnType<typeof supabase.channel> | null = null;
+    
+    if (user && !isDevTestMode) {
+      realtimeChannel = supabase
+        .channel(`profile-updates-${user.id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "profiles",
+            filter: `id=eq.${user.id}`,
+          },
+          (payload) => {
+            if (payload.new) {
+              setProfile(payload.new as Profile);
+            }
+          }
+        )
+        .subscribe();
+    }
+
+    return () => {
+      if (realtimeChannel) {
+        supabase.removeChannel(realtimeChannel);
+      }
+    };
+  }, [user?.id]);
+
   // Force Sign Out if site-wide login is disabled for regular users
   useEffect(() => {
     if (user && siteSettings && !siteSettings.login_enabled) {
@@ -154,7 +185,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function fetchProfile(userId: string) {
     try {
-      const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).single();
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*", { count: "exact" }) // count: exact adds a slightly different header/query to prevent aggressive browser caching
+        .eq("id", userId)
+        .single();
 
       if (error) {
         console.warn("Failed to fetch profile:", error);

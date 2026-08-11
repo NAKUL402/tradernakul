@@ -16,7 +16,7 @@ export function Gatekeeper({ children }: { children: ReactNode }) {
     }
   }, [user, isLoading, navigate]);
 
-  if (isLoading) {
+  if (isLoading || (user && profile === null)) {
     return (
       <div className="flex min-h-[70vh] items-center justify-center">
         <div className="flex flex-col items-center gap-3">
