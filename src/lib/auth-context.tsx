@@ -229,9 +229,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const isDark = userSettings.theme === "dark" || userSettings.theme === "special" || (userSettings.theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
       
       document.documentElement.classList.toggle("dark", isDark);
-      document.documentElement.classList.toggle("theme-special", userSettings.theme === "special");
+      document.documentElement.classList.toggle("theme-special", userSettings.accent_color === "special");
       
-      if (userSettings.theme === "special") {
+      if (userSettings.accent_color === "special") {
         document.documentElement.style.removeProperty("--primary");
         document.documentElement.style.removeProperty("--ring");
       } else {
