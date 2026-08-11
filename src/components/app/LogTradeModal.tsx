@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { useAuth } from "@/lib/auth-context";
 import { type Trade } from "@/lib/trades";
 import { field, primaryBtn } from "./AuthLayout";
 import { Upload, X, Star } from "lucide-react";
@@ -51,6 +52,7 @@ export function LogTradeModal({ isOpen, onClose, onSave, initialTrade, nextTrade
   
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { userSettings } = useAuth();
 
   useEffect(() => {
     if (isOpen) {
@@ -78,14 +80,14 @@ export function LogTradeModal({ isOpen, onClose, onSave, initialTrade, nextTrade
         setPair("");
         setTradeNo(nextTradeNo);
         setSide("Buy");
-        setSession("London");
+        setSession(userSettings?.default_session || "London");
         setResultAmount("");
         setEntryTime(new Date().toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit" }));
         setExitTime(new Date().toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit" }));
         setLots("");
         setResult("Win");
-        setRrr("");
-        setRiskPct("1.0");
+        setRrr(userSettings?.default_rrr || "");
+        setRiskPct(userSettings?.default_risk_pct ? String(userSettings.default_risk_pct) : "1.0");
         setSetup("");
         setConfirmation("");
         setNotes("");
@@ -97,7 +99,7 @@ export function LogTradeModal({ isOpen, onClose, onSave, initialTrade, nextTrade
       }
       setImageFile(null);
     }
-  }, [isOpen, initialTrade, nextTradeNo]);
+  }, [isOpen, initialTrade, nextTradeNo, userSettings]);
 
   if (!isOpen) return null;
 
@@ -198,7 +200,7 @@ export function LogTradeModal({ isOpen, onClose, onSave, initialTrade, nextTrade
           {/* Result Amount in Rupees (₹) replaces Entry/Exit price */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <div className="col-span-2 sm:col-span-1">
-              <label className="block text-xs font-semibold text-primary mb-1">Result Amount (₹ Rupees)</label>
+              <label className="block text-xs font-semibold text-primary mb-1">Result Amount ({userSettings?.currency?.split(' ')[1]?.replace(/[()]/g, '') || '₹'})</label>
               <input
                 type="number"
                 step="any"

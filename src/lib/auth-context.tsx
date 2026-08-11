@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { User, Session } from "@supabase/supabase-js";
-import { supabase, type Profile, type SiteSettings } from "./supabase";
+import { supabase, type Profile, type SiteSettings, type UserSettings } from "./supabase";
 import { toast } from "sonner";
 
 type AuthContextType = {
@@ -8,6 +8,7 @@ type AuthContextType = {
   session: Session | null;
   profile: Profile | null;
   siteSettings: SiteSettings | null;
+  userSettings: UserSettings | null;
   isLoading: boolean;
   isApproved: boolean;
   isAdmin: boolean;
@@ -15,6 +16,7 @@ type AuthContextType = {
   fetchError: string | null;
   signOut: () => Promise<void>;
   refreshSettings: () => Promise<void>;
+  updateUserSettings: (newSettings: Partial<UserSettings>) => Promise<boolean>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -24,6 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [siteSettings, setSiteSettings] = useState<SiteSettings | null>(null);
+  const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -56,6 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setSession(session);
           setUser(session.user);
           await fetchProfile(session.user.id);
+          await fetchUserSettings(session.user.id);
         } else if (mounted) {
           setIsLoading(false);
         }
@@ -80,6 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         setUser(session.user);
         await fetchProfile(session.user.id);
+        await fetchUserSettings(session.user.id);
       }
     });
 
@@ -122,6 +127,87 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function fetchUserSettings(userId: string) {
+    try {
+      const { data, error } = await supabase
+        .from("user_settings")
+        .select("*")
+        .eq("user_id", userId)
+        .single();
+
+      if (error) {
+        if (error.code === "PGRST116") {
+          // No settings found, default one will be created via trigger eventually, 
+          // or we create it now.
+          const defaultSettings: UserSettings = {
+            user_id: userId,
+            theme: "system",
+            accent_color: "oklch(0.64 0.21 268)",
+            compact_ui: false,
+            currency: "USD ($)",
+            default_session: null,
+            default_risk_pct: null,
+            default_rrr: null,
+            daily_summary: true,
+            weekly_report: true,
+            ai_coach_alerts: false,
+            ai_response_style: "Balanced",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+          setUserSettings(defaultSettings);
+        } else {
+          console.warn("Failed to fetch user settings:", error);
+        }
+      } else if (data) {
+        setUserSettings(data as UserSettings);
+      }
+    } catch (err) {
+      console.error("Exception fetching user settings:", err);
+    }
+  }
+
+  async function updateUserSettings(newSettings: Partial<UserSettings>) {
+    if (!user) return false;
+    const updated = { ...userSettings, ...newSettings } as UserSettings;
+    setUserSettings(updated); // Optimistic
+    try {
+      const { error } = await supabase
+        .from("user_settings")
+        .upsert({ ...updated, user_id: user.id });
+      if (error) throw error;
+      return true;
+    } catch (err) {
+      console.error("Error updating settings:", err);
+      toast.error("Failed to save settings");
+      // Revert optimistic if needed, but for simplicity we keep it or refetch
+      await fetchUserSettings(user.id);
+      return false;
+    }
+  }
+
+  // Apply theme and accent color globally whenever userSettings change
+  useEffect(() => {
+    if (userSettings) {
+      const isDark = userSettings.theme === "dark" || (userSettings.theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+      document.documentElement.classList.toggle("dark", isDark);
+      
+      document.documentElement.style.setProperty("--primary", userSettings.accent_color);
+      document.documentElement.style.setProperty("--ring", userSettings.accent_color);
+      
+      if (userSettings.compact_ui) {
+        document.documentElement.setAttribute("data-compact", "true");
+      } else {
+        document.documentElement.removeAttribute("data-compact");
+      }
+    } else {
+      // Default to dark if not logged in
+      document.documentElement.classList.toggle("dark", true);
+      document.documentElement.style.setProperty("--primary", "oklch(0.64 0.21 268)");
+      document.documentElement.style.setProperty("--ring", "oklch(0.64 0.21 268)");
+    }
+  }, [userSettings]);
+
   const signOut = async () => {
     setIsLoading(true);
     try {
@@ -145,6 +231,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session,
         profile,
         siteSettings,
+        userSettings,
         isLoading,
         isApproved,
         isAdmin,
@@ -152,6 +239,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         fetchError,
         signOut,
         refreshSettings,
+        updateUserSettings,
       }}
     >
       {children}

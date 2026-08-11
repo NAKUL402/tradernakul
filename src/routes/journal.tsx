@@ -25,7 +25,9 @@ export const Route = createFileRoute("/journal")({
 });
 
 function TradeCard({ t, onOpen }: { t: Trade; onOpen: () => void }) {
+  const { userSettings } = useAuth();
   const pnl = pnlUsd(t);
+  const currencySymbol = userSettings?.currency?.split(' ')[1]?.replace(/[()]/g, '') || '₹';
   return (
     <button
       onClick={onOpen}
@@ -58,7 +60,7 @@ function TradeCard({ t, onOpen }: { t: Trade; onOpen: () => void }) {
       <div className="mt-3 flex flex-wrap items-center gap-1.5">
         <Badge tone="primary">{t.setup}</Badge>
         {(t.tags || []).map((tag) => <Badge key={tag}>{tag}</Badge>)}
-        <span className={cn("ml-auto font-display text-sm font-semibold", pnl >= 0 ? "text-[oklch(0.72_0.19_155)]" : "text-destructive")}>{money(pnl)}</span>
+        <span className={cn("ml-auto font-display text-sm font-semibold", pnl >= 0 ? "text-[oklch(0.72_0.19_155)]" : "text-destructive")}>{money(pnl, currencySymbol)}</span>
       </div>
     </button>
   );

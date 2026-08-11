@@ -97,6 +97,23 @@ export type SiteSettings = {
   updated_at: string;
 };
 
+export type UserSettings = {
+  user_id: string;
+  theme: "dark" | "light" | "system";
+  accent_color: string;
+  compact_ui: boolean;
+  currency: string;
+  default_session: "Asian" | "London" | "New York" | null;
+  default_risk_pct: number | null;
+  default_rrr: string | null;
+  daily_summary: boolean;
+  weekly_report: boolean;
+  ai_coach_alerts: boolean;
+  ai_response_style: "Concise" | "Balanced" | "Detailed";
+  created_at: string;
+  updated_at: string;
+};
+
 
 // ── Real Supabase Client Instance ───────────────────────────────────────────
 const realClient = createClient(
