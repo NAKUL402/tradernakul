@@ -24,38 +24,62 @@ const QUICK_QUESTIONS = [
 const getResponse = (input: string): string => {
   const lowerInput = input.toLowerCase();
   
-  if (lowerInput.includes("what is edge journal")) {
-    return "Edge Journal is a premium trading journal designed to help traders record, review, and analyze their trades in one place.";
+  const isHindi = lowerInput.includes("kya") || lowerInput.includes("kaise") || lowerInput.includes("kyu") || lowerInput.includes("hai") || lowerInput.includes("mujhe") || lowerInput.includes("mera") || lowerInput.includes("bhai");
+
+  if (lowerInput.includes("what is edge journal") || (lowerInput.includes("edge journal") && lowerInput.includes("kya hai"))) {
+    return isHindi 
+      ? "Edge Journal ek premium trading journal hai jahan tum apne trades ko record, review aur analyze kar sakte ho."
+      : "Edge Journal is a premium trading journal designed to help traders record, review, and analyze their trades in one place.";
   }
-  if (lowerInput.includes("why should i use") || lowerInput.includes("help me improve")) {
-    return "Because trading isn't only about taking trades — it's about learning from them.\n\nEdge Journal helps you record your decisions, review your performance, identify patterns, and use AI-assisted analysis to understand your trades better.\n\nInstead of relying on memory, you build a record of your trading process.";
+  if (lowerInput.includes("why should i use") || lowerInput.includes("help me improve") || lowerInput.includes("kyu use karni") || lowerInput.includes("fayda")) {
+    return isHindi
+      ? "Kyunki trading sirf trade lene ke baare mein nahi hai — ye apni mistakes se seekhne ke baare mein hai.\n\nEdge Journal tumhe decisions record karne, performance review karne, aur AI analysis ke through apne trades samajhne mein help karta hai."
+      : "Because trading isn't only about taking trades — it's about learning from them.\n\nEdge Journal helps you record your decisions, review your performance, identify patterns, and use AI-assisted analysis to understand your trades better.\n\nInstead of relying on memory, you build a record of your trading process.";
   }
-  if (lowerInput.includes("what can i track") || lowerInput.includes("add a trade")) {
-    return "You can record your trades and relevant information such as:\n\n- Pair/instrument\n- Entry information\n- Lots\n- Side\n- Result & RRR\n- Setup\n- Mistakes\n- Reason for trade\n- Date\n- Rating\n- Screenshot\n\nThis gives you a complete picture of every execution.";
+  if (lowerInput.includes("what can i track") || lowerInput.includes("add a trade") || lowerInput.includes("kaha add karna") || lowerInput.includes("kaise add")) {
+    return isHindi
+      ? "Tum apne trades ki saari important details record kar sakte ho jaise:\n\n- Pair/instrument\n- Entry/Exit\n- Lots & Side\n- Result & RRR\n- Setup\n- Mistakes\n- Reason\n- Date\n- Screenshot"
+      : "You can record your trades and relevant information such as:\n\n- Pair/instrument\n- Entry information\n- Lots\n- Side\n- Result & RRR\n- Setup\n- Mistakes\n- Reason for trade\n- Date\n- Rating\n- Screenshot\n\nThis gives you a complete picture of every execution.";
   }
-  if (lowerInput.includes("ai trade analysis")) {
-    return "Edge Journal provides an AI-assisted feature for analyzing your trades. It helps you identify strengths and potential mistakes in your recorded setups. (Note: AI does not predict the market or guarantee profits.)";
+  if (lowerInput.includes("ai trade analysis") || (lowerInput.includes("ai") && lowerInput.includes("analysis"))) {
+    return isHindi
+      ? "Edge Journal AI ka use karke tumhare trades ko analyze karta hai aur batata hai ki tumhari strengths kya hain aur possible mistakes kahan hui hain. (Note: AI market predict nahi karta.)"
+      : "Edge Journal provides an AI-assisted feature for analyzing your trades. It helps you identify strengths and potential mistakes in your recorded setups. (Note: AI does not predict the market or guarantee profits.)";
   }
   if (lowerInput.includes("ai coach")) {
-    return "The AI Coach acts as your personalized trading mentor. You can chat with it about your logged trades, ask for feedback on your performance, and get objective insights to help maintain your trading discipline.";
+    return isHindi
+      ? "AI Coach tumhara personalized trading mentor hai. Tum apne logged trades ke baare mein isse chat kar sakte ho, feedback le sakte ho, aur apni trading discipline maintain rakhne ke liye advice le sakte ho."
+      : "The AI Coach acts as your personalized trading mentor. You can chat with it about your logged trades, ask for feedback on your performance, and get objective insights to help maintain your trading discipline.";
   }
   if (lowerInput.includes("analytics")) {
-    return "The Analytics dashboard helps you review your historical trading performance. It visually tracks your win rate, profit/loss curves, and identifies patterns to show you what's working and what isn't.";
+    return isHindi
+      ? "Analytics dashboard tumhari historical performance dikhata hai. Ye tumhara win rate, profit/loss curves, aur trading patterns track karta hai taaki tum samajh sako ki kya kaam kar raha hai."
+      : "The Analytics dashboard helps you review your historical trading performance. It visually tracks your win rate, profit/loss curves, and identifies patterns to show you what's working and what isn't.";
   }
-  if (lowerInput.includes("private") || lowerInput.includes("privacy")) {
-    return "Yes! Your trading data is private and secured. It is only accessible to you when you are authenticated.";
+  if (lowerInput.includes("private") || lowerInput.includes("privacy") || lowerInput.includes("secure")) {
+    return isHindi
+      ? "Haan bilkul! Tumhara trading data 100% private aur secure hai. Ye sirf tumhare login karne ke baad tumhe hi dikhta hai."
+      : "Yes! Your trading data is private and secured. It is only accessible to you when you are authenticated.";
   }
-  if (lowerInput.includes("approval")) {
-    return "New accounts may require administrator approval before you can access the dashboard. Once approved by the Owner, you'll be able to log in and start journaling.";
+  if (lowerInput.includes("approval") || lowerInput.includes("account kaise")) {
+    return isHindi
+      ? "Naye accounts ko pehle administrator (Owner) se approval chahiye hota hai dashboard access karne ke liye. Approve hone ke baad tum journal use kar sakte ho."
+      : "New accounts may require administrator approval before you can access the dashboard. Once approved by the Owner, you'll be able to log in and start journaling.";
   }
   if (lowerInput.includes("dashboard")) {
-    return "The Dashboard provides a high-level overview of your trading activity, quick stats, and recent trades so you can instantly see where you stand.";
+    return isHindi
+      ? "Dashboard tumhe tumhari trading activity ka ek quick overview aur recent stats dikhata hai."
+      : "The Dashboard provides a high-level overview of your trading activity, quick stats, and recent trades so you can instantly see where you stand.";
   }
   if (lowerInput.includes("profile") || lowerInput.includes("settings")) {
-    return "Your Profile and Settings allow you to manage your personal details, avatar, and customize your Edge Journal experience.";
+    return isHindi
+      ? "Profile aur Settings se tum apni personal details aur preferences manage kar sakte ho."
+      : "Your Profile and Settings allow you to manage your personal details, avatar, and customize your Edge Journal experience.";
   }
   
-  return "I'm here to help you understand Edge Journal and how to use it. Ask me anything about the platform, its features, or how it can help you journal and analyze your trades.";
+  return isHindi
+    ? "Main yahan Edge Journal samajhne mein tumhari help karne ke liye hoon. Tum platform, features, ya apne trades ke baare mein kuch bhi pooch sakte ho."
+    : "I'm here to help you understand Edge Journal and how to use it. Ask me anything about the platform, its features, or how it can help you journal and analyze your trades.";
 };
 
 export function LoginGuide() {
@@ -72,7 +96,7 @@ export function LoginGuide() {
         {
           id: "welcome",
           role: "assistant",
-          content: "Hey 👋 I'm the Edge Journal Guide.\n\nI can help you understand what Edge Journal does, how its features work, and why keeping a proper trading journal can improve your trading process.\n\nWhat would you like to know?"
+          content: "Hey 👋 Welcome to Edge Journal.\n\nMain tumhe Edge Journal ke features, trading journal aur AI tools ke baare mein explain kar sakta hoon. (I can help you understand Edge Journal's features).\n\nWhat would you like to know?"
         }
       ]);
     }

@@ -160,6 +160,7 @@ export function AppShell({
           <div className="px-3 pb-2">
             <Link
               to="/ai-coach"
+              search={{ chat: true }}
               className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl border border-primary/20 bg-gradient-to-r from-primary/10 to-accent/10 px-3 py-3 text-xs font-semibold text-primary transition-all duration-300 hover:scale-[1.02] hover:border-primary/40 hover:from-primary/20 hover:to-accent/20 hover:shadow-[0_0_15px_-3px_var(--color-primary)] active:scale-95"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/10 to-primary/0 translate-x-[-100%] transition-transform duration-700 group-hover:translate-x-[100%]" />

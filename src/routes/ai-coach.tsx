@@ -39,6 +39,11 @@ export const Route = createFileRoute("/ai-coach")({
       { property: "og:description", content: "World-class AI trading mentor & performance lab." },
     ],
   }),
+  validateSearch: (search: Record<string, unknown>) => {
+    return {
+      chat: (search.chat as string) === 'true' || search.chat === true,
+    }
+  },
   component: CoachPage,
 });
 
@@ -104,6 +109,7 @@ function CoachPage() {
   const { session, siteSettings } = useAuth();
   const [userTrades, setUserTrades] = useState<Trade[]>([]);
   const [activeQuoteIdx, setActiveQuoteIdx] = useState<number>(getDailyQuoteIndex());
+  const { chat } = Route.useSearch();
 
   // Interactive AI Assistant Chat State
   const [customQuestion, setCustomQuestion] = useState("");
@@ -111,6 +117,19 @@ function CoachPage() {
     [],
   );
   const [isAnswering, setIsAnswering] = useState(false);
+  const [isChatModalOpen, setIsChatModalOpen] = useState(false);
+
+  // Initialize welcome message
+  useEffect(() => {
+    if (isChatModalOpen && chatMessages.length === 0) {
+      setChatMessages([
+        {
+          role: "coach",
+          text: "Ready to analyze your trade?\n\nShare your trade details, setup, reasoning, result, or mistakes and I'll help you review the trade.",
+        },
+      ]);
+    }
+  }, [isChatModalOpen, chatMessages.length]);
 
   if (siteSettings && !siteSettings.ai_coach_enabled) {
     return (
@@ -129,7 +148,12 @@ function CoachPage() {
     );
   }
 
-  const [isChatModalOpen, setIsChatModalOpen] = useState(false);
+  // Auto-open chat if URL parameter specifies it
+  useEffect(() => {
+    if (chat) {
+      setIsChatModalOpen(true);
+    }
+  }, [chat]);
 
   // Pre-Trading Readiness State
   const [readinessState, setReadinessState] = useState({
@@ -504,10 +528,10 @@ function CoachPage() {
                 </div>
                 <div>
                   <h3 className="font-display text-base font-semibold text-foreground leading-none">
-                    AI Mentor Assessment
+                    Edge AI
                   </h3>
-                  <p className="mt-1 text-xs font-medium uppercase tracking-widest text-primary/80">
-                    Active Session
+                  <p className="mt-1 text-xs font-medium tracking-wide text-muted-foreground">
+                    Analyze your trade. Understand your decisions. Improve your process.
                   </p>
                 </div>
               </div>
