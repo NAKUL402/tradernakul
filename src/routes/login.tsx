@@ -209,39 +209,43 @@ function LoginPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10 perspective-container">
-      <div className="pointer-events-none absolute -left-32 top-0 size-[28rem] animate-float-slow rounded-full bg-primary/25 blur-[120px] parallax-bg" />
-      <div className="pointer-events-none absolute -right-24 bottom-0 size-[26rem] animate-float-slow rounded-full bg-accent/25 blur-[120px] [animation-delay:2s] parallax-bg" />
-      <div className="pointer-events-none absolute inset-0 opacity-[0.07] [background-image:linear-gradient(var(--color-border)_1px,transparent_1px),linear-gradient(90deg,var(--color-border)_1px,transparent_1px)] [background-size:44px_44px] parallax-bg" />
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 py-10">
+      {/* Static Premium Background */}
+      <div className="pointer-events-none absolute -left-32 top-0 size-[32rem] rounded-full bg-primary/10 blur-[100px]" />
+      <div className="pointer-events-none absolute -right-24 bottom-0 size-[28rem] rounded-full bg-accent/10 blur-[100px]" />
+      <div className="pointer-events-none absolute inset-0 opacity-[0.04] [background-image:linear-gradient(var(--color-border)_1px,transparent_1px),linear-gradient(90deg,var(--color-border)_1px,transparent_1px)] [background-size:44px_44px]" />
 
-      <div className="glass-card-3d transform-3d layer-3d relative w-full max-w-md animate-rise rounded-3xl p-6 sm:p-8 text-center">
-        <div className="flex items-center justify-center gap-3">
-          <span className="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-primary to-accent text-sm font-bold text-primary-foreground glow-primary">TJ</span>
-          <span className="text-left">
-            <span className="block font-display text-sm font-semibold">Trading Journal AI</span>
-            <span className="block text-[11px] text-muted-foreground">Track. Analyze. Improve.</span>
-          </span>
-        </div>
+      <div className="relative w-full max-w-[420px] animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="rounded-3xl border border-border/40 bg-background/60 p-8 text-center shadow-2xl shadow-black/10 backdrop-blur-2xl">
+          
+          {/* Logo & Header */}
+          <div className="flex flex-col items-center justify-center space-y-4">
+            <div className="grid size-12 place-items-center rounded-2xl bg-gradient-to-br from-primary to-accent shadow-lg shadow-primary/20">
+              <span className="text-lg font-bold text-primary-foreground tracking-wider">TJ</span>
+            </div>
+            
+            <div className="space-y-1">
+              <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
+                {showOtp ? "Verify Your Email" : "Welcome Back"}
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                {showOtp ? (
+                  <>
+                    We sent a secure code to
+                    <br />
+                    <span className="font-medium text-foreground">{email}</span>
+                  </>
+                ) : (
+                  "Enter your details to securely access your journal."
+                )}
+              </p>
+            </div>
+          </div>
 
-        <div className="mt-8 text-left">
-          <h1 className="font-display text-2xl font-semibold">
-            {showOtp ? "Verify your email" : "Sign In / Sign Up"}
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {showOtp ? (
-              <>
-                We've sent a 6-digit verification code to
-                <br />
-                <span className="font-medium text-foreground">{email}</span>
-              </>
-            ) : (
-              "Enter your details to securely access your journal."
-            )}
-          </p>
-
+          {/* Forms */}
           {showOtp ? (
-            <form onSubmit={handleVerifyOtp} className="mt-6 space-y-4">
-              <div className="animate-in fade-in duration-300">
+            <form onSubmit={handleVerifyOtp} className="mt-8 space-y-6">
+              <div className="animate-in fade-in zoom-in-95 duration-500">
                 <div 
                   className="flex justify-between gap-2 sm:gap-3" 
                   onPaste={handleOtpPaste}
@@ -256,7 +260,7 @@ function LoginPage() {
                       value={otpToken[index] || ""}
                       onChange={(e) => handleOtpChange(index, e.target.value)}
                       onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                      className="size-10 sm:size-12 text-center text-lg sm:text-xl font-semibold rounded-xl border border-border bg-background/50 outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
+                      className="size-11 sm:size-12 text-center text-xl font-bold rounded-xl border border-border/50 bg-background/50 outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
                       maxLength={2}
                       aria-label={`Digit ${index + 1}`}
                       disabled={isLoading}
@@ -273,22 +277,22 @@ function LoginPage() {
               <button
                 type="submit"
                 disabled={isLoading || otpToken.length < 6}
-                className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-accent px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90 active:scale-[0.99] disabled:opacity-50 glow-primary"
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-foreground px-4 py-3.5 text-sm font-semibold text-background transition-all hover:bg-foreground/90 active:scale-[0.98] disabled:opacity-50"
               >
                 {isLoading ? "Verifying..." : "Verify Code"}
                 {!isLoading && <ArrowRight className="size-4" />}
               </button>
 
-              <div className="mt-6 flex flex-col items-center gap-3 text-xs text-muted-foreground">
-                <div className="flex items-center gap-1">
+              <div className="mt-6 flex flex-col items-center gap-4 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1.5">
                   <span>Didn't receive the code?</span>
                   <button
                     type="button"
                     onClick={handleResendOtp}
                     disabled={isLoading || resendCooldown > 0}
-                    className="font-medium text-primary hover:underline disabled:opacity-50 disabled:no-underline"
+                    className="font-semibold text-foreground hover:text-primary transition-colors disabled:opacity-50 disabled:hover:text-foreground"
                   >
-                    {resendCooldown > 0 ? `Resend available in ${resendCooldown}s` : "Resend code"}
+                    {resendCooldown > 0 ? `Wait ${resendCooldown}s` : "Resend"}
                   </button>
                 </div>
                 <button
@@ -298,57 +302,64 @@ function LoginPage() {
                     setOtpToken("");
                     setOtpError("");
                   }}
-                  className="hover:underline"
+                  className="font-medium hover:text-foreground transition-colors"
                 >
-                  Change email address
+                  Use a different email address
                 </button>
               </div>
             </form>
           ) : (
-            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+            <form onSubmit={handleSubmit} className="mt-8 space-y-5 text-left">
               
-              <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-300">
-                <label className="text-xs font-medium text-foreground">First Name / Display Name</label>
+              <div className="space-y-1.5 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-100 fill-mode-backwards">
+                <label className="text-[13px] font-semibold text-foreground/80">First Name</label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <User className="absolute left-3.5 top-1/2 size-[18px] -translate-y-1/2 text-muted-foreground/70" />
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Rahul Sharma"
-                    className="w-full rounded-xl border border-border bg-background/50 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
+                    placeholder="E.g. Rahul Sharma"
+                    className="w-full rounded-xl border border-border/50 bg-background/50 py-3 pl-10 pr-4 text-[15px] outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
                     required
                   />
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-foreground">Email Address</label>
+              <div className="space-y-1.5 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-150 fill-mode-backwards">
+                <label className="text-[13px] font-semibold text-foreground/80">Email Address</label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Mail className="absolute left-3.5 top-1/2 size-[18px] -translate-y-1/2 text-muted-foreground/70" />
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@example.com"
-                    className="w-full rounded-xl border border-border bg-background/50 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
+                    className="w-full rounded-xl border border-border/50 bg-background/50 py-3 pl-10 pr-4 text-[15px] outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
                     required
                   />
                 </div>
               </div>
 
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-accent px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90 active:scale-[0.99] disabled:opacity-50 glow-primary"
-              >
-                {isLoading ? "Sending OTP..." : "Send OTP"}
-                {!isLoading && <ArrowRight className="size-4" />}
-              </button>
+              <div className="pt-2 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-200 fill-mode-backwards">
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-foreground px-4 py-3.5 text-[15px] font-semibold text-background transition-all hover:bg-foreground/90 active:scale-[0.98] disabled:opacity-50 shadow-md shadow-black/5"
+                >
+                  {isLoading ? "Sending secure code..." : "Continue with Email"}
+                  {!isLoading && <ArrowRight className="size-4" />}
+                </button>
+              </div>
 
             </form>
           )}
         </div>
+        
+        {/* Footer info */}
+        <p className="mt-8 text-center text-[13px] text-muted-foreground animate-in fade-in duration-700 delay-300 fill-mode-backwards">
+          Secure, passwordless authentication by Trading Journal AI.
+        </p>
       </div>
     </div>
   );
