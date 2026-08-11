@@ -20,17 +20,23 @@ export function SettingsTradingPreferences() {
             ))}
           </select>
         </div>
-        
+
         <div>
           <label className="text-sm font-medium">Default Trading Session</label>
           <select
             value={userSettings.default_session || ""}
-            onChange={(e) => updateUserSettings({ default_session: e.target.value ? (e.target.value as any) : null })}
+            onChange={(e) =>
+              updateUserSettings({
+                default_session: e.target.value ? (e.target.value as any) : null,
+              })
+            }
             className="mt-2 w-full rounded-xl border border-border bg-card/60 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
           >
             <option value="">No default</option>
             {["Asian", "London", "New York"].map((c) => (
-              <option key={c} value={c}>{c}</option>
+              <option key={c} value={c}>
+                {c}
+              </option>
             ))}
           </select>
           <p className="mt-1.5 text-xs text-muted-foreground">Pre-fills new trades.</p>
@@ -43,7 +49,11 @@ export function SettingsTradingPreferences() {
               type="number"
               step="0.1"
               value={userSettings.default_risk_pct || ""}
-              onChange={(e) => updateUserSettings({ default_risk_pct: e.target.value ? parseFloat(e.target.value) : null })}
+              onChange={(e) =>
+                updateUserSettings({
+                  default_risk_pct: e.target.value ? parseFloat(e.target.value) : null,
+                })
+              }
               placeholder="e.g. 1.0"
               className="mt-2 w-full rounded-xl border border-border bg-card/60 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
             />

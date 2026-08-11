@@ -1,7 +1,17 @@
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
-export function AuthLayout({ title, subtitle, children, footer }: { title: string; subtitle: string; children: ReactNode; footer: ReactNode }) {
+export function AuthLayout({
+  title,
+  subtitle,
+  children,
+  footer,
+}: {
+  title: string;
+  subtitle: string;
+  children: ReactNode;
+  footer: ReactNode;
+}) {
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10">
       <div className="pointer-events-none absolute -left-32 top-0 size-[28rem] animate-float-slow rounded-full bg-primary/25 blur-[120px]" />
@@ -10,10 +20,16 @@ export function AuthLayout({ title, subtitle, children, footer }: { title: strin
 
       <div className="glass relative w-full max-w-md animate-rise rounded-3xl p-6 sm:p-8">
         <Link to="/" className="flex items-center gap-3">
-          <img src="/logo.jpg" alt="Edge Journal Logo" className="size-10 rounded-xl object-cover glow-primary" />
+          <img
+            src="/logo.jpg"
+            alt="Edge Journal Logo"
+            className="size-10 rounded-xl object-cover glow-primary"
+          />
           <span>
             <span className="block font-display text-sm font-semibold">Edge Journal</span>
-            <span className="block text-[11px] text-muted-foreground">Track. Analyze. Improve.</span>
+            <span className="block text-[11px] text-muted-foreground">
+              Track. Analyze. Improve.
+            </span>
           </span>
         </Link>
 

@@ -66,9 +66,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
           Edge Journal Dashboard
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Reconnecting to your session...
-        </p>
+        <p className="mt-2 text-sm text-muted-foreground">Reconnecting to your session...</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             type="button"
@@ -95,16 +93,28 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Edge Journal" },
-      { name: "description", content: "Track, analyze and improve your trading with Edge Journal's AI-powered analytics, equity curves and performance insights." },
+      {
+        name: "description",
+        content:
+          "Track, analyze and improve your trading with Edge Journal's AI-powered analytics, equity curves and performance insights.",
+      },
       { name: "author", content: "Edge Journal" },
       { property: "og:title", content: "Edge Journal" },
-      { property: "og:description", content: "Track, analyze and improve your trading with Edge Journal's AI-powered analytics, equity curves and performance insights." },
+      {
+        property: "og:description",
+        content:
+          "Track, analyze and improve your trading with Edge Journal's AI-powered analytics, equity curves and performance insights.",
+      },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://EdgeJournal.site" },
       { property: "og:image", content: "https://EdgeJournal.site/logo.jpg" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Edge Journal" },
-      { name: "twitter:description", content: "Track, analyze and improve your trading with Edge Journal's AI-powered analytics, equity curves and performance insights." },
+      {
+        name: "twitter:description",
+        content:
+          "Track, analyze and improve your trading with Edge Journal's AI-powered analytics, equity curves and performance insights.",
+      },
       { name: "twitter:image", content: "https://EdgeJournal.site/logo.jpg" },
     ],
     links: [
@@ -129,13 +139,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   // Resolve environment variables on the server (handling the Vercel typo "ANOM_KEY")
-  const envUrl = typeof process !== 'undefined' && process.env.VITE_SUPABASE_URL 
-    ? process.env.VITE_SUPABASE_URL 
-    : (import.meta as any).env?.VITE_SUPABASE_URL || '';
-    
-  const envKey = typeof process !== 'undefined' && (process.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANOM_KEY)
-    ? (process.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANOM_KEY)
-    : (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || (import.meta as any).env?.VITE_SUPABASE_ANOM_KEY || '';
+  const envUrl =
+    typeof process !== "undefined" && process.env.VITE_SUPABASE_URL
+      ? process.env.VITE_SUPABASE_URL
+      : (import.meta as any).env?.VITE_SUPABASE_URL || "";
+
+  const envKey =
+    typeof process !== "undefined" &&
+    (process.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANOM_KEY)
+      ? process.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANOM_KEY
+      : (import.meta as any).env?.VITE_SUPABASE_ANON_KEY ||
+        (import.meta as any).env?.VITE_SUPABASE_ANOM_KEY ||
+        "";
 
   const envScript = `
   window.__TRADERNAKUL_ENV__ = {
@@ -170,7 +185,8 @@ function RejectedComponent() {
         <ShieldAlert className="mx-auto size-16 text-destructive" />
         <h1 className="mt-4 font-display text-2xl font-bold text-foreground">Access Denied</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Your account request was declined by the administrator. Please contact support if you believe this is a mistake.
+          Your account request was declined by the administrator. Please contact support if you
+          believe this is a mistake.
         </p>
         <button
           onClick={signOut}
@@ -192,7 +208,8 @@ function MaintenanceComponent() {
         <Wrench className="mx-auto size-16 text-destructive animate-pulse" />
         <h1 className="mt-4 font-display text-2xl font-bold text-foreground">Under Maintenance</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Edge Journal is currently undergoing scheduled upgrades. We will be back online shortly. Thank you for your patience!
+          Edge Journal is currently undergoing scheduled upgrades. We will be back online shortly.
+          Thank you for your patience!
         </p>
         <button
           onClick={signOut}
@@ -206,7 +223,8 @@ function MaintenanceComponent() {
 }
 
 function AuthGuard({ children }: { children: ReactNode }) {
-  const { user, profile, isLoading, isAdmin, isApproved, fetchError, signOut, siteSettings } = useAuth();
+  const { user, profile, isLoading, isAdmin, isApproved, fetchError, signOut, siteSettings } =
+    useAuth();
   const { location } = useRouterState();
   const isAuthRoute = ["/login"].includes(location.pathname);
 
@@ -224,9 +242,7 @@ function AuthGuard({ children }: { children: ReactNode }) {
         <div className="max-w-md text-center glass p-8 rounded-3xl">
           <ShieldAlert className="mx-auto size-16 text-destructive" />
           <h1 className="mt-4 font-display text-2xl font-bold text-foreground">Database Error</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {fetchError}
-          </p>
+          <p className="mt-2 text-sm text-muted-foreground">{fetchError}</p>
           <button
             onClick={signOut}
             className="mt-6 inline-flex items-center justify-center rounded-xl border border-border bg-card/40 px-5 py-2.5 text-sm font-medium text-foreground transition hover:bg-card/70"

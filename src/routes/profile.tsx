@@ -7,9 +7,15 @@ export const Route = createFileRoute("/profile")({
   head: () => ({
     meta: [
       { title: "Profile — Edge Journal" },
-      { name: "description", content: "Your trader profile: plan, trading style, stats snapshot and account details." },
+      {
+        name: "description",
+        content: "Your trader profile: plan, trading style, stats snapshot and account details.",
+      },
       { property: "og:title", content: "Profile — Edge Journal" },
-      { property: "og:description", content: "Trader profile with plan details and lifetime performance snapshot." },
+      {
+        property: "og:description",
+        content: "Trader profile with plan details and lifetime performance snapshot.",
+      },
     ],
   }),
   component: Profile,
@@ -22,25 +28,44 @@ import { supabase } from "@/lib/supabase";
 import { fetchUserTrades, stats as calcStats } from "@/lib/trades";
 
 function Profile() {
-  const { user, profile, userSettings, updateUserSettings, isOwner, isAdmin, isApproved, refreshSettings, refreshProfile } = useAuth();
-  
+  const {
+    user,
+    profile,
+    userSettings,
+    updateUserSettings,
+    isOwner,
+    isAdmin,
+    isApproved,
+    refreshSettings,
+    refreshProfile,
+  } = useAuth();
+
   const [isUploading, setIsUploading] = useState(false);
   const [isSavingName, setIsSavingName] = useState(false);
-  const [nameInput, setNameInput] = useState(profile?.full_name || user?.user_metadata?.["full_name"] || user?.user_metadata?.["name"] || "");
+  const [nameInput, setNameInput] = useState(
+    profile?.full_name || user?.user_metadata?.["full_name"] || user?.user_metadata?.["name"] || "",
+  );
   const [userStats, setUserStats] = useState<ReturnType<typeof calcStats> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    fetchUserTrades().then(trades => {
+    fetchUserTrades().then((trades) => {
       setUserStats(calcStats(trades));
     });
   }, []);
 
-  const name = profile?.full_name || user?.user_metadata?.["full_name"] || user?.user_metadata?.["name"] || "Trader";
+  const name =
+    profile?.full_name ||
+    user?.user_metadata?.["full_name"] ||
+    user?.user_metadata?.["name"] ||
+    "Trader";
   const email = profile?.email || user?.email || "";
   const roleLabel = isOwner ? "Owner Admin" : isAdmin ? "Admin" : "Trader";
-  const statusLabel = isOwner || isApproved ? "APPROVED" : profile?.status ? profile.status.toUpperCase() : "PENDING";
-  const memberSince = profile?.created_at ? new Date(profile.created_at).toLocaleDateString() : "Unknown";
+  const statusLabel =
+    isOwner || isApproved ? "APPROVED" : profile?.status ? profile.status.toUpperCase() : "PENDING";
+  const memberSince = profile?.created_at
+    ? new Date(profile.created_at).toLocaleDateString()
+    : "Unknown";
 
   const initials = name
     .split(" ")
@@ -54,27 +79,27 @@ function Profile() {
       if (!e.target.files || e.target.files.length === 0 || !user) return;
       setIsUploading(true);
       const file = e.target.files[0];
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file.name.split(".").pop();
       const fileName = `${user.id}/${Math.random()}.${fileExt}`;
-      
+
       const { error: uploadError } = await supabase.storage
-        .from('profile-avatars')
+        .from("profile-avatars")
         .upload(fileName, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('profile-avatars')
-        .getPublicUrl(fileName);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("profile-avatars").getPublicUrl(fileName);
 
       const { error: updateError } = await supabase
-        .from('profiles')
+        .from("profiles")
         .update({ avatar_url: publicUrl })
-        .eq('id', user.id);
+        .eq("id", user.id);
 
       if (updateError) throw updateError;
       toast.success("Profile photo updated successfully");
-      
+
       await refreshProfile();
     } catch (error: any) {
       toast.error(error.message || "Failed to upload avatar");
@@ -88,11 +113,11 @@ function Profile() {
     try {
       if (!user || !profile?.avatar_url) return;
       setIsUploading(true);
-      
+
       const { error: updateError } = await supabase
-        .from('profiles')
+        .from("profiles")
         .update({ avatar_url: null })
-        .eq('id', user.id);
+        .eq("id", user.id);
 
       if (updateError) throw updateError;
       toast.success("Profile photo removed");
@@ -108,7 +133,10 @@ function Profile() {
     if (!user || nameInput.trim() === name) return;
     setIsSavingName(true);
     try {
-      const { error } = await supabase.from('profiles').update({ full_name: nameInput.trim() }).eq('id', user.id);
+      const { error } = await supabase
+        .from("profiles")
+        .update({ full_name: nameInput.trim() })
+        .eq("id", user.id);
       if (error) throw error;
       toast.success("Name updated successfully");
       await refreshProfile();
@@ -122,21 +150,30 @@ function Profile() {
   return (
     <AppShell title="Profile" subtitle="Manage your identity and trading profile">
       <div className="mx-auto max-w-4xl space-y-6">
-        
         {/* Header Section */}
         <Panel>
           <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
             <div className="flex flex-col items-center gap-3">
               {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt={name} className="size-24 rounded-3xl object-cover ring-2 ring-primary/40 glow-primary" />
+                <img
+                  src={profile.avatar_url}
+                  alt={name}
+                  className="size-24 rounded-3xl object-cover ring-2 ring-primary/40 glow-primary"
+                />
               ) : (
                 <div className="grid size-24 place-items-center rounded-3xl bg-gradient-to-br from-primary to-accent font-display text-3xl font-bold text-primary-foreground glow-primary">
                   {initials}
                 </div>
               )}
               <div className="flex gap-2">
-                <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleAvatarUpload} />
-                <button 
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  ref={fileInputRef}
+                  onChange={handleAvatarUpload}
+                />
+                <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isUploading}
                   className="rounded-lg bg-muted px-3 py-1.5 text-xs font-medium hover:bg-muted/80 disabled:opacity-50"
@@ -144,7 +181,7 @@ function Profile() {
                   {isUploading ? "Uploading..." : "Change"}
                 </button>
                 {profile?.avatar_url && (
-                  <button 
+                  <button
                     onClick={handleAvatarRemove}
                     disabled={isUploading}
                     className="rounded-lg bg-destructive/10 px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/20 disabled:opacity-50"
@@ -167,7 +204,6 @@ function Profile() {
         </Panel>
 
         <div className="grid gap-6 md:grid-cols-2">
-          
           {/* Personal Information */}
           <Panel title="Personal Information">
             <div className="space-y-4">
@@ -179,9 +215,11 @@ function Profile() {
                   disabled
                   className="w-full rounded-xl border border-border bg-muted/50 px-3 py-2.5 text-sm outline-none cursor-not-allowed opacity-70"
                 />
-                <p className="mt-1 text-xs text-muted-foreground">Email is managed via your secure provider.</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Email is managed via your secure provider.
+                </p>
               </div>
-              
+
               <div>
                 <label className="mb-1.5 block text-sm font-medium">Full Name</label>
                 <div className="flex gap-2">
@@ -217,7 +255,9 @@ function Profile() {
               <div className="flex items-center justify-between pb-1">
                 <span className="text-muted-foreground">Access Status</span>
                 <span className="font-medium flex items-center gap-2">
-                  <div className={`size-2 rounded-full ${isApproved || isOwner ? "bg-emerald-500" : "bg-yellow-500"}`}></div>
+                  <div
+                    className={`size-2 rounded-full ${isApproved || isOwner ? "bg-emerald-500" : "bg-yellow-500"}`}
+                  ></div>
                   {statusLabel}
                 </span>
               </div>
@@ -234,15 +274,21 @@ function Profile() {
                 </div>
                 <div className="rounded-xl border border-border/50 bg-card/60 p-4 text-center">
                   <p className="text-sm text-muted-foreground">Win Rate</p>
-                  <p className="mt-1 font-display text-2xl font-bold">{userStats.winRate.toFixed(1)}%</p>
+                  <p className="mt-1 font-display text-2xl font-bold">
+                    {userStats.winRate.toFixed(1)}%
+                  </p>
                 </div>
                 <div className="rounded-xl border border-border/50 bg-card/60 p-4 text-center">
                   <p className="text-sm text-muted-foreground">Avg RRR</p>
-                  <p className="mt-1 font-display text-2xl font-bold">{userStats.avgRRR.toFixed(2)}</p>
+                  <p className="mt-1 font-display text-2xl font-bold">
+                    {userStats.avgRRR.toFixed(2)}
+                  </p>
                 </div>
                 <div className="rounded-xl border border-border/50 bg-card/60 p-4 text-center">
                   <p className="text-sm text-muted-foreground">Best Setup</p>
-                  <p className="mt-1 font-display text-lg font-bold line-clamp-1">{userStats.bestPair?.name || "N/A"}</p>
+                  <p className="mt-1 font-display text-lg font-bold line-clamp-1">
+                    {userStats.bestPair?.name || "N/A"}
+                  </p>
                 </div>
               </div>
             ) : (
@@ -255,7 +301,8 @@ function Profile() {
           {/* Trading Profile */}
           <Panel title="Trading Profile" className="md:col-span-2">
             <p className="mb-6 text-sm text-muted-foreground">
-              Configure your primary trading identity. These settings help customize your journal analytics.
+              Configure your primary trading identity. These settings help customize your journal
+              analytics.
             </p>
             <div className="grid gap-6 sm:grid-cols-2">
               <div>
@@ -277,7 +324,9 @@ function Profile() {
                 <label className="mb-1.5 block text-sm font-medium">Preferred Timeframe</label>
                 <select
                   value={userSettings?.preferred_timeframe || ""}
-                  onChange={(e) => updateUserSettings({ preferred_timeframe: e.target.value || null })}
+                  onChange={(e) =>
+                    updateUserSettings({ preferred_timeframe: e.target.value || null })
+                  }
                   className="w-full rounded-xl border border-border bg-card/60 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
                 >
                   <option value="">Not specified</option>
@@ -294,9 +343,16 @@ function Profile() {
                   type="text"
                   placeholder="e.g. Forex, Crypto, Indices (comma separated)"
                   value={userSettings?.primary_markets?.join(", ") || ""}
-                  onChange={(e) => updateUserSettings({ 
-                    primary_markets: e.target.value ? e.target.value.split(",").map(s => s.trim()).filter(Boolean) : null 
-                  })}
+                  onChange={(e) =>
+                    updateUserSettings({
+                      primary_markets: e.target.value
+                        ? e.target.value
+                            .split(",")
+                            .map((s) => s.trim())
+                            .filter(Boolean)
+                        : null,
+                    })
+                  }
                   className="w-full rounded-xl border border-border bg-card/60 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
@@ -305,7 +361,11 @@ function Profile() {
                 <label className="mb-1.5 block text-sm font-medium">Preferred Session</label>
                 <select
                   value={userSettings?.default_session || ""}
-                  onChange={(e) => updateUserSettings({ default_session: e.target.value ? (e.target.value as any) : null })}
+                  onChange={(e) =>
+                    updateUserSettings({
+                      default_session: e.target.value ? (e.target.value as any) : null,
+                    })
+                  }
                   className="w-full rounded-xl border border-border bg-card/60 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
                 >
                   <option value="">No default</option>
@@ -317,9 +377,7 @@ function Profile() {
             </div>
           </Panel>
         </div>
-
       </div>
     </AppShell>
   );
 }
-

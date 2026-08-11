@@ -61,8 +61,9 @@ export default function handler(_req: VercelRequest, res: VercelResponse) {
       OWNER_EMAIL: ownerEmail ? `✅ SET (${ownerEmail})` : "❌ NOT SET",
       VITE_SITE_URL: siteUrl ? `✅ SET (${siteUrl})` : "❌ NOT SET",
     },
-    diagnosis: urlOk && keyOk
-      ? "✅ All Supabase variables are correctly configured. Frontend should connect successfully."
-      : "❌ Supabase variables missing or invalid. The frontend build will not embed them and 'Invalid API Key' will occur.",
+    diagnosis:
+      urlOk && keyOk
+        ? "✅ All Supabase variables are correctly configured. Frontend should connect successfully."
+        : "❌ Supabase variables missing or invalid. The frontend build will not embed them and 'Invalid API Key' will occur.",
   });
 }

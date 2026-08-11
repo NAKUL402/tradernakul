@@ -3,14 +3,15 @@ const assert = require("assert");
 
 async function runTests() {
   console.log("Running AI Coach Test Matrix...");
-  let passed = 0, failed = 0;
-  
+  let passed = 0,
+    failed = 0;
+
   const testMsg = async (msg, expectedStr) => {
     try {
       const res = await fetch("http://localhost:3001/api/ai-coach", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: msg, history: [] })
+        body: JSON.stringify({ message: msg, history: [] }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -25,7 +26,7 @@ async function runTests() {
         console.log(`❌ FAILED: ${msg} | No reply in data`, data);
         failed++;
       }
-    } catch(err) {
+    } catch (err) {
       console.log(`❌ FAILED: ${msg} | Network error`, err.message);
       failed++;
     }
@@ -33,7 +34,7 @@ async function runTests() {
 
   await testMsg("2+2 kya hai?", "Dynamic Math response");
   await testMsg("Liquidity sweep kya hota hai?", "SMC response");
-  
+
   console.log(`\nTests finished. Passed: ${passed}, Failed: ${failed}`);
 }
 

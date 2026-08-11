@@ -5,7 +5,8 @@ export type WeeklyGoldenRule = {
   title: string;
   rule: string;
   principle: string;
-  category: "Capital Protection" | "Discipline" | "Psychology" | "Liquidity & Execution" | "Risk Control";
+  category:
+    "Capital Protection" | "Discipline" | "Psychology" | "Liquidity & Execution" | "Risk Control";
 };
 
 export const WEEKLY_GOLDEN_RULES: WeeklyGoldenRule[] = [
@@ -27,35 +28,40 @@ export const WEEKLY_GOLDEN_RULES: WeeklyGoldenRule[] = [
     week: 3,
     title: "The 30-Minute Post-Loss Rule",
     rule: "Revenge trading is an emotional attempt to control an uncontrollable market. Take a mandatory 30-minute break after every loss.",
-    principle: "Step away from screens immediately after a stop out to reset your psychological state.",
+    principle:
+      "Step away from screens immediately after a stop out to reset your psychological state.",
     category: "Psychology",
   },
   {
     week: 4,
     title: "Asymmetric Risk:Reward Ratio",
     rule: "Your win rate does not make you rich; your Risk-to-Reward ratio does. A 40% win rate with a 1:3 RRR builds long-term wealth.",
-    principle: "Refuse setups offering less than 1:2 RRR, regardless of how enticing the pattern looks.",
+    principle:
+      "Refuse setups offering less than 1:2 RRR, regardless of how enticing the pattern looks.",
     category: "Risk Control",
   },
   {
     week: 5,
     title: "Process Over Outcome",
     rule: "A winning trade executed against your plan is a bad trade. A losing trade executed strictly following your plan is a successful trade.",
-    principle: "Evaluate trading success purely by rule adherence, not by short-term monetary results.",
+    principle:
+      "Evaluate trading success purely by rule adherence, not by short-term monetary results.",
     category: "Discipline",
   },
   {
     week: 6,
     title: "Position Sizing Is Your Shield",
     rule: "If a trade causes anxiety or heart palpitations, your lot size is too large. Size down until entry feels robotic and calm.",
-    principle: "Calculate position size dynamically based on stop loss distance, not fixed lot numbers.",
+    principle:
+      "Calculate position size dynamically based on stop loss distance, not fixed lot numbers.",
     category: "Capital Protection",
   },
   {
     week: 7,
     title: "FOMO Is a Retail Trap",
     rule: "Chasing a candle is paying top price for market noise. Elite traders let price return to their Point of Interest (POI).",
-    principle: "If you miss the initial break, wait patiently for the retest or skip the move entirely.",
+    principle:
+      "If you miss the initial break, wait patiently for the retest or skip the move entirely.",
     category: "Psychology",
   },
   {
@@ -69,21 +75,24 @@ export const WEEKLY_GOLDEN_RULES: WeeklyGoldenRule[] = [
     week: 9,
     title: "Robotic Execution Discipline",
     rule: "Hesitation at entry and early exit at target are signs of trade fear. Once setup is verified, execute without doubt.",
-    principle: "Set entry, stop loss, and take profit, then let the market reach one of them without micro-managing.",
+    principle:
+      "Set entry, stop loss, and take profit, then let the market reach one of them without micro-managing.",
     category: "Liquidity & Execution",
   },
   {
     week: 10,
     title: "Drawdown Management Strategy",
     rule: "Drawdowns are a natural statistical cost of trading. Cut your position size by 50% during a 3-trade losing streak.",
-    principle: "Protect confidence and bankroll by scaling down risk when market conditions mismatch your strategy.",
+    principle:
+      "Protect confidence and bankroll by scaling down risk when market conditions mismatch your strategy.",
     category: "Risk Control",
   },
   {
     week: 11,
     title: "Session Volatility Alignment",
     rule: "Trade when institutional volume is active. High probability moves happen during London and New York session overlaps.",
-    principle: "Avoid entering new positions during Asian consolidation unless trading specific range-bound setups.",
+    principle:
+      "Avoid entering new positions during Asian consolidation unless trading specific range-bound setups.",
     category: "Liquidity & Execution",
   },
   {
@@ -97,14 +106,16 @@ export const WEEKLY_GOLDEN_RULES: WeeklyGoldenRule[] = [
     week: 13,
     title: "Order Block Validation",
     rule: "Not all order blocks hold. Only trade order blocks that created market structure breaks (BOS) and left fair value gaps (FVG).",
-    principle: "Filter setups by demanding displacement before placing limit orders at order blocks.",
+    principle:
+      "Filter setups by demanding displacement before placing limit orders at order blocks.",
     category: "Liquidity & Execution",
   },
   {
     week: 14,
     title: "Daily Max Loss Limit",
     rule: "Set a hard daily loss limit of 2% of total capital. Once hit, close terminals and walk away for the rest of the day.",
-    principle: "Protecting your account from catastrophe days is the key difference between pros and amateurs.",
+    principle:
+      "Protecting your account from catastrophe days is the key difference between pros and amateurs.",
     category: "Capital Protection",
   },
   {
@@ -126,7 +137,8 @@ export const WEEKLY_GOLDEN_RULES: WeeklyGoldenRule[] = [
 export function getCurrentWeekIndex(): number {
   const now = new Date();
   const start = new Date(now.getFullYear(), 0, 1);
-  const diff = now.getTime() - start.getTime() + (start.getTimezoneOffset() - now.getTimezoneOffset()) * 60000;
+  const diff =
+    now.getTime() - start.getTime() + (start.getTimezoneOffset() - now.getTimezoneOffset()) * 60000;
   const oneDay = 1000 * 60 * 60 * 24;
   const dayOfYear = Math.floor(diff / oneDay);
   const weekNum = Math.floor(dayOfYear / 7);
@@ -171,7 +183,7 @@ import { supabase } from "./supabase";
 export async function sendChatMessageToAI(
   message: string,
   history: ChatMessage[] = [],
-  userTrades: Trade[] = []
+  userTrades: Trade[] = [],
 ): Promise<string> {
   const summaryContext =
     userTrades && userTrades.length > 0
@@ -198,9 +210,11 @@ export async function sendChatMessageToAI(
   while (attempts < maxAttempts) {
     attempts++;
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       const token = session?.access_token;
-      
+
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (token) {
         headers["Authorization"] = `Bearer ${token}`;
@@ -217,31 +231,37 @@ export async function sendChatMessageToAI(
           history: historyToSend,
           tradeContext: summaryContext,
         }),
-        signal: AbortSignal.timeout(20000)
+        signal: AbortSignal.timeout(20000),
       });
-      
+
       // If success or 4xx error (like 400, 401, 403, 404, 429), break immediately and handle below
       if (res.ok || (res.status >= 400 && res.status < 500)) {
         break;
       }
-      
+
       // If 5xx error, we will retry (if attempts < maxAttempts)
       lastErrorMsg = `Server returned HTTP ${res.status}`;
       if (attempts < maxAttempts) {
-        console.warn(`[ai-coach-service] HTTP ${res.status}. Retrying (${attempts}/${maxAttempts})...`);
-        await new Promise(r => setTimeout(r, 1000));
+        console.warn(
+          `[ai-coach-service] HTTP ${res.status}. Retrying (${attempts}/${maxAttempts})...`,
+        );
+        await new Promise((r) => setTimeout(r, 1000));
       }
-      
     } catch (networkErr: unknown) {
       const msg = networkErr instanceof Error ? networkErr.message : String(networkErr);
       lastErrorMsg = `Network/Timeout Error: ${msg}`;
       if (attempts < maxAttempts) {
-        console.warn(`[ai-coach-service] Network error. Retrying (${attempts}/${maxAttempts})...`, msg);
-        await new Promise(r => setTimeout(r, 1000));
+        console.warn(
+          `[ai-coach-service] Network error. Retrying (${attempts}/${maxAttempts})...`,
+          msg,
+        );
+        await new Promise((r) => setTimeout(r, 1000));
       } else {
         throw new Error(
           `Cannot reach AI Coach API after ${maxAttempts} attempts. ` +
-          (msg.includes("Timeout") || msg.includes("abort") ? "Request timed out." : `Original error: ${msg}`)
+            (msg.includes("Timeout") || msg.includes("abort")
+              ? "Request timed out."
+              : `Original error: ${msg}`),
         );
       }
     }
@@ -259,7 +279,7 @@ export async function sendChatMessageToAI(
     rateLimited?: boolean;
     retryAfterSeconds?: number;
   };
-  
+
   let data: CoachResponse | null = null;
 
   try {
@@ -267,7 +287,7 @@ export async function sendChatMessageToAI(
   } catch {
     throw new Error(
       `Server returned non-JSON response (HTTP ${res.status}). ` +
-        `The API server may not be running or crashed.`
+        `The API server may not be running or crashed.`,
     );
   }
 
@@ -278,7 +298,7 @@ export async function sendChatMessageToAI(
       throw new Error(
         `⏱ Groq API rate limit reached. ` +
           `Please wait ${waitSec} seconds before sending another message. ` +
-          `This is an API quota limit, not an app error.`
+          `This is an API quota limit, not an app error.`,
       );
     }
 
@@ -296,7 +316,6 @@ export async function sendChatMessageToAI(
 
   return data.reply;
 }
-
 
 export function analyzeTradeDataWithAI(userTrades: Trade[]): AICoachAnalysis {
   const weekIdx = getCurrentWeekIndex();
@@ -331,9 +350,12 @@ export function analyzeTradeDataWithAI(userTrades: Trade[]): AICoachAnalysis {
         "Phase 2: Maintain a fixed 1% risk per trade and tag setup type (Order Block / Liquidity Sweep).",
         "Phase 3: Conduct a weekend performance review using AI Coach insights.",
       ],
-      psychologyText: "Patience is not passive waiting; it is actively refusing low-probability setups. Log your entries to unlock personalized psychological profiling.",
-      riskReviewText: "Ensure strict risk control of 1% to 2% per trade. Always utilize an automated position sizing calculator prior to execution.",
-      finalVerdict: "Your AI Mentor is active. Log your trades in the Journal to receive automated institutional grading and edge analysis.",
+      psychologyText:
+        "Patience is not passive waiting; it is actively refusing low-probability setups. Log your entries to unlock personalized psychological profiling.",
+      riskReviewText:
+        "Ensure strict risk control of 1% to 2% per trade. Always utilize an automated position sizing calculator prior to execution.",
+      finalVerdict:
+        "Your AI Mentor is active. Log your trades in the Journal to receive automated institutional grading and edge analysis.",
       suggestedPrompts,
     };
   }
@@ -346,11 +368,15 @@ export function analyzeTradeDataWithAI(userTrades: Trade[]): AICoachAnalysis {
   const institutionalScore = Math.min(98, Math.max(30, Math.round(s.profitFactor * 30 + 22)));
 
   const overallGrade: "A+" | "A" | "B" | "C" | "D" =
-    qualityScore >= 88 ? "A+"
-    : qualityScore >= 78 ? "A"
-    : qualityScore >= 68 ? "B"
-    : qualityScore >= 58 ? "C"
-    : "D";
+    qualityScore >= 88
+      ? "A+"
+      : qualityScore >= 78
+        ? "A"
+        : qualityScore >= 68
+          ? "B"
+          : qualityScore >= 58
+            ? "C"
+            : "D";
 
   const bestPair = s.bestPair?.name || "XAUUSD";
   const worstPair = s.worstPair?.name || "USDJPY";
@@ -358,19 +384,29 @@ export function analyzeTradeDataWithAI(userTrades: Trade[]): AICoachAnalysis {
 
   const mistakes: string[] = [];
   if (str.loss >= 3) {
-    mistakes.push(`Max loss streak reached ${str.loss} trades. Acknowledge emotional tilt and enforce a 30-min post-loss break.`);
+    mistakes.push(
+      `Max loss streak reached ${str.loss} trades. Acknowledge emotional tilt and enforce a 30-min post-loss break.`,
+    );
   }
   if (worstPair && worstPair !== bestPair) {
-    mistakes.push(`Suboptimal performance on ${worstPair}. Reduce lot size or eliminate setups on this asset.`);
+    mistakes.push(
+      `Suboptimal performance on ${worstPair}. Reduce lot size or eliminate setups on this asset.`,
+    );
   }
   if (s.avgRRR < 1.8) {
-    mistakes.push(`Average Risk:Reward ratio is 1:${s.avgRRR.toFixed(2)}. Target a minimum of 1:2.0 RRR to compound gains.`);
+    mistakes.push(
+      `Average Risk:Reward ratio is 1:${s.avgRRR.toFixed(2)}. Target a minimum of 1:2.0 RRR to compound gains.`,
+    );
   }
   if (userTrades.some((t) => t.riskPct > 2.5)) {
-    mistakes.push("Position sizing exceeded 2.5% risk on certain trades. Standardize risk to max 1-2%.");
+    mistakes.push(
+      "Position sizing exceeded 2.5% risk on certain trades. Standardize risk to max 1-2%.",
+    );
   }
   if (mistakes.length === 0) {
-    mistakes.push("Watch out for news-driven volatility spikes during London open liquidity sweeps.");
+    mistakes.push(
+      "Watch out for news-driven volatility spikes during London open liquidity sweeps.",
+    );
   }
 
   const strengths: string[] = [

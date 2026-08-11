@@ -24,24 +24,31 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const isDevTestMode = import.meta.env.DEV && String(import.meta.env.VITE_DEV_TEST_MODE).trim() === "true";
-  const mockUser = isDevTestMode ? ({ id: "dev-test-owner-id", email: "test-owner@local.test" } as User) : null;
-  const mockProfile: Profile | null = isDevTestMode ? {
-    id: mockUser!.id,
-    email: mockUser!.email!,
-    full_name: "Test Owner",
-    avatar_url: null,
-    role: "admin",
-    status: "approved",
-    is_owner: true,
-    subscription_plan: "enterprise",
-    subscription_status: "active",
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  } : null;
+  const isDevTestMode =
+    import.meta.env.DEV && String(import.meta.env.VITE_DEV_TEST_MODE).trim() === "true";
+  const mockUser = isDevTestMode
+    ? ({ id: "dev-test-owner-id", email: "test-owner@local.test" } as User)
+    : null;
+  const mockProfile: Profile | null = isDevTestMode
+    ? {
+        id: mockUser!.id,
+        email: mockUser!.email!,
+        full_name: "Test Owner",
+        avatar_url: null,
+        role: "admin",
+        status: "approved",
+        is_owner: true,
+        subscription_plan: "enterprise",
+        subscription_status: "active",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+    : null;
 
   const [user, setUser] = useState<User | null>(mockUser);
-  const [session, setSession] = useState<Session | null>(isDevTestMode ? ({ user: mockUser, access_token: "mock-token" } as Session) : null);
+  const [session, setSession] = useState<Session | null>(
+    isDevTestMode ? ({ user: mockUser, access_token: "mock-token" } as Session) : null,
+  );
   const [profile, setProfile] = useState<Profile | null>(mockProfile);
   const [siteSettings, setSiteSettings] = useState<SiteSettings | null>(null);
   const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
@@ -50,11 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function refreshSettings() {
     try {
-      const { data, error } = await supabase
-        .from("site_settings")
-        .select("*")
-        .eq("id", 1)
-        .single();
+      const { data, error } = await supabase.from("site_settings").select("*").eq("id", 1).single();
 
       if (!error && data) {
         setSiteSettings(data as SiteSettings);
@@ -86,9 +89,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession();
         if (error) throw error;
-        
+
         if (session && mounted) {
           setSession(session);
           setUser(session.user);
@@ -105,7 +111,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     loadAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: string, session: Session | null) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event: string, session: Session | null) => {
       if (isDevTestMode) return; // Ignore real auth changes in test mode
 
       if (!mounted) return;
@@ -133,7 +141,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Force Sign Out if site-wide login is disabled for regular users
   useEffect(() => {
     if (user && siteSettings && !siteSettings.login_enabled) {
-      const isUserAdminOrOwner = profile?.role === "admin" || profile?.is_owner === true || user?.email === "nakulrathi641@gmail.com";
+      const isUserAdminOrOwner =
+        profile?.role === "admin" ||
+        profile?.is_owner === true ||
+        user?.email === "nakulrathi641@gmail.com";
       if (!isUserAdminOrOwner) {
         signOut();
         toast.error("Access blocked: Login is temporarily disabled by administrator.");
@@ -143,11 +154,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function fetchProfile(userId: string) {
     try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", userId)
-        .single();
+      const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).single();
 
       if (error) {
         console.warn("Failed to fetch profile:", error);
@@ -188,7 +195,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUserSettings(defaultSettings);
         return;
       }
-      
+
       const meta = data?.user?.user_metadata?.settings;
       if (meta) {
         setUserSettings({ ...defaultSettings, ...meta, user_id: userId });
@@ -207,14 +214,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUserSettings(updated); // Optimistic
     try {
       const { error } = await supabase.auth.updateUser({
-        data: { settings: updated }
+        data: { settings: updated },
       });
       if (error) throw error;
       return true;
     } catch (err: any) {
       console.error("Error updating settings in metadata:", {
         message: err?.message || err,
-        code: err?.code
+        code: err?.code,
       });
       toast.error(`Failed to save settings: ${err?.message || "Unknown error"}`);
       // Revert optimistic if needed
@@ -226,11 +233,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Apply theme and accent color globally whenever userSettings change
   useEffect(() => {
     if (userSettings) {
-      const isDark = userSettings.theme === "dark" || userSettings.theme === "special" || (userSettings.theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
-      
+      const isDark =
+        userSettings.theme === "dark" ||
+        userSettings.theme === "special" ||
+        (userSettings.theme === "system" &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches);
+
       document.documentElement.classList.toggle("dark", isDark);
-      document.documentElement.classList.toggle("theme-special", userSettings.accent_color === "special");
-      
+      document.documentElement.classList.toggle(
+        "theme-special",
+        userSettings.accent_color === "special",
+      );
+
       if (userSettings.accent_color === "special") {
         document.documentElement.style.removeProperty("--primary");
         document.documentElement.style.removeProperty("--ring");
@@ -238,7 +252,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         document.documentElement.style.setProperty("--primary", userSettings.accent_color);
         document.documentElement.style.setProperty("--ring", userSettings.accent_color);
       }
-      
+
       if (userSettings.compact_ui) {
         document.documentElement.setAttribute("data-compact", "true");
       } else {
@@ -257,11 +271,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      
+
       setUser(null);
       setSession(null);
       setProfile(null);
-      
+
       toast.success("Successfully logged out");
     } catch (err: any) {
       toast.error(`Failed to log out: ${err?.message || "Unknown error"}`);
@@ -277,7 +291,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (isDevTestMode) {
         // Clean up mock local storage databases
         for (const key of Object.keys(localStorage)) {
-          if (key.startsWith('tn_mock_')) {
+          if (key.startsWith("tn_mock_")) {
             localStorage.removeItem(key);
           }
         }
@@ -289,7 +303,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data: files } = await supabase.storage.from("trade-screenshots").list(user.id);
       if (files && files.length > 0) {
         const filePaths = files.map((f) => `${user.id}/${f.name}`);
-        const { error: storageError } = await supabase.storage.from("trade-screenshots").remove(filePaths);
+        const { error: storageError } = await supabase.storage
+          .from("trade-screenshots")
+          .remove(filePaths);
         if (storageError) {
           console.error("Failed to delete user storage files:", storageError);
           // Non-fatal, continue with account deletion
@@ -297,7 +313,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       // 2. Call RPC to delete account
-      const { error: rpcError } = await supabase.rpc('delete_own_account');
+      const { error: rpcError } = await supabase.rpc("delete_own_account");
       if (rpcError) {
         throw rpcError;
       }
@@ -316,8 +332,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const isOwner = profile?.is_owner === true || user?.email === "nakulrathi641@gmail.com";
-  const isApproved = profile?.status === "approved" || profile?.is_owner === true || user?.email === "nakulrathi641@gmail.com";
-  const isAdmin = profile?.role === "admin" || profile?.is_owner === true || user?.email === "nakulrathi641@gmail.com";
+  const isApproved =
+    profile?.status === "approved" ||
+    profile?.is_owner === true ||
+    user?.email === "nakulrathi641@gmail.com";
+  const isAdmin =
+    profile?.role === "admin" ||
+    profile?.is_owner === true ||
+    user?.email === "nakulrathi641@gmail.com";
 
   return (
     <AuthContext.Provider

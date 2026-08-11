@@ -1,6 +1,4 @@
 {
   "buildCommand": "npm run build",
-  "rewrites": [
-    { "source": "/((?!assets|favicon\\.ico|api).*)", "destination": "/" }
-  ]
+  "rewrites": [{ "source": "/((?!assets|favicon\\.ico|api).*)", "destination": "/" }]
 }

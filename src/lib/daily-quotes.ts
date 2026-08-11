@@ -98,13 +98,15 @@ export const DAILY_QUOTES = [
   "The goal of trading is not excitement; the goal is controlled participation.",
   "Professional trading is the ability to remain disciplined when the market becomes emotional.",
   "Your greatest trading advantage may simply be the ability to wait.",
-  "The goal of a successful trader is to make good trades. Money is secondary."
+  "The goal of a successful trader is to make good trades. Money is secondary.",
 ];
 
 export function getDailyQuoteIndex(): number {
   const today = new Date();
   const epoch = new Date(1970, 0, 1);
   const currentLocalMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const diffDays = Math.floor((currentLocalMidnight.getTime() - epoch.getTime()) / (1000 * 60 * 60 * 24));
+  const diffDays = Math.floor(
+    (currentLocalMidnight.getTime() - epoch.getTime()) / (1000 * 60 * 60 * 24),
+  );
   return diffDays % DAILY_QUOTES.length;
 }

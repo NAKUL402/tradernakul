@@ -4,9 +4,7 @@ import { AppShell } from "@/components/app/AppShell";
 import { Badge, Panel } from "@/components/app/ui-kit";
 import { fetchUserTrades, type Trade } from "@/lib/trades";
 import { useAuth } from "@/lib/auth-context";
-import {
-  analyzeTradeDataWithAI,
-} from "@/lib/ai-coach-service";
+import { analyzeTradeDataWithAI } from "@/lib/ai-coach-service";
 import { DAILY_QUOTES, getDailyQuoteIndex } from "@/lib/daily-quotes";
 import { TraderEdgeIntelligence } from "@/components/app/TraderEdgeIntelligence";
 import {
@@ -32,7 +30,11 @@ export const Route = createFileRoute("/ai-coach")({
   head: () => ({
     meta: [
       { title: "AI Coach — Edge Journal" },
-      { name: "description", content: "World-class AI trading mentor: weekly golden rules, institutional performance grades, psychology analysis, and risk reviews." },
+      {
+        name: "description",
+        content:
+          "World-class AI trading mentor: weekly golden rules, institutional performance grades, psychology analysis, and risk reviews.",
+      },
       { property: "og:title", content: "AI Coach — Edge Journal" },
       { property: "og:description", content: "World-class AI trading mentor & performance lab." },
     ],
@@ -41,7 +43,15 @@ export const Route = createFileRoute("/ai-coach")({
 });
 
 // ── 3D Circular Progress Score Gauge ─────────────────────────────────────────
-function Gauge3D({ value, label, tone }: { value: number; label: string; tone: "primary" | "accent" | "win" }) {
+function Gauge3D({
+  value,
+  label,
+  tone,
+}: {
+  value: number;
+  label: string;
+  tone: "primary" | "accent" | "win";
+}) {
   const colorStr =
     tone === "win"
       ? "oklch(0.72 0.19 155)"
@@ -59,7 +69,9 @@ function Gauge3D({ value, label, tone }: { value: number; label: string; tone: "
         }}
       >
         <div className="grid size-24 place-items-center rounded-full bg-card/90 backdrop-blur-xl border border-border/60 shadow-inner">
-          <span className="font-display text-3xl font-bold tracking-tight text-foreground">{value}</span>
+          <span className="font-display text-3xl font-bold tracking-tight text-foreground">
+            {value}
+          </span>
         </div>
       </div>
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
@@ -95,7 +107,9 @@ function CoachPage() {
 
   // Interactive AI Assistant Chat State
   const [customQuestion, setCustomQuestion] = useState("");
-  const [chatMessages, setChatMessages] = useState<Array<{ role: "user" | "coach"; text: string }>>([]);
+  const [chatMessages, setChatMessages] = useState<Array<{ role: "user" | "coach"; text: string }>>(
+    [],
+  );
   const [isAnswering, setIsAnswering] = useState(false);
 
   if (siteSettings && !siteSettings.ai_coach_enabled) {
@@ -107,7 +121,8 @@ function CoachPage() {
           </div>
           <h1 className="mt-4 font-display text-2xl font-bold text-foreground">AI Coach Offline</h1>
           <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-            The AI Trading Coach is temporarily disabled by the administrator. Please check back later.
+            The AI Trading Coach is temporarily disabled by the administrator. Please check back
+            later.
           </p>
         </div>
       </AppShell>
@@ -154,25 +169,26 @@ function CoachPage() {
         headers,
         body: JSON.stringify({
           message: userMsg,
-          history: chatMessages.map(m => ({ role: m.role, content: m.text })),
+          history: chatMessages.map((m) => ({ role: m.role, content: m.text })),
           tradeContext: `Current Daily Quote: "${selectedQuote}". Win Rate: ${ai.qualityScore}%. Overall Grade: ${ai.overallGrade}.`,
         }),
-        signal: AbortSignal.timeout(20000)
+        signal: AbortSignal.timeout(20000),
       });
 
       const data = await res.json();
-      
+
       console.log(`[Diagnostic] Request: POST /api/ai-coach`);
       console.log(`[Diagnostic] HTTP Status: ${res.status}`);
       console.log(`[Diagnostic] JSON Keys: ${Object.keys(data).join(", ")}`);
-      
+
       if (res.ok && data.reply) {
         setChatMessages((prev) => [...prev, { role: "coach", text: data.reply }]);
         if (data.modelUsed) {
           console.log(`[Groq AI] Responded via ${data.modelUsed}`);
         }
       } else {
-        const errReply = data.error || "Sorry, I am unable to generate a response right now. Please try again.";
+        const errReply =
+          data.error || "Sorry, I am unable to generate a response right now. Please try again.";
         setChatMessages((prev) => [...prev, { role: "coach", text: `⚠️ ${errReply}` }]);
       }
     } catch {
@@ -219,14 +235,17 @@ function CoachPage() {
                 </Badge>
               </div>
               <p className="mt-1 text-sm text-muted-foreground">
-                Institutional execution grading, weekly trading psychology rules &amp; risk management.
+                Institutional execution grading, weekly trading psychology rules &amp; risk
+                management.
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
             <div className="rounded-2xl border border-primary/30 bg-primary/10 px-4 py-2.5 text-center backdrop-blur-md">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-primary">Pre-Trade Readiness</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-primary">
+                Pre-Trade Readiness
+              </p>
               <p className="font-display text-lg font-bold text-foreground">{readinessScore}%</p>
             </div>
           </div>
@@ -299,24 +318,40 @@ function CoachPage() {
             <Gauge3D value={ai.institutionalScore} label="Institutional Score" tone="accent" />
             <div className="text-center">
               <div className="relative grid size-32 place-items-center rounded-3xl bg-gradient-to-br from-primary via-accent to-primary text-primary-foreground shadow-2xl glow-primary transition-transform duration-500 hover:scale-105">
-                <span className="font-display text-5xl font-extrabold tracking-tight">{ai.overallGrade}</span>
+                <span className="font-display text-5xl font-extrabold tracking-tight">
+                  {ai.overallGrade}
+                </span>
               </div>
-              <p className="mt-2.5 text-xs font-medium text-muted-foreground">Overall Performance Grade</p>
+              <p className="mt-2.5 text-xs font-medium text-muted-foreground">
+                Overall Performance Grade
+              </p>
             </div>
           </div>
 
           <div className="mt-4 grid grid-cols-3 gap-3 text-center">
             <div className="rounded-xl border border-border/50 bg-card/40 p-3 backdrop-blur-sm">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Discipline</p>
-              <p className="mt-1 font-display text-lg font-bold text-emerald-400">{ai.disciplineScore} / 100</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Discipline
+              </p>
+              <p className="mt-1 font-display text-lg font-bold text-emerald-400">
+                {ai.disciplineScore} / 100
+              </p>
             </div>
             <div className="rounded-xl border border-border/50 bg-card/40 p-3 backdrop-blur-sm">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Patience</p>
-              <p className="mt-1 font-display text-lg font-bold text-primary">{ai.patienceScore} / 100</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Patience
+              </p>
+              <p className="mt-1 font-display text-lg font-bold text-primary">
+                {ai.patienceScore} / 100
+              </p>
             </div>
             <div className="rounded-xl border border-border/50 bg-card/40 p-3 backdrop-blur-sm">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Risk Control</p>
-              <p className="mt-1 font-display text-lg font-bold text-accent">{ai.riskControlScore} / 100</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Risk Control
+              </p>
+              <p className="mt-1 font-display text-lg font-bold text-accent">
+                {ai.riskControlScore} / 100
+              </p>
             </div>
           </div>
         </Panel>
@@ -408,13 +443,18 @@ function CoachPage() {
                     : "text-destructive"
               }`}
             >
-              {readinessScore}% — {readinessScore >= 80 ? "Optimal Trading State" : readinessScore >= 60 ? "Proceed With Caution" : "Do Not Trade — Risk High"}
+              {readinessScore}% —{" "}
+              {readinessScore >= 80
+                ? "Optimal Trading State"
+                : readinessScore >= 60
+                  ? "Proceed With Caution"
+                  : "Do Not Trade — Risk High"}
             </p>
           </div>
         </Panel>
 
         {/* ── 4. Interactive AI Mentor Chat Trigger Card ───────────── */}
-        <div 
+        <div
           onClick={() => setIsChatModalOpen(true)}
           className="lg:col-span-3 group relative cursor-pointer overflow-hidden rounded-2xl border border-border/60 bg-card/50 p-6 shadow-xl backdrop-blur-md transition-all hover:border-primary/50 hover:bg-card/80 hover:shadow-[0_0_40px_-10px_var(--color-primary)]"
         >
@@ -425,7 +465,9 @@ function CoachPage() {
                 <Brain className="size-7" />
               </div>
               <div>
-                <h3 className="font-display text-lg font-bold text-foreground">AI Trading Mentor</h3>
+                <h3 className="font-display text-lg font-bold text-foreground">
+                  AI Trading Mentor
+                </h3>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Personal AI guidance for your trading journey.
                 </p>
@@ -440,7 +482,7 @@ function CoachPage() {
         {/* ── Chat Modal/Drawer ────────────────────────────────────────────── */}
         <>
           {/* Backdrop */}
-          <div 
+          <div
             className={`fixed inset-0 z-[60] bg-background/60 backdrop-blur-sm transition-opacity duration-300 ${
               isChatModalOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
             }`}
@@ -461,8 +503,12 @@ function CoachPage() {
                   <Brain className="size-5" />
                 </div>
                 <div>
-                  <h3 className="font-display text-base font-semibold text-foreground leading-none">AI Mentor Assessment</h3>
-                  <p className="mt-1 text-xs font-medium uppercase tracking-widest text-primary/80">Active Session</p>
+                  <h3 className="font-display text-base font-semibold text-foreground leading-none">
+                    AI Mentor Assessment
+                  </h3>
+                  <p className="mt-1 text-xs font-medium uppercase tracking-widest text-primary/80">
+                    Active Session
+                  </p>
                 </div>
               </div>
               <button
@@ -582,8 +628,13 @@ function CoachPage() {
               ["Revenge Trading", "Controlled"],
               ["Overconfidence", "Low"],
             ].map(([k, v]) => (
-              <div key={k} className="flex flex-col items-center justify-center text-center rounded-xl border border-border/40 bg-muted/30 p-2 sm:p-3 min-h-[72px] sm:min-h-[84px] gap-1">
-                <p className="text-[10px] sm:text-[11px] font-medium uppercase tracking-wider text-muted-foreground w-full break-words">{k}</p>
+              <div
+                key={k}
+                className="flex flex-col items-center justify-center text-center rounded-xl border border-border/40 bg-muted/30 p-2 sm:p-3 min-h-[72px] sm:min-h-[84px] gap-1"
+              >
+                <p className="text-[10px] sm:text-[11px] font-medium uppercase tracking-wider text-muted-foreground w-full break-words">
+                  {k}
+                </p>
                 <p className="mt-1 sm:mt-1.5 text-xs sm:text-sm font-bold text-foreground">{v}</p>
               </div>
             ))}
@@ -598,7 +649,9 @@ function CoachPage() {
             </p>
             <p className="flex items-start gap-3">
               <Target className="mt-0.5 size-5 shrink-0 text-accent" />
-              <span className="leading-relaxed">Target minimum 1:2.0 Risk:Reward ratio on all high-conviction entries.</span>
+              <span className="leading-relaxed">
+                Target minimum 1:2.0 Risk:Reward ratio on all high-conviction entries.
+              </span>
             </p>
           </div>
         </Panel>
@@ -613,7 +666,9 @@ function CoachPage() {
               <Sparkles className="size-6" />
             </div>
             <div>
-              <h3 className="font-display text-lg font-bold text-foreground">Final Coach Verdict</h3>
+              <h3 className="font-display text-lg font-bold text-foreground">
+                Final Coach Verdict
+              </h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground font-medium">
                 {ai.finalVerdict}
               </p>

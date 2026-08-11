@@ -17,21 +17,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const { email, name, status } = req.body || {};
   if (!email || !name || !status || !["approved", "rejected"].includes(status)) {
-    return res.status(400).json({ success: false, error: "Missing or invalid email, name, or status" });
+    return res
+      .status(400)
+      .json({ success: false, error: "Missing or invalid email, name, or status" });
   }
 
-  const resendApiKey = process.env['RESEND_API_KEY'];
-  const smtpUser = process.env['EMAIL_USER'];
-  const smtpPass = process.env['EMAIL_PASS'];
-  const resendFrom = process.env['RESEND_FROM_EMAIL'] || "Edge Journal <onboarding@resend.dev>";
+  const resendApiKey = process.env["RESEND_API_KEY"];
+  const smtpUser = process.env["EMAIL_USER"];
+  const smtpPass = process.env["EMAIL_PASS"];
+  const resendFrom = process.env["RESEND_FROM_EMAIL"] || "Edge Journal <onboarding@resend.dev>";
   const hasGmail = !!(smtpUser && smtpPass);
 
   console.log(`[send-status-email] Sending ${status} notification to: ${email}`);
 
   const isApproved = status === "approved";
   const statusLabel = isApproved ? "Access Approved" : "Access Denied";
-  const headerColor = isApproved ? "linear-gradient(135deg, #059669 0%, #10b981 100%)" : "linear-gradient(135deg, #dc2626 0%, #ef4444 100%)";
-  
+  const headerColor = isApproved
+    ? "linear-gradient(135deg, #059669 0%, #10b981 100%)"
+    : "linear-gradient(135deg, #dc2626 0%, #ef4444 100%)";
+
   const htmlBody = `
     <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:520px;margin:0 auto;background:#0b0c16;color:#fff;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,0.08);">
       <div style="background:${headerColor};padding:32px 40px;text-align:center;">
@@ -42,24 +46,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         <p style="font-size:16px;color:#f1f5f9;line-height:1.6;margin:0 0 16px;">
           Hello ${name},
         </p>
-        ${isApproved ? `
+        ${
+          isApproved
+            ? `
           <p style="font-size:15px;color:#cbd5e1;line-height:1.6;margin:0 0 24px;">
             We are pleased to inform you that your request for access to <strong style="color:#10b981;">Edge Journal</strong> has been approved by the administrator.
           </p>
           <div style="text-align:center;margin:30px 0;">
-            <a href="${process.env['VITE_SITE_URL'] || "https://Edge Journal.vercel.app"}/login" 
+            <a href="${process.env["VITE_SITE_URL"] || "https://Edge Journal.vercel.app"}/login" 
                style="display:inline-block;background:#10b981;color:#ffffff;text-decoration:none;padding:12px 30px;border-radius:10px;font-weight:700;font-size:15px;box-shadow:0 4px 12px rgba(16,185,129,0.3);">
               Log In to Dashboard
             </a>
           </div>
-        ` : `
+        `
+            : `
           <p style="font-size:15px;color:#cbd5e1;line-height:1.6;margin:0 0 24px;">
             Thank you for your interest in Edge Journal. Unfortunately, your request for access has been declined by the administrator at this time.
           </p>
           <p style="font-size:14px;color:#94a3b8;line-height:1.6;margin:0 0 24px;">
             If you believe this is a mistake or have questions, please contact us.
           </p>
-        `}
+        `
+        }
         <hr style="border:0;border-top:1px solid rgba(255,255,255,0.08);margin:24px 0;" />
         <p style="font-size:12px;color:#64748b;text-align:center;margin:0;">
           This is an automated notification from Edge Journal.
@@ -68,8 +76,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     </div>
   `;
 
-  const textBody = isApproved 
-    ? `Hello ${name},\n\nYour request for access to Edge Journal has been approved! You can now log in here: ${process.env['VITE_SITE_URL'] || "https://Edge Journal.vercel.app"}/login`
+  const textBody = isApproved
+    ? `Hello ${name},\n\nYour request for access to Edge Journal has been approved! You can now log in here: ${process.env["VITE_SITE_URL"] || "https://Edge Journal.vercel.app"}/login`
     : `Hello ${name},\n\nYour request for access to Edge Journal was declined by the administrator.`;
 
   let resendError: string | null = null;
@@ -95,12 +103,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
 
       const data = (await response.json().catch(() => ({}))) as Record<string, any>;
-      if (response.ok && data['id']) {
-        console.log(`[send-status-email] ✅ Resend success: ${data['id']}`);
+      if (response.ok && data["id"]) {
+        console.log(`[send-status-email] ✅ Resend success: ${data["id"]}`);
         return res.status(200).json({ success: true, provider: "resend" });
       }
 
-      resendError = data['message'] || data['error'] || `HTTP ${response.status}`;
+      resendError = data["message"] || data["error"] || `HTTP ${response.status}`;
       console.warn(`[send-status-email] Resend failed: ${resendError}`);
     } catch (err: unknown) {
       resendError = err instanceof Error ? err.message : String(err);

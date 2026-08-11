@@ -34,10 +34,17 @@ async function checkBucket(bucketName) {
   try {
     const { data, error } = await supabase.storage.from(bucketName).list();
     if (error) {
-      if (error.message.includes("Bucket not found") || error.statusCode === 404 || error.message.includes("Object not found") || error.message.includes("The resource was not found")) {
+      if (
+        error.message.includes("Bucket not found") ||
+        error.statusCode === 404 ||
+        error.message.includes("Object not found") ||
+        error.message.includes("The resource was not found")
+      ) {
         console.log(`[!] Bucket '${bucketName}' does NOT exist (Error: ${error.message})`);
       } else {
-         console.log(`[?] Bucket '${bucketName}' check returned error: ${error.message} (Bucket MIGHT exist but RLS blocked list)`);
+        console.log(
+          `[?] Bucket '${bucketName}' check returned error: ${error.message} (Bucket MIGHT exist but RLS blocked list)`,
+        );
       }
     } else {
       console.log(`[+] Bucket '${bucketName}' EXISTS (listed ${data?.length || 0} items)`);
@@ -50,7 +57,7 @@ async function checkBucket(bucketName) {
 async function main() {
   console.log("Checking remote Supabase connection...");
   console.log("URL:", supabaseUrl);
-  
+
   await checkBucket("profile-avatars");
   await checkBucket("trade-screenshots");
 }

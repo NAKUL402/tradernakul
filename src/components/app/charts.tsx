@@ -1,9 +1,26 @@
 import {
-  Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart,
-  ResponsiveContainer, Tooltip, XAxis, YAxis,
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from "recharts";
 
-const axis = { stroke: "var(--color-muted-foreground)", fontSize: 11, tickLine: false, axisLine: false } as const;
+const axis = {
+  stroke: "var(--color-muted-foreground)",
+  fontSize: 11,
+  tickLine: false,
+  axisLine: false,
+} as const;
 
 const tooltipStyle = {
   contentStyle: {
@@ -30,7 +47,13 @@ export function EquityChart({ data }: { data: { i: number; equity: number }[] })
         <XAxis dataKey="i" {...axis} />
         <YAxis {...axis} width={56} />
         <Tooltip {...tooltipStyle} />
-        <Area type="monotone" dataKey="equity" stroke="var(--color-primary)" strokeWidth={2.4} fill="url(#eq)" />
+        <Area
+          type="monotone"
+          dataKey="equity"
+          stroke="var(--color-primary)"
+          strokeWidth={2.4}
+          fill="url(#eq)"
+        />
       </AreaChart>
     </ResponsiveContainer>
   );
@@ -50,7 +73,13 @@ export function DrawdownChart({ data }: { data: { i: number; drawdown: number }[
         <XAxis dataKey="i" {...axis} />
         <YAxis {...axis} width={44} unit="%" />
         <Tooltip {...tooltipStyle} />
-        <Area type="monotone" dataKey="drawdown" stroke="var(--color-destructive)" strokeWidth={2} fill="url(#dd)" />
+        <Area
+          type="monotone"
+          dataKey="drawdown"
+          stroke="var(--color-destructive)"
+          strokeWidth={2}
+          fill="url(#dd)"
+        />
       </AreaChart>
     </ResponsiveContainer>
   );
@@ -64,7 +93,14 @@ export function WinLossPie({ wins, losses }: { wins: number; losses: number }) {
   return (
     <ResponsiveContainer width="100%" height={230}>
       <PieChart>
-        <Pie data={data} dataKey="value" innerRadius={62} outerRadius={92} paddingAngle={4} stroke="none">
+        <Pie
+          data={data}
+          dataKey="value"
+          innerRadius={62}
+          outerRadius={92}
+          paddingAngle={4}
+          stroke="none"
+        >
           {data.map((d) => (
             <Cell key={d.name} fill={d.color} />
           ))}
@@ -76,8 +112,18 @@ export function WinLossPie({ wins, losses }: { wins: number; losses: number }) {
 }
 
 export function BarsChart({
-  data, xKey = "label", yKey = "pnl", height = 240, unit,
-}: { data: Record<string, unknown>[]; xKey?: string; yKey?: string; height?: number; unit?: string }) {
+  data,
+  xKey = "label",
+  yKey = "pnl",
+  height = 240,
+  unit,
+}: {
+  data: Record<string, unknown>[];
+  xKey?: string;
+  yKey?: string;
+  height?: number;
+  unit?: string;
+}) {
   return (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={data} margin={{ left: -18, right: 6, top: 6 }}>
@@ -87,7 +133,10 @@ export function BarsChart({
         <Tooltip {...tooltipStyle} cursor={{ fill: "var(--color-muted)", opacity: 0.35 }} />
         <Bar dataKey={yKey} radius={[8, 8, 4, 4]}>
           {data.map((d, i) => (
-            <Cell key={i} fill={Number(d[yKey]) >= 0 ? "var(--color-primary)" : "var(--color-destructive)"} />
+            <Cell
+              key={i}
+              fill={Number(d[yKey]) >= 0 ? "var(--color-primary)" : "var(--color-destructive)"}
+            />
           ))}
         </Bar>
       </BarChart>
@@ -95,7 +144,13 @@ export function BarsChart({
   );
 }
 
-export function TrendChart({ data, yKey = "winRate" }: { data: Record<string, unknown>[]; yKey?: string }) {
+export function TrendChart({
+  data,
+  yKey = "winRate",
+}: {
+  data: Record<string, unknown>[];
+  yKey?: string;
+}) {
   return (
     <ResponsiveContainer width="100%" height={230}>
       <LineChart data={data} margin={{ left: -18, right: 6, top: 6 }}>
@@ -103,7 +158,13 @@ export function TrendChart({ data, yKey = "winRate" }: { data: Record<string, un
         <XAxis dataKey="label" {...axis} />
         <YAxis {...axis} width={44} unit="%" />
         <Tooltip {...tooltipStyle} />
-        <Line type="monotone" dataKey={yKey} stroke="var(--color-accent)" strokeWidth={2.6} dot={{ r: 3, fill: "var(--color-accent)" }} />
+        <Line
+          type="monotone"
+          dataKey={yKey}
+          stroke="var(--color-accent)"
+          strokeWidth={2.6}
+          dot={{ r: 3, fill: "var(--color-accent)" }}
+        />
       </LineChart>
     </ResponsiveContainer>
   );

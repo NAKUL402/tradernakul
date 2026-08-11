@@ -98,5 +98,5 @@ export const goldenRules: string[] = [
   "The only holy grail in trading is risk management.",
   "Do not compare your Chapter 1 to someone else's Chapter 20.",
   "You don't get paid for predicting. You get paid for executing.",
-  "In trading, the most boring approach is usually the most profitable one."
+  "In trading, the most boring approach is usually the most profitable one.",
 ];

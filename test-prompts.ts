@@ -18,12 +18,12 @@ function createMockRes() {
     },
     end() {
       return this;
-    }
+    },
   };
   return res;
 }
 
-import fs from 'fs';
+import fs from "fs";
 
 async function testPrompt(prompt) {
   const req = { method: "POST", headers: {}, body: { message: prompt } };
@@ -34,12 +34,12 @@ async function testPrompt(prompt) {
 }
 
 async function runTests() {
-  const envContent = fs.readFileSync('.env', 'utf-8');
-  envContent.split('\n').forEach(line => {
-    if (line.includes('=')) {
-      const parts = line.split('=');
+  const envContent = fs.readFileSync(".env", "utf-8");
+  envContent.split("\n").forEach((line) => {
+    if (line.includes("=")) {
+      const parts = line.split("=");
       const key = parts[0].trim();
-      const val = parts.slice(1).join('=').trim();
+      const val = parts.slice(1).join("=").trim();
       if (!process.env[key]) process.env[key] = val;
     }
   });

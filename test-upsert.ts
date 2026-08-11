@@ -1,1 +1,12 @@
-import dotenv from 'dotenv'; dotenv.config(); import { createClient } from '@supabase/supabase-js'; const supabase = createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_ANON_KEY); supabase.from('user_settings').upsert({ user_id: '00000000-0000-0000-0000-000000000000', theme: 'dark' }).then(res => console.log('user_settings error:', res.error)); supabase.from('site_settings').upsert({ id: 1, maintenance_mode: false }).then(res => console.log('site_settings error:', res.error));
+import dotenv from "dotenv";
+dotenv.config();
+import { createClient } from "@supabase/supabase-js";
+const supabase = createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_ANON_KEY);
+supabase
+  .from("user_settings")
+  .upsert({ user_id: "00000000-0000-0000-0000-000000000000", theme: "dark" })
+  .then((res) => console.log("user_settings error:", res.error));
+supabase
+  .from("site_settings")
+  .upsert({ id: 1, maintenance_mode: false })
+  .then((res) => console.log("site_settings error:", res.error));

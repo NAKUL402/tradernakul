@@ -1,20 +1,29 @@
 import { useAuth } from "@/lib/auth-context";
 import { Badge } from "./ui-kit";
 import { Clock, LogOut, ShieldAlert } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 export function AccessPending() {
   const { user, profile, signOut, refreshProfile } = useAuth();
-  const name = profile?.full_name || user?.user_metadata?.["full_name"] || user?.user_metadata?.["name"] || "Trader";
+  const name =
+    profile?.full_name ||
+    user?.user_metadata?.["full_name"] ||
+    user?.user_metadata?.["name"] ||
+    "Trader";
   const email = profile?.email || user?.email || "";
+
+  const refreshProfileRef = useRef(refreshProfile);
+  useEffect(() => {
+    refreshProfileRef.current = refreshProfile;
+  }, [refreshProfile]);
 
   useEffect(() => {
     // Gentle polling to check if admin has approved the user
     const interval = setInterval(() => {
-      if (refreshProfile) refreshProfile();
+      if (refreshProfileRef.current) refreshProfileRef.current();
     }, 10000);
     return () => clearInterval(interval);
-  }, [refreshProfile]);
+  }, []);
 
   useEffect(() => {
     if (user && email && name) {
@@ -67,7 +76,8 @@ export function AccessPending() {
         <div className="mt-6 flex items-center gap-2 rounded-xl bg-muted/40 p-3 text-xs text-muted-foreground text-left">
           <ShieldAlert className="size-4 shrink-0 text-amber-400" />
           <span>
-            Only approved accounts can view trading metrics, journal entries, and AI insights. You will gain full access as soon as the admin approves your account.
+            Only approved accounts can view trading metrics, journal entries, and AI insights. You
+            will gain full access as soon as the admin approves your account.
           </span>
         </div>
 

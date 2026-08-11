@@ -1,19 +1,24 @@
-const fs = require('fs');
+const fs = require("fs");
 
 async function validateOpenRouter() {
   console.log("Starting OpenRouter Validation...");
-  
+
   // 1. Load env vars safely
   let openRouterKey = process.env.OPENROUTER_API_KEY;
   if (!openRouterKey) {
     try {
-      const envContent = fs.readFileSync('.env', 'utf-8');
-      envContent.split('\n').forEach(line => {
-        if (line.includes('=')) {
-          const parts = line.split('=');
+      const envContent = fs.readFileSync(".env", "utf-8");
+      envContent.split("\n").forEach((line) => {
+        if (line.includes("=")) {
+          const parts = line.split("=");
           const key = parts[0].trim();
-          if (key === 'OPENROUTER_API_KEY') {
-            openRouterKey = parts.slice(1).join('=').trim().replace(/^["']|["']$/g, "").trim();
+          if (key === "OPENROUTER_API_KEY") {
+            openRouterKey = parts
+              .slice(1)
+              .join("=")
+              .trim()
+              .replace(/^["']|["']$/g, "")
+              .trim();
           }
         }
       });
@@ -35,19 +40,19 @@ async function validateOpenRouter() {
     model: "openrouter/free",
     messages: [{ role: "user", content: "Reply with the word SUCCESS only." }],
     temperature: 0.1,
-    max_tokens: 10
+    max_tokens: 10,
   });
 
   try {
     const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${openRouterKey}`,
+        Authorization: `Bearer ${openRouterKey}`,
         "Content-Type": "application/json",
         "HTTP-Referer": "https://tradernakul.com",
-        "X-Title": "TraderNakul-AI-Coach"
+        "X-Title": "TraderNakul-AI-Coach",
       },
-      body
+      body,
     });
 
     console.log(`HTTP Status: ${res.status}`);

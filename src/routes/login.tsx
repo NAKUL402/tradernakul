@@ -19,16 +19,16 @@ export const Route = createFileRoute("/login")({
 function LoginPage() {
   const navigate = useNavigate();
   const { user, profile, isApproved, siteSettings } = useAuth();
-  
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  
+
   const [showOtp, setShowOtp] = useState(false);
   const [otpToken, setOtpToken] = useState("");
   const [otpError, setOtpError] = useState("");
   const [resendCooldown, setResendCooldown] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Auto-focus first input box when OTP screen is shown
@@ -42,17 +42,17 @@ function LoginPage() {
 
   const handleOtpChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
-    
+
     setOtpError("");
     const digit = value.slice(-1);
-    
+
     const newOtp = otpToken.split("");
     newOtp[index] = digit;
-    
+
     while (newOtp.length <= index) {
       newOtp.push("");
     }
-    
+
     const nextToken = newOtp.join("").slice(0, 6);
     setOtpToken(nextToken);
 
@@ -115,9 +115,9 @@ function LoginPage() {
     try {
       if (siteSettings && !siteSettings.login_enabled) {
         if (email !== "nakulrathi641@gmail.com") {
-            toast.error("Login is temporarily disabled by the administrator.");
-            setIsLoading(false);
-            return;
+          toast.error("Login is temporarily disabled by the administrator.");
+          setIsLoading(false);
+          return;
         }
       }
 
@@ -127,12 +127,11 @@ function LoginPage() {
           data: {
             full_name: name.trim(),
           },
-          emailRedirectTo: window.location.origin,
         },
       });
 
       if (error) throw error;
-      
+
       toast.success("Verification code sent to your email.");
       setShowOtp(true);
       setOtpToken("");
@@ -160,7 +159,7 @@ function LoginPage() {
 
       if (data.session) {
         toast.success("Verified successfully!");
-        
+
         // Request owner approval silently (owner email is auto-approved by RLS/Trigger, so this is fine to call)
         try {
           await sendOwnerApprovalEmail({ userEmail: email, userName: name.trim() });
@@ -174,11 +173,23 @@ function LoginPage() {
       }
     } catch (err: any) {
       const msg = err.message?.toLowerCase() || "";
-      if (msg.includes("expired") || msg.includes("invalid token") || msg.includes("token has expired")) {
+      if (
+        msg.includes("expired") ||
+        msg.includes("invalid token") ||
+        msg.includes("token has expired")
+      ) {
         setOtpError("That code has expired. Please request a new code.");
-      } else if (msg.includes("too many requests") || msg.includes("rate limit") || msg.includes("email rate limit")) {
+      } else if (
+        msg.includes("too many requests") ||
+        msg.includes("rate limit") ||
+        msg.includes("email rate limit")
+      ) {
         setOtpError("Too many attempts. Please wait a moment and try again.");
-      } else if (msg.includes("network") || msg.includes("fetch") || msg.includes("failed to fetch")) {
+      } else if (
+        msg.includes("network") ||
+        msg.includes("fetch") ||
+        msg.includes("failed to fetch")
+      ) {
         setOtpError("Something went wrong. Please check your connection and try again.");
       } else {
         setOtpError("That code is incorrect. Please check your email and try again.");
@@ -196,9 +207,6 @@ function LoginPage() {
       const { error } = await supabase.auth.resend({
         type: "signup", // Supabase requires "signup" for resend when using signInWithOtp for new users
         email,
-        options: {
-          emailRedirectTo: window.location.origin,
-        },
       });
 
       if (error) throw error;
@@ -221,11 +229,14 @@ function LoginPage() {
 
       <div className="relative w-full max-w-[420px] animate-in fade-in slide-in-from-bottom-4 duration-700">
         <div className="rounded-3xl border border-border/40 bg-background/60 p-8 text-center shadow-2xl shadow-black/10 backdrop-blur-2xl">
-          
           {/* Logo & Header */}
           <div className="flex flex-col items-center justify-center space-y-4">
-            <img src="/logo.jpg" alt="Edge Journal" className="size-20 rounded-[20px] object-cover shadow-lg shadow-primary/20" />
-            
+            <img
+              src="/logo.jpg"
+              alt="Edge Journal"
+              className="size-20 rounded-[20px] object-cover shadow-lg shadow-primary/20"
+            />
+
             <div className="space-y-1">
               <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
                 {showOtp ? "Verify Your Email" : "Welcome to Edge Journal"}
@@ -248,10 +259,7 @@ function LoginPage() {
           {showOtp ? (
             <form onSubmit={handleVerifyOtp} className="mt-8 space-y-6">
               <div className="animate-in fade-in zoom-in-95 duration-500">
-                <div 
-                  className="flex justify-between gap-2 sm:gap-3" 
-                  onPaste={handleOtpPaste}
-                >
+                <div className="flex justify-between gap-2 sm:gap-3" onPaste={handleOtpPaste}>
                   {[0, 1, 2, 3, 4, 5].map((index) => (
                     <input
                       key={index}
@@ -312,7 +320,6 @@ function LoginPage() {
             </form>
           ) : (
             <form onSubmit={handleSubmit} className="mt-8 space-y-5 text-left">
-              
               <div className="space-y-1.5 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-100 fill-mode-backwards">
                 <label className="text-[13px] font-semibold text-foreground/80">First Name</label>
                 <div className="relative">
@@ -329,7 +336,9 @@ function LoginPage() {
               </div>
 
               <div className="space-y-1.5 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-150 fill-mode-backwards">
-                <label className="text-[13px] font-semibold text-foreground/80">Email Address</label>
+                <label className="text-[13px] font-semibold text-foreground/80">
+                  Email Address
+                </label>
                 <div className="relative">
                   <Mail className="absolute left-3.5 top-1/2 size-[18px] -translate-y-1/2 text-muted-foreground/70" />
                   <input
@@ -353,11 +362,10 @@ function LoginPage() {
                   {!isLoading && <ArrowRight className="size-4" />}
                 </button>
               </div>
-
             </form>
           )}
         </div>
-        
+
         {/* Footer info */}
         <p className="mt-8 text-center text-[13px] text-muted-foreground animate-in fade-in duration-700 delay-300 fill-mode-backwards">
           Secure, passwordless authentication by Edge Journal.
@@ -366,4 +374,3 @@ function LoginPage() {
     </div>
   );
 }
-

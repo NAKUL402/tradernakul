@@ -1,5 +1,15 @@
 import { Link } from "@tanstack/react-router";
-import { Database, RefreshCw, Trash2, UserCog, Settings, ListTree, Activity, Bot, LayoutDashboard } from "lucide-react";
+import {
+  Database,
+  RefreshCw,
+  Trash2,
+  UserCog,
+  Settings,
+  ListTree,
+  Activity,
+  Bot,
+  LayoutDashboard,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 
 export function LocalTestControlPanel() {
@@ -45,10 +55,10 @@ export function LocalTestControlPanel() {
   const showMockUser = () => {
     alert(
       "Current Mock User:\n\n" +
-      "Email: test-owner@local.test\n" +
-      "Role: admin\n" +
-      "Is Owner: true\n" +
-      "Status: approved"
+        "Email: test-owner@local.test\n" +
+        "Role: admin\n" +
+        "Is Owner: true\n" +
+        "Status: approved",
     );
   };
 
@@ -71,7 +81,10 @@ export function LocalTestControlPanel() {
           <Database className="size-4" />
           LOCAL TEST CONTROL
         </h3>
-        <button onClick={() => setIsOpen(false)} className="text-muted-foreground hover:text-foreground">
+        <button
+          onClick={() => setIsOpen(false)}
+          className="text-muted-foreground hover:text-foreground"
+        >
           ✕
         </button>
       </div>
@@ -80,36 +93,63 @@ export function LocalTestControlPanel() {
         <Link to="/" className="flex items-center gap-2 rounded bg-muted p-2 hover:bg-primary/20">
           <LayoutDashboard className="size-3" /> Dashboard
         </Link>
-        <Link to="/admin" className="flex items-center gap-2 rounded bg-muted p-2 hover:bg-primary/20">
+        <Link
+          to="/admin"
+          className="flex items-center gap-2 rounded bg-muted p-2 hover:bg-primary/20"
+        >
           <ListTree className="size-3" /> Admin
         </Link>
-        <Link to="/journal" className="flex items-center gap-2 rounded bg-muted p-2 hover:bg-primary/20">
+        <Link
+          to="/journal"
+          className="flex items-center gap-2 rounded bg-muted p-2 hover:bg-primary/20"
+        >
           <ListTree className="size-3" /> Journal
         </Link>
-        <Link to="/analytics" className="flex items-center gap-2 rounded bg-muted p-2 hover:bg-primary/20">
+        <Link
+          to="/analytics"
+          className="flex items-center gap-2 rounded bg-muted p-2 hover:bg-primary/20"
+        >
           <Activity className="size-3" /> Analytics
         </Link>
-        <Link to="/ai-coach" className="flex items-center gap-2 rounded bg-muted p-2 hover:bg-primary/20">
+        <Link
+          to="/ai-coach"
+          className="flex items-center gap-2 rounded bg-muted p-2 hover:bg-primary/20"
+        >
           <Bot className="size-3" /> AI Coach
         </Link>
-        <Link to="/profile" className="flex items-center gap-2 rounded bg-muted p-2 hover:bg-primary/20">
+        <Link
+          to="/profile"
+          className="flex items-center gap-2 rounded bg-muted p-2 hover:bg-primary/20"
+        >
           <UserCog className="size-3" /> Profile
         </Link>
-        <Link to="/settings" className="col-span-2 flex items-center justify-center gap-2 rounded bg-muted p-2 hover:bg-primary/20">
+        <Link
+          to="/settings"
+          className="col-span-2 flex items-center justify-center gap-2 rounded bg-muted p-2 hover:bg-primary/20"
+        >
           <Settings className="size-3" /> Settings Center
         </Link>
       </div>
 
       <div className="flex flex-col gap-2 pt-2 border-t border-border/50 text-xs">
         <p className="text-[10px] text-muted-foreground">{mockDbStatus}</p>
-        
-        <button onClick={showMockUser} className="rounded bg-blue-500/20 p-2 text-blue-400 hover:bg-blue-500/30">
+
+        <button
+          onClick={showMockUser}
+          className="rounded bg-blue-500/20 p-2 text-blue-400 hover:bg-blue-500/30"
+        >
           Show Current Mock User
         </button>
-        <button onClick={resetData} className="flex items-center justify-center gap-2 rounded bg-orange-500/20 p-2 text-orange-400 hover:bg-orange-500/30">
+        <button
+          onClick={resetData}
+          className="flex items-center justify-center gap-2 rounded bg-orange-500/20 p-2 text-orange-400 hover:bg-orange-500/30"
+        >
           <RefreshCw className="size-3" /> Reset Local Test Data
         </button>
-        <button onClick={clearStorage} className="flex items-center justify-center gap-2 rounded bg-red-500/20 p-2 text-red-400 hover:bg-red-500/30">
+        <button
+          onClick={clearStorage}
+          className="flex items-center justify-center gap-2 rounded bg-red-500/20 p-2 text-red-400 hover:bg-red-500/30"
+        >
           <Trash2 className="size-3" /> Clear Local Storage
         </button>
         <button onClick={reloadApp} className="rounded bg-muted p-2 hover:bg-muted/80">

@@ -10,9 +10,15 @@ export const Route = createFileRoute("/reports")({
   head: () => ({
     meta: [
       { title: "Reports — Edge Journal" },
-      { name: "description", content: "Weekly and monthly trading reports with exportable performance summaries." },
+      {
+        name: "description",
+        content: "Weekly and monthly trading reports with exportable performance summaries.",
+      },
       { property: "og:title", content: "Reports — Edge Journal" },
-      { property: "og:description", content: "Download weekly and monthly trading performance reports." },
+      {
+        property: "og:description",
+        content: "Download weekly and monthly trading performance reports.",
+      },
     ],
   }),
   component: Reports,
@@ -27,7 +33,9 @@ function Reports() {
 
   const months = monthly(userTrades);
   const s = stats(userTrades);
-  const weekly = months.slice(-6).map((m, i) => ({ label: `Week ${i + 1}`, pnl: Math.round(m.pnl / 4), winRate: m.winRate }));
+  const weekly = months
+    .slice(-6)
+    .map((m, i) => ({ label: `Week ${i + 1}`, pnl: Math.round(m.pnl / 4), winRate: m.winRate }));
 
   return (
     <AppShell title="Reports" subtitle="Weekly & monthly performance summaries">
@@ -36,10 +44,21 @@ function Reports() {
           <BarsChart data={months} />
           <div className="mt-4 grid gap-2 sm:grid-cols-2">
             {months.map((m) => (
-              <div key={m.name} className="flex items-center justify-between rounded-xl bg-muted/40 px-3 py-2.5 text-sm">
+              <div
+                key={m.name}
+                className="flex items-center justify-between rounded-xl bg-muted/40 px-3 py-2.5 text-sm"
+              >
                 <span className="font-medium">{m.label}</span>
-                <span className="text-xs text-muted-foreground">{m.trades} trades · {pct(m.winRate)}</span>
-                <span className={m.pnl >= 0 ? "font-semibold text-success" : "font-semibold text-destructive"}>{money(m.pnl)}</span>
+                <span className="text-xs text-muted-foreground">
+                  {m.trades} trades · {pct(m.winRate)}
+                </span>
+                <span
+                  className={
+                    m.pnl >= 0 ? "font-semibold text-success" : "font-semibold text-destructive"
+                  }
+                >
+                  {money(m.pnl)}
+                </span>
               </div>
             ))}
           </div>
@@ -48,19 +67,30 @@ function Reports() {
         <Panel title="Summary">
           <div className="space-y-3 text-sm">
             {[
-              ["Total Trades", String(s.total)], ["Win Rate", pct(s.winRate)],
-              ["Profit Factor", s.profitFactor.toFixed(2)], ["Average RRR", `1:${s.avgRRR.toFixed(2)}`],
-              ["Net PnL", money(s.net)], ["Best Pair", s.bestPair.name],
+              ["Total Trades", String(s.total)],
+              ["Win Rate", pct(s.winRate)],
+              ["Profit Factor", s.profitFactor.toFixed(2)],
+              ["Average RRR", `1:${s.avgRRR.toFixed(2)}`],
+              ["Net PnL", money(s.net)],
+              ["Best Pair", s.bestPair.name],
             ].map(([k, v]) => (
-              <div key={k} className="flex items-center justify-between border-b border-border/50 pb-2">
-                <span className="text-muted-foreground">{k}</span><span className="font-medium">{v}</span>
+              <div
+                key={k}
+                className="flex items-center justify-between border-b border-border/50 pb-2"
+              >
+                <span className="text-muted-foreground">{k}</span>
+                <span className="font-medium">{v}</span>
               </div>
             ))}
           </div>
         </Panel>
 
-        <Panel title="Weekly Performance"><BarsChart data={weekly} /></Panel>
-        <Panel title="Win Rate Trend" className="lg:col-span-2"><TrendChart data={months} /></Panel>
+        <Panel title="Weekly Performance">
+          <BarsChart data={weekly} />
+        </Panel>
+        <Panel title="Win Rate Trend" className="lg:col-span-2">
+          <TrendChart data={months} />
+        </Panel>
       </div>
     </AppShell>
   );

@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 export function SettingsAccount() {
   const { user, profile, signOut, deleteAccount, isOwner } = useAuth();
-  
+
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
@@ -33,7 +33,7 @@ export function SettingsAccount() {
             <p className="text-sm font-medium text-muted-foreground">Account Email</p>
             <p className="font-display font-medium text-foreground">{user?.email}</p>
           </div>
-          
+
           <div className="flex items-center gap-3">
             <div>
               <p className="text-sm font-medium text-muted-foreground mb-1">Account Role</p>
@@ -41,7 +41,9 @@ export function SettingsAccount() {
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground mb-1">Status</p>
-              <Badge tone={profile?.status === "approved" ? "win" : "accent"}>{profile?.status}</Badge>
+              <Badge tone={profile?.status === "approved" ? "win" : "accent"}>
+                {profile?.status}
+              </Badge>
             </div>
           </div>
 
@@ -50,7 +52,7 @@ export function SettingsAccount() {
               onClick={signOut}
               className="flex w-full items-center justify-center gap-2 rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-2.5 text-sm font-semibold text-destructive transition hover:bg-destructive hover:text-destructive-foreground"
             >
-              <LogOut className="size-4" /> 
+              <LogOut className="size-4" />
               Sign Out
             </button>
           </div>
@@ -64,10 +66,11 @@ export function SettingsAccount() {
             Permanently delete your account and all associated data. This action cannot be undone.
           </p>
         </div>
-        
+
         {isOwner ? (
           <div className="rounded-lg bg-background p-4 text-sm text-muted-foreground border">
-            Owner accounts require administrative intervention to delete. This option is disabled for platform safety.
+            Owner accounts require administrative intervention to delete. This option is disabled
+            for platform safety.
           </div>
         ) : (
           <>

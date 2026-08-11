@@ -124,7 +124,7 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
     res.end(
       JSON.stringify({
         error: `Unknown API route: ${pathname}. Available: ${Object.keys(ROUTES).join(", ")}`,
-      })
+      }),
     );
     return;
   }
@@ -175,7 +175,7 @@ server.listen(PORT, "127.0.0.1", () => {
   const orLen = process.env["OPENROUTER_API_KEY"] ? process.env["OPENROUTER_API_KEY"]?.length : 0;
   console.log(
     `[api-server] GROQ_API_KEY:        ${groqSet ? `SET (length ${groqLen}, primary AI ready)` : "MISSING (add to .env file)"}\n` +
-    `[api-server] OPENROUTER_API_KEY:  ${orSet ? `SET (length ${orLen}, fallback AI ready)` : "NOT SET (fallback unavailable — add to .env for resilience)"}\n`
+      `[api-server] OPENROUTER_API_KEY:  ${orSet ? `SET (length ${orLen}, fallback AI ready)` : "NOT SET (fallback unavailable — add to .env for resilience)"}\n`,
   );
 });
 

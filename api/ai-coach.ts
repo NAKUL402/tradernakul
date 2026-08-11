@@ -25,10 +25,7 @@ import { createClient } from "@supabase/supabase-js";
 // ─────────────────────────────────────────────────────────────────────────────
 class GroqFallbackError extends Error {
   readonly reason: "rate_limit" | "server_error" | "timeout" | "network";
-  constructor(
-    message: string,
-    reason: "rate_limit" | "server_error" | "timeout" | "network"
-  ) {
+  constructor(message: string, reason: "rate_limit" | "server_error" | "timeout" | "network") {
     super(message);
     this.name = "GroqFallbackError";
     this.reason = reason;
@@ -41,7 +38,7 @@ class GroqFallbackError extends Error {
 async function callOpenRouter(
   systemText: string,
   filteredHistory: Array<{ role: string; content: string }>,
-  userMessage: string
+  userMessage: string,
 ): Promise<string> {
   const rawOpenRouterKey = process.env["OPENROUTER_API_KEY"] || "";
   const openRouterKey = rawOpenRouterKey.replace(/^["']|["']$/g, "").trim();
@@ -138,9 +135,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const filteredHistory = rawHistory
       .filter(
         (item: { role: string; content: string; isError?: boolean }) =>
-          !item.isError &&
-          typeof item.content === "string" &&
-          item.content.trim().length > 0
+          !item.isError && typeof item.content === "string" && item.content.trim().length > 0,
       )
       .slice(-10); // Limit to last 10 messages to prevent token overflow
 
@@ -275,7 +270,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         } else if (groqResponse.status >= 500) {
           // Groq server error — ELIGIBLE for fallback
           console.warn(
-            `[ai-coach] Groq server error (${groqResponse.status}). Will attempt OpenRouter fallback.`
+            `[ai-coach] Groq server error (${groqResponse.status}). Will attempt OpenRouter fallback.`,
           );
           groqFallbackError = new GroqFallbackError(errorMsg, "server_error");
         } else {
@@ -289,7 +284,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } catch (err) {
       // ── GROQ NETWORK / TIMEOUT ERROR — ELIGIBLE for fallback ─────────────
       const errMsg = err instanceof Error ? err.message : String(err);
-      if (errMsg.includes("TimeoutError") || errMsg.includes("abort") || errMsg.includes("timeout")) {
+      if (
+        errMsg.includes("TimeoutError") ||
+        errMsg.includes("abort") ||
+        errMsg.includes("timeout")
+      ) {
         console.warn("[ai-coach] Groq request timed out. Will attempt OpenRouter fallback.");
         groqFallbackError = new GroqFallbackError(errMsg, "timeout");
       } else {
@@ -303,14 +302,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // =========================================================================
     if (groqFallbackError) {
       console.log(
-        `[ai-coach] AI Provider: OPENROUTER (fallback — Groq reason: ${groqFallbackError.reason})`
+        `[ai-coach] AI Provider: OPENROUTER (fallback — Groq reason: ${groqFallbackError.reason})`,
       );
 
       try {
         const openRouterText = await callOpenRouter(
           systemText,
           filteredHistory as Array<{ role: string; content: string }>,
-          message
+          message,
         );
 
         // OpenRouter succeeded — return as normal response

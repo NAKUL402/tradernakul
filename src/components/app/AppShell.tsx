@@ -1,7 +1,18 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
-  LayoutDashboard, NotebookPen, BarChart3, Brain, CalendarDays, FileText,
-  Settings, User, Menu, Plus, Bell, Search, ShieldCheck,
+  LayoutDashboard,
+  NotebookPen,
+  BarChart3,
+  Brain,
+  CalendarDays,
+  FileText,
+  Settings,
+  User,
+  Menu,
+  Plus,
+  Bell,
+  Search,
+  ShieldCheck,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
@@ -22,7 +33,11 @@ const mobileNav = nav.slice(0, 5);
 function Brand({ compact }: { compact?: boolean }) {
   return (
     <div className="flex items-center gap-3">
-      <img src="/logo.jpg" alt="Edge Journal Logo" className="size-9 shrink-0 animate-float-slow rounded-xl object-cover shadow-[0_0_15px_-3px_var(--color-primary)]" />
+      <img
+        src="/logo.jpg"
+        alt="Edge Journal Logo"
+        className="size-9 shrink-0 animate-float-slow rounded-xl object-cover shadow-[0_0_15px_-3px_var(--color-primary)]"
+      />
       {!compact && (
         <div className="leading-tight">
           <p className="font-display text-sm font-semibold">Edge Journal</p>
@@ -38,12 +53,24 @@ import { FloatingAICoach } from "@/components/app/FloatingAICoach";
 import { useAuth } from "@/lib/auth-context";
 import { LocalTestControlPanel } from "@/components/app/LocalTestControlPanel";
 
-export function AppShell({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
+export function AppShell({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  children: ReactNode;
+}) {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { user, profile, isAdmin } = useAuth();
 
-  const name = profile?.full_name || user?.user_metadata?.["full_name"] || user?.user_metadata?.["name"] || "TN";
+  const name =
+    profile?.full_name ||
+    user?.user_metadata?.["full_name"] ||
+    user?.user_metadata?.["name"] ||
+    "TN";
   const initials = name
     .split(" ")
     .map((part: string) => part[0])
@@ -102,7 +129,9 @@ export function AppShell({ title, subtitle, children }: { title: string; subtitl
                   collapsed && "justify-center px-0",
                 )}
               >
-                {active && <span className="absolute left-0 h-6 w-1 rounded-r-full bg-gradient-to-b from-primary to-accent" />}
+                {active && (
+                  <span className="absolute left-0 h-6 w-1 rounded-r-full bg-gradient-to-b from-primary to-accent" />
+                )}
                 <item.icon className={cn("size-[18px] shrink-0", active && "text-primary")} />
                 {!collapsed && <span>{item.label}</span>}
               </Link>
@@ -115,7 +144,8 @@ export function AppShell({ title, subtitle, children }: { title: string; subtitl
               title="Admin Portal"
               className={cn(
                 "group relative mt-2 flex items-center gap-3 rounded-xl border border-primary/40 bg-primary/10 px-3 py-2.5 text-sm font-semibold text-primary transition-all hover:bg-primary/20",
-                pathname === "/admin" && "bg-primary/30 shadow-[inset_0_0_0_1px_var(--color-primary)]",
+                pathname === "/admin" &&
+                  "bg-primary/30 shadow-[inset_0_0_0_1px_var(--color-primary)]",
                 collapsed && "justify-center px-0",
               )}
             >
@@ -128,7 +158,9 @@ export function AppShell({ title, subtitle, children }: { title: string; subtitl
         {!collapsed && (
           <div className="glass rounded-2xl p-4">
             <p className="font-display text-sm font-semibold">Pro Plan</p>
-            <p className="mt-1 text-xs text-muted-foreground">Unlimited AI coach reviews &amp; reports.</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Unlimited AI coach reviews &amp; reports.
+            </p>
             <Link
               to="/ai-coach"
               className="mt-3 flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-primary to-accent px-3 py-2 text-xs font-semibold text-primary-foreground transition hover:opacity-90"
@@ -154,13 +186,24 @@ export function AppShell({ title, subtitle, children }: { title: string; subtitl
                 <Search className="size-3.5" />
                 <span>Search trades…</span>
               </div>
-              <button aria-label="Notifications" className="relative rounded-xl border border-border/70 bg-card/50 p-2 text-muted-foreground transition hover:text-foreground">
+              <button
+                aria-label="Notifications"
+                className="relative rounded-xl border border-border/70 bg-card/50 p-2 text-muted-foreground transition hover:text-foreground"
+              >
                 <Bell className="size-4" />
                 <span className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-accent" />
               </button>
-              <Link to="/profile" aria-label="Profile" className="grid size-9 place-items-center rounded-xl bg-gradient-to-br from-accent to-primary text-xs font-bold text-primary-foreground">
+              <Link
+                to="/profile"
+                aria-label="Profile"
+                className="grid size-9 place-items-center rounded-xl bg-gradient-to-br from-accent to-primary text-xs font-bold text-primary-foreground"
+              >
                 {profile?.avatar_url ? (
-                  <img src={profile.avatar_url} alt={name} className="size-full rounded-xl object-cover" />
+                  <img
+                    src={profile.avatar_url}
+                    alt={name}
+                    className="size-full rounded-xl object-cover"
+                  />
                 ) : (
                   initials
                 )}
@@ -206,7 +249,9 @@ export function AppShell({ title, subtitle, children }: { title: string; subtitl
                   active ? "text-primary" : "text-muted-foreground",
                 )}
               >
-                <item.icon className={cn("size-5", active && "drop-shadow-[0_0_8px_var(--color-primary)]")} />
+                <item.icon
+                  className={cn("size-5", active && "drop-shadow-[0_0_8px_var(--color-primary)]")}
+                />
                 {item.label}
               </Link>
             );

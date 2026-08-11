@@ -19,14 +19,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ success: false, error: "Missing userEmail or userName" });
   }
 
-  const resendApiKey = process.env['RESEND_API_KEY'];
-  const ownerEmail = process.env['OWNER_EMAIL'];
+  const resendApiKey = process.env["RESEND_API_KEY"];
+  const ownerEmail = process.env["OWNER_EMAIL"];
   if (!ownerEmail) {
     console.error("[send-approval] FATAL: OWNER_EMAIL environment variable is missing.");
-    return res.status(500).json({ success: false, error: "OWNER_EMAIL environment variable not set." });
+    return res
+      .status(500)
+      .json({ success: false, error: "OWNER_EMAIL environment variable not set." });
   }
-  const baseUrl = process.env['VITE_SITE_URL'] || "https://Edge Journal.vercel.app";
-  const resendFrom = process.env['RESEND_FROM_EMAIL'] || "Edge Journal <onboarding@resend.dev>";
+  const baseUrl = process.env["VITE_SITE_URL"] || "https://Edge Journal.vercel.app";
+  const resendFrom = process.env["RESEND_FROM_EMAIL"] || "Edge Journal <onboarding@resend.dev>";
 
   const adminLink = `${baseUrl}/admin`;
   const requestTime = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
@@ -64,7 +66,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (!resendApiKey) {
     console.error("[send-approval] FATAL: RESEND_API_KEY missing.");
-    return res.status(500).json({ success: false, error: "RESEND_API_KEY environment variable not set." });
+    return res
+      .status(500)
+      .json({ success: false, error: "RESEND_API_KEY environment variable not set." });
   }
 
   console.log("[send-approval] Attempting Resend API...");
@@ -92,7 +96,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ success: true, provider: "resend" });
     }
 
-    const errMsg: string = data['message'] || data['error'] || `Resend error ${response.status}`;
+    const errMsg: string = data["message"] || data["error"] || `Resend error ${response.status}`;
     console.error("[send-approval] Resend failed:", errMsg);
     return res.status(500).json({ success: false, error: `Resend: ${errMsg}` });
   } catch (err: unknown) {

@@ -9,7 +9,7 @@ globalThis.fetch = async (url, options) => {
       ok: false,
       status: 429,
       statusText: "Too Many Requests",
-      json: async () => ({ error: { message: "Mocked 429 Rate Limit" } })
+      json: async () => ({ error: { message: "Mocked 429 Rate Limit" } }),
     } as any;
   }
   return originalFetch(url, options);
@@ -33,27 +33,31 @@ function createMockRes() {
     },
     end() {
       return this;
-    }
+    },
   };
   return res;
 }
 
-import fs from 'fs';
+import fs from "fs";
 
 async function runTests() {
-  const envContent = fs.readFileSync('.env', 'utf-8');
-  envContent.split('\n').forEach(line => {
-    if (line.includes('=')) {
-      const parts = line.split('=');
+  const envContent = fs.readFileSync(".env", "utf-8");
+  envContent.split("\n").forEach((line) => {
+    if (line.includes("=")) {
+      const parts = line.split("=");
       const key = parts[0].trim();
-      const val = parts.slice(1).join('=').trim();
+      const val = parts.slice(1).join("=").trim();
       if (!process.env[key]) process.env[key] = val;
     }
   });
 
   console.log("--- TEST 1: Normal Groq Request ---");
   forceGroq429 = false;
-  let req1 = { method: "POST", headers: {}, body: { message: "Reply with the word SUCCESS" } } as any;
+  let req1 = {
+    method: "POST",
+    headers: {},
+    body: { message: "Reply with the word SUCCESS" },
+  } as any;
   let res1 = createMockRes();
   await handler(req1, res1);
   console.log("Status:", res1.statusCode);
@@ -61,7 +65,11 @@ async function runTests() {
 
   console.log("\n--- TEST 2: Mocked Groq 429 (OpenRouter Fallback) ---");
   forceGroq429 = true;
-  let req2 = { method: "POST", headers: {}, body: { message: "Reply with the word SUCCESS" } } as any;
+  let req2 = {
+    method: "POST",
+    headers: {},
+    body: { message: "Reply with the word SUCCESS" },
+  } as any;
   let res2 = createMockRes();
   await handler(req2, res2);
   console.log("Status:", res2.statusCode);

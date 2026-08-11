@@ -16,7 +16,9 @@ export function SettingsAppearance() {
   const { userSettings, updateUserSettings } = useAuth();
   if (!userSettings) return null;
 
-  const isDark = userSettings.theme === "dark" || (userSettings.theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const isDark =
+    userSettings.theme === "dark" ||
+    (userSettings.theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
 
   const setTheme = (dark: boolean) => {
     updateUserSettings({ theme: dark ? "dark" : "light" });
@@ -38,15 +40,21 @@ export function SettingsAppearance() {
           <p className="text-xs text-muted-foreground">Switch between dark and light mode</p>
         </div>
         <div className="flex rounded-xl border border-border p-1 bg-background/50">
-          <button 
-            onClick={() => updateUserSettings({ theme: "dark" })} 
-            className={cn("flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs transition-all", userSettings.theme === "dark" ? "bg-primary/20 text-primary" : "hover:bg-muted")}
+          <button
+            onClick={() => updateUserSettings({ theme: "dark" })}
+            className={cn(
+              "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs transition-all",
+              userSettings.theme === "dark" ? "bg-primary/20 text-primary" : "hover:bg-muted",
+            )}
           >
             <Moon className="size-3.5" /> Dark
           </button>
-          <button 
-            onClick={() => updateUserSettings({ theme: "light" })} 
-            className={cn("flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs transition-all", userSettings.theme === "light" ? "bg-primary/20 text-primary" : "hover:bg-muted")}
+          <button
+            onClick={() => updateUserSettings({ theme: "light" })}
+            className={cn(
+              "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs transition-all",
+              userSettings.theme === "light" ? "bg-primary/20 text-primary" : "hover:bg-muted",
+            )}
           >
             <Sun className="size-3.5" /> Light
           </button>
@@ -60,7 +68,10 @@ export function SettingsAppearance() {
               key={a.name}
               aria-label={a.name}
               onClick={() => applyAccent(a.value)}
-              className={cn("size-9 rounded-xl ring-offset-2 ring-offset-background transition", userSettings.accent_color === a.value && "ring-2 ring-foreground")}
+              className={cn(
+                "size-9 rounded-xl ring-offset-2 ring-offset-background transition",
+                userSettings.accent_color === a.value && "ring-2 ring-foreground",
+              )}
               style={{ background: a.value }}
             />
           ))}
@@ -68,11 +79,12 @@ export function SettingsAppearance() {
             aria-label="Special Red Green Theme"
             onClick={() => applyAccent("special")}
             className={cn(
-              "size-9 rounded-xl ring-offset-2 ring-offset-background transition relative overflow-hidden", 
-              userSettings.accent_color === "special" && "ring-2 ring-foreground"
+              "size-9 rounded-xl ring-offset-2 ring-offset-background transition relative overflow-hidden",
+              userSettings.accent_color === "special" && "ring-2 ring-foreground",
             )}
-            style={{ 
-              background: "linear-gradient(135deg, oklch(0.62 0.28 25) 0%, oklch(0.75 0.22 150) 100%)" 
+            style={{
+              background:
+                "linear-gradient(135deg, oklch(0.62 0.28 25) 0%, oklch(0.75 0.22 150) 100%)",
             }}
           />
         </div>

@@ -12,7 +12,9 @@ export function SettingsNotifications() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium">Daily Summary</p>
-            <p className="text-xs text-muted-foreground">Receive a daily summary of your trading activity.</p>
+            <p className="text-xs text-muted-foreground">
+              Receive a daily summary of your trading activity.
+            </p>
           </div>
           <Toggle
             on={userSettings.daily_summary}
@@ -22,7 +24,9 @@ export function SettingsNotifications() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium">Weekly Report</p>
-            <p className="text-xs text-muted-foreground">Comprehensive Sunday performance report.</p>
+            <p className="text-xs text-muted-foreground">
+              Comprehensive Sunday performance report.
+            </p>
           </div>
           <Toggle
             on={userSettings.weekly_report}
@@ -32,7 +36,9 @@ export function SettingsNotifications() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium">AI Coach Alerts</p>
-            <p className="text-xs text-muted-foreground">Instant alerts when you break your rules.</p>
+            <p className="text-xs text-muted-foreground">
+              Instant alerts when you break your rules.
+            </p>
           </div>
           <Toggle
             on={userSettings.ai_coach_alerts}

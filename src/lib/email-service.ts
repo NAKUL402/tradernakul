@@ -98,4 +98,3 @@ export async function sendStatusNotificationEmail({
     return { success: false, error: `Network error: ${message}` };
   }
 }
-

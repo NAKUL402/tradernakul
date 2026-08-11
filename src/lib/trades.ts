@@ -20,14 +20,20 @@ export type Trade = {
   notes: string;
   screenshot: string;
   tags: string[];
-  lots?: string | undefined;      // Lot size
-  mistakes?: string | undefined;  // Mistakes section
-  rating?: number | undefined;    // 1-5 Star rating
-  reason?: string | undefined;    // Reason for taking trade
+  lots?: string | undefined; // Lot size
+  mistakes?: string | undefined; // Mistakes section
+  rating?: number | undefined; // 1-5 Star rating
+  reason?: string | undefined; // Reason for taking trade
 };
 
 export const PAIRS = ["XAUUSD", "EURUSD", "GBPUSD", "USDJPY", "BTCUSD", "NAS100"];
-export const SETUPS = ["Order Block", "FVG Retest", "Liquidity Sweep", "Break & Retest", "Trend Continuation"];
+export const SETUPS = [
+  "Order Block",
+  "FVG Retest",
+  "Liquidity Sweep",
+  "Break & Retest",
+  "Trend Continuation",
+];
 export const SESSIONS = ["Asian", "London", "New York"] as const;
 
 export const money = (n: number, currency = "$") =>
@@ -36,7 +42,10 @@ export const money = (n: number, currency = "$") =>
     currency: "USD",
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
-  }).format(n).replace("USD", "").trim();
+  })
+    .format(n)
+    .replace("USD", "")
+    .trim();
 
 export const pct = (n: number) => `${n.toFixed(1)}%`;
 
@@ -213,7 +222,11 @@ export async function fetchUserTrades(): Promise<Trade[]> {
   return getLocalTrades();
 }
 
-export async function saveTradeToSupabase(tradePayload: Partial<Trade>, userId: string, imageFile?: File): Promise<void> {
+export async function saveTradeToSupabase(
+  tradePayload: Partial<Trade>,
+  userId: string,
+  imageFile?: File,
+): Promise<void> {
   let screenshotUrl = tradePayload.screenshot || "chart-1";
 
   if (imageFile && isSupabaseConfigured) {
@@ -235,7 +248,8 @@ export async function saveTradeToSupabase(tradePayload: Partial<Trade>, userId: 
     }
   }
 
-  const tradeId = tradePayload.id || `trade-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+  const tradeId =
+    tradePayload.id || `trade-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
 
   const newTradeObj: Trade = {
     id: tradeId,
@@ -293,14 +307,12 @@ export async function saveTradeToSupabase(tradePayload: Partial<Trade>, userId: 
     };
 
     try {
-      if (tradePayload.id) {
-        await supabase.from("trades").update(row).eq("id", tradeId);
-      } else {
-        await supabase.from("trades").insert(row);
-      }
-    } catch (e) {
+      const { error } = await supabase.from("trades").upsert(row);
+      if (error) throw error;
+    } catch (e: any) {
       console.warn("[Database] Trades sync notice:", e);
-      throw e; // Bubble error to UI
+      // RLS or Session error usually throws an object with a message
+      throw new Error(e.message || "Session Error or Database Permission Denied");
     }
   } else {
     // 2. Instantly save to local persistent storage ONLY IF NOT SUPABASE

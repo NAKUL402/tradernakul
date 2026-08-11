@@ -18,7 +18,9 @@ export type MT5Payload = {
   executionTime: string;
 };
 
-export async function processMT5SyncPayload(payload: MT5Payload): Promise<{ success: boolean; message: string; tradeId?: string }> {
+export async function processMT5SyncPayload(
+  payload: MT5Payload,
+): Promise<{ success: boolean; message: string; tradeId?: string }> {
   try {
     if (!payload.apiKey) {
       return { success: false, message: "Missing X-MT5-API-KEY header or payload API Key" };
