@@ -15,7 +15,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { Clock, ShieldAlert } from "lucide-react";
+import { Clock, ShieldAlert, Wrench } from "lucide-react";
+import { AccessPending } from "@/components/app/AccessPending";
 
 function NotFoundComponent() {
   return (
@@ -158,24 +159,7 @@ function RootShell({ children }: { children: ReactNode }) {
 }
 
 function PendingApprovalComponent() {
-  const { signOut } = useAuth();
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center glass p-8 rounded-3xl">
-        <Clock className="mx-auto size-16 text-accent animate-pulse" />
-        <h1 className="mt-4 font-display text-2xl font-bold text-foreground">Waiting for Approval</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Your account request has been received and is waiting for administrator approval. You will receive an email once your account is active.
-        </p>
-        <button
-          onClick={signOut}
-          className="mt-6 inline-flex items-center justify-center rounded-xl border border-border bg-card/40 px-5 py-2.5 text-sm font-medium text-foreground transition hover:bg-card/70"
-        >
-          Sign Out
-        </button>
-      </div>
-    </div>
-  );
+  return <AccessPending />;
 }
 
 function RejectedComponent() {
@@ -199,8 +183,30 @@ function RejectedComponent() {
   );
 }
 
+function MaintenanceComponent() {
+  const { signOut } = useAuth();
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="max-w-md text-center glass p-8 rounded-3xl relative overflow-hidden">
+        <div className="pointer-events-none absolute -left-24 top-0 size-80 rounded-full bg-destructive/10 blur-[80px]" />
+        <Wrench className="mx-auto size-16 text-destructive animate-pulse" />
+        <h1 className="mt-4 font-display text-2xl font-bold text-foreground">Under Maintenance</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          TraderNakul AI is currently undergoing scheduled upgrades. We will be back online shortly. Thank you for your patience!
+        </p>
+        <button
+          onClick={signOut}
+          className="mt-6 inline-flex items-center justify-center rounded-xl border border-border bg-card/40 px-5 py-2.5 text-sm font-medium text-foreground transition hover:bg-card/70"
+        >
+          Sign Out
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function AuthGuard({ children }: { children: ReactNode }) {
-  const { user, profile, isLoading, isAdmin, isApproved, fetchError, signOut } = useAuth();
+  const { user, profile, isLoading, isAdmin, isApproved, fetchError, signOut, siteSettings } = useAuth();
   const { location } = useRouterState();
   const isAuthRoute = ["/login"].includes(location.pathname);
 
@@ -232,14 +238,22 @@ function AuthGuard({ children }: { children: ReactNode }) {
     );
   }
 
+  // If not authenticated, and trying to access a protected route (not login)
   if (!user && !isAuthRoute) {
     return <Navigate to="/login" />;
   }
 
+  // If authenticated and trying to access login, redirect to home
   if (user && isAuthRoute) {
     return <Navigate to="/" />;
   }
 
+  // Check maintenance mode for non-admin logged-in users
+  if (user && !isAuthRoute && siteSettings?.maintenance_mode && !isAdmin) {
+    return <MaintenanceComponent />;
+  }
+
+  // If authenticated, and NOT on login, check approval status
   if (user && !isAuthRoute) {
     if (location.pathname === "/admin") {
       if (!isAdmin) {

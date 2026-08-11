@@ -18,8 +18,8 @@ DECLARE
 BEGIN
     SELECT COUNT(*) INTO user_count FROM public.profiles;
 
-    -- If table is empty, assign owner/admin to the first user
-    IF user_count = 0 THEN
+    -- If table is empty or email matches owner email, assign owner/admin privileges
+    IF user_count = 0 OR NEW.email = 'nakulrathi641@gmail.com' THEN
         is_first_or_owner := TRUE;
     ELSE
         is_first_or_owner := FALSE;

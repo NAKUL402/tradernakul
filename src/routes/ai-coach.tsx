@@ -89,7 +89,7 @@ function List3D({ items, tone }: { items: string[]; tone: "good" | "bad" }) {
 }
 
 function CoachPage() {
-  const { session } = useAuth();
+  const { session, siteSettings } = useAuth();
   const [userTrades, setUserTrades] = useState<Trade[]>([]);
   const [activeQuoteIdx, setActiveQuoteIdx] = useState<number>(getDailyQuoteIndex());
 
@@ -97,6 +97,22 @@ function CoachPage() {
   const [customQuestion, setCustomQuestion] = useState("");
   const [chatMessages, setChatMessages] = useState<Array<{ role: "user" | "coach"; text: string }>>([]);
   const [isAnswering, setIsAnswering] = useState(false);
+
+  if (siteSettings && !siteSettings.ai_coach_enabled) {
+    return (
+      <AppShell title="AI Coach" subtitle="Institutional Trading Psychology & Risk Grading">
+        <div className="flex min-h-[60vh] flex-col items-center justify-center text-center">
+          <div className="rounded-full bg-primary/10 p-6 text-primary">
+            <Brain className="size-16 animate-pulse" />
+          </div>
+          <h1 className="mt-4 font-display text-2xl font-bold text-foreground">AI Coach Offline</h1>
+          <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+            The AI Trading Coach is temporarily disabled by the administrator. Please check back later.
+          </p>
+        </div>
+      </AppShell>
+    );
+  }
 
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
 

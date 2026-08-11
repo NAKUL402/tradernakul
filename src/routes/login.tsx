@@ -2,14 +2,14 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect, useRef, KeyboardEvent, ClipboardEvent } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { ArrowRight, Mail, KeyRound, User, Lock, Eye, EyeOff } from "lucide-react";
+import { ArrowRight, Mail, User } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
       { title: "Login — Trading Journal AI" },
-      { name: "description", content: "Login to your Trading Journal AI account." },
+      { name: "description", content: "Access your Trading Journal AI account securely using email OTP." },
     ],
   }),
   component: LoginPage,
@@ -17,20 +17,24 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const navigate = useNavigate();
-  const { user, profile, isApproved } = useAuth();
-  const [mode, setMode] = useState<"login" | "signup">("login");
+  const { user, profile, isApproved, siteSettings } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
   const [otpToken, setOtpToken] = useState("");
   const [otpError, setOtpError] = useState("");
   const [resendCooldown, setResendCooldown] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // Auto-focus first input box when OTP screen is shown
+  useEffect(() => {
+    if (showOtp) {
+      setTimeout(() => {
+        otpRefs.current[0]?.focus();
+      }, 50);
+    }
+  }, [showOtp]);
 
   const handleOtpChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
@@ -84,7 +88,8 @@ function LoginPage() {
 
   // If already authenticated and approved, go to dashboard
   useEffect(() => {
-    if (user && profile && isApproved) {
+    const ownerBypass = user?.email === "nakulrathi641@gmail.com";
+    if (user && (ownerBypass || (profile && isApproved))) {
       navigate({ to: "/" });
     }
   }, [user, profile, isApproved, navigate]);
@@ -96,79 +101,79 @@ function LoginPage() {
       toast.error("Please enter your email address.");
       return;
     }
-    if (!password) {
-      toast.error("Please enter your password.");
+    if (!name.trim()) {
+      toast.error("Please enter your name.");
       return;
     }
 
     setIsLoading(true);
+    console.log("AUTH_REQUEST_STARTED");
+    console.log("AUTH_METHOD: signInWithOtp");
+    console.log("AUTH_EMAIL_FLOW: existing");
     try {
-      if (mode === "signup") {
-        if (!name.trim()) {
-          toast.error("Please enter your name.");
-          setIsLoading(false);
-          return;
-        }
+      // Step 1: Attempt login for an existing user (shouldCreateUser: false)
+      // This will send an OTP if the user exists, and avoids sending display name metadata (preserving their existing profile name).
+      const { error: signInError } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: false,
+        },
+      });
 
-        if (password !== confirmPassword) {
-          toast.error("Passwords do not match.");
-          setIsLoading(false);
-          return;
-        }
+      if (signInError) {
+        console.log("AUTH_RESPONSE_RECEIVED");
+        console.log("AUTH_ERROR: true");
+        
+        // Step 2: Fallback to new user signup if they do not exist
+        const isNewUser = 
+          signInError.message.includes("Signups not allowed") || 
+          signInError.message.includes("signup") || 
+          signInError.message.includes("not found") ||
+          signInError.status === 400; // standard bad request for signups disabled
 
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              full_name: name.trim()
-            }
-          }
-        });
-
-        if (error) {
-          if (error.message.toLowerCase().includes("user already registered")) {
-            toast.error("Account already exists. Please log in.");
-            setMode("login");
-            setIsLoading(false);
+        if (isNewUser) {
+          if (siteSettings && !siteSettings.registration_enabled) {
+            toast.error("Registration is temporarily closed by the administrator.");
             return;
           }
-          throw error;
-        }
+          console.log("AUTH_REQUEST_STARTED");
+          console.log("AUTH_METHOD: signInWithOtp");
+          console.log("AUTH_EMAIL_FLOW: new");
+          
+          const { error: signUpError } = await supabase.auth.signInWithOtp({
+            email,
+            options: {
+              shouldCreateUser: true,
+              data: {
+                full_name: name.trim(),
+              },
+            },
+          });
 
-        if (data.user) {
-          if (data.session) {
-            toast.success("Account created successfully!");
-            navigate({ to: "/" });
+          if (signUpError) {
+            console.log("AUTH_RESPONSE_RECEIVED");
+            console.log("AUTH_ERROR: true");
+            throw signUpError;
           } else {
-            toast.success("OTP sent to your email.");
-            setShowOtp(true);
-            setResendCooldown(60);
+            console.log("AUTH_RESPONSE_RECEIVED");
+            console.log("AUTH_ERROR: false");
           }
+        } else {
+          // A genuine error (e.g. rate limit, invalid email format)
+          throw signInError;
         }
       } else {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-        if (error) {
-          if (error.message.toLowerCase().includes("invalid login credentials")) {
-            throw new Error("Incorrect email or password.");
-          }
-          if (error.message.toLowerCase().includes("email not confirmed")) {
-            throw new Error("Please verify your email address before logging in.");
-          }
-          throw error;
-        }
-
-        if (data.session) {
-          toast.success("Logged in successfully.");
-          navigate({ to: "/" });
-        }
+        console.log("AUTH_RESPONSE_RECEIVED");
+        console.log("AUTH_ERROR: false");
       }
+
+      toast.success("Verification code sent to your email.");
+      setShowOtp(true);
+      setOtpToken("");
+      setOtpError("");
+      setResendCooldown(30); // 30-second Resend cooldown
     } catch (err: any) {
-      toast.error(err.message || "Authentication failed.");
+      toast.error(err.message || "Failed to send verification code.");
     } finally {
       setIsLoading(false);
     }
@@ -180,20 +185,19 @@ function LoginPage() {
     setIsLoading(true);
     setOtpError("");
     try {
-      const { error } = await supabase.auth.verifyOtp({
+      const { data, error } = await supabase.auth.verifyOtp({
         email,
         token: otpToken,
-        type: "signup"
+        type: "email", // Verification type for signInWithOtp is always 'email'
       });
       if (error) throw error;
-      
-      await supabase.auth.signOut();
-      toast.success("Email verified successfully. Please sign in.");
-      setShowOtp(false);
-      setMode("login");
-      setPassword("");
-      setConfirmPassword("");
-      setOtpToken("");
+
+      if (data.session) {
+        toast.success("Logged in successfully!");
+        navigate({ to: "/" });
+      } else {
+        throw new Error("Verification successful, but failed to load session. Please try again.");
+      }
     } catch (err: any) {
       const msg = err.message?.toLowerCase() || "";
       if (msg.includes("expired") || msg.includes("invalid token") || msg.includes("token has expired")) {
@@ -214,21 +218,63 @@ function LoginPage() {
     if (resendCooldown > 0) return;
     setIsLoading(true);
     setOtpError("");
+    console.log("AUTH_REQUEST_STARTED (RESEND)");
+    console.log("AUTH_METHOD: signInWithOtp (RESEND)");
+    console.log("AUTH_EMAIL_FLOW: existing (RESEND)");
     try {
-      // In many Supabase versions, calling signUp again resends the confirmation.
-      // If `resend` method is available, you can use it, but `signUp` is safe here.
-      const { error } = await supabase.auth.signUp({
+      // Re-triggering the same check ensures we preserve existing names and register new names correctly on resend
+      const { error: signInError } = await supabase.auth.signInWithOtp({
         email,
-        password,
         options: {
-          data: {
-            full_name: name.trim()
-          }
-        }
+          shouldCreateUser: false,
+        },
       });
-      if (error && !error.message.toLowerCase().includes("user already registered")) {
-        throw error;
+
+      if (signInError) {
+        console.log("AUTH_RESPONSE_RECEIVED (RESEND)");
+        console.log("AUTH_ERROR: true (RESEND)");
+        
+        const isNewUser = 
+          signInError.message.includes("Signups not allowed") || 
+          signInError.message.includes("signup") || 
+          signInError.message.includes("not found") ||
+          signInError.status === 400;
+
+        if (isNewUser) {
+          if (siteSettings && !siteSettings.registration_enabled) {
+            toast.error("Registration is temporarily closed by the administrator.");
+            return;
+          }
+          console.log("AUTH_REQUEST_STARTED (RESEND)");
+          console.log("AUTH_METHOD: signInWithOtp (RESEND)");
+          console.log("AUTH_EMAIL_FLOW: new (RESEND)");
+          
+          const { error: signUpError } = await supabase.auth.signInWithOtp({
+            email,
+            options: {
+              shouldCreateUser: true,
+              data: {
+                full_name: name.trim(),
+              },
+            },
+          });
+
+          if (signUpError) {
+            console.log("AUTH_RESPONSE_RECEIVED (RESEND)");
+            console.log("AUTH_ERROR: true (RESEND)");
+            throw signUpError;
+          } else {
+            console.log("AUTH_RESPONSE_RECEIVED (RESEND)");
+            console.log("AUTH_ERROR: false (RESEND)");
+          }
+        } else {
+          throw signInError;
+        }
+      } else {
+        console.log("AUTH_RESPONSE_RECEIVED (RESEND)");
+        console.log("AUTH_ERROR: false (RESEND)");
       }
+
       toast.success("A new verification code has been sent.");
       setResendCooldown(30);
     } catch (err: any) {
@@ -255,7 +301,7 @@ function LoginPage() {
 
         <div className="mt-8 text-left">
           <h1 className="font-display text-2xl font-semibold">
-            {showOtp ? "Verify your email" : mode === "login" ? "Welcome Back" : "Create Account"}
+            {showOtp ? "Verify your email" : "Secure Access"}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             {showOtp ? (
@@ -264,10 +310,8 @@ function LoginPage() {
                 <br />
                 <span className="font-medium text-foreground">{email}</span>
               </>
-            ) : mode === "login" ? (
-              "Enter your email and password to sign in."
             ) : (
-              "Register for a secure trading journal account."
+              "Enter your name and email to access your trading journal."
             )}
           </p>
 
@@ -325,7 +369,11 @@ function LoginPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setShowOtp(false)}
+                  onClick={() => {
+                    setShowOtp(false);
+                    setOtpToken("");
+                    setOtpError("");
+                  }}
                   className="hover:underline"
                 >
                   Change email address
@@ -334,22 +382,20 @@ function LoginPage() {
             </form>
           ) : (
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-              {mode === "signup" && (
-                <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <label className="text-xs font-medium text-foreground">First Name / Display Name</label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                    <input
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Rahul Sharma"
-                      className="w-full rounded-xl border border-border bg-background/50 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
-                      required={mode === "signup"}
-                    />
-                  </div>
+              <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-300">
+                <label className="text-xs font-medium text-foreground">First Name / Display Name</label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Rahul Sharma"
+                    className="w-full rounded-xl border border-border bg-background/50 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
+                    required
+                  />
                 </div>
-              )}
+              </div>
 
               <div className="space-y-1">
                 <label className="text-xs font-medium text-foreground">Email Address</label>
@@ -366,102 +412,14 @@ function LoginPage() {
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-foreground">Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full rounded-xl border border-border bg-background/50 py-2.5 pl-10 pr-10 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    tabIndex={-1}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                  >
-                    {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                  </button>
-                </div>
-              </div>
-
-              {mode === "signup" && (
-                <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <label className="text-xs font-medium text-foreground">Confirm Password</label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                    <input
-                      type={showConfirmPassword ? "text" : "password"}
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full rounded-xl border border-border bg-background/50 py-2.5 pl-10 pr-10 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
-                      required={mode === "signup"}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                      tabIndex={-1}
-                      aria-label={showConfirmPassword ? "Hide password" : "Show password"}
-                    >
-                      {showConfirmPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                    </button>
-                  </div>
-                </div>
-              )}
-
               <button
                 type="submit"
                 disabled={isLoading}
                 className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-accent px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90 active:scale-[0.99] disabled:opacity-50 glow-primary"
               >
-                {isLoading ? (
-                  mode === "login" ? "Signing in..." : "Sending OTP..."
-                ) : (
-                  mode === "login" ? "Sign In" : "Send OTP"
-                )}
+                {isLoading ? "Sending OTP..." : "Send OTP"}
                 {!isLoading && <ArrowRight className="size-4" />}
               </button>
-              
-              <div className="mt-4 flex justify-center text-xs text-muted-foreground">
-                {mode === "login" ? (
-                  <span>
-                    Don't have an account?{" "}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMode("signup");
-                        setPassword("");
-                        setConfirmPassword("");
-                      }}
-                      className="font-medium text-primary hover:underline"
-                    >
-                      Sign up
-                    </button>
-                  </span>
-                ) : (
-                  <span>
-                    Already have an account?{" "}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMode("login");
-                        setPassword("");
-                        setConfirmPassword("");
-                      }}
-                      className="font-medium text-primary hover:underline"
-                    >
-                      Sign in
-                    </button>
-                  </span>
-                )}
-              </div>
             </form>
           )}
         </div>
@@ -469,4 +427,3 @@ function LoginPage() {
     </div>
   );
 }
-

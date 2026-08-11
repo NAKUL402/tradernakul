@@ -83,6 +83,20 @@ export type Profile = {
   updated_at: string;
 };
 
+export type SiteSettings = {
+  id: number;
+  announcement_banner: string | null;
+  banner_active: boolean;
+  maintenance_mode: boolean;
+  ai_coach_enabled: boolean;
+  mt5_sync_enabled: boolean;
+  registration_enabled: boolean;
+  login_enabled: boolean;
+  journal_enabled: boolean;
+  market_data_enabled: boolean;
+  updated_at: string;
+};
+
 
 // ── Real Supabase Client Instance ───────────────────────────────────────────
 const realClient = createClient(
@@ -100,20 +114,6 @@ const realClient = createClient(
 // ── Unified Resilient Supabase Wrapper ─────────────────────────────────────
 export const supabase = {
   auth: {
-    signUp: async (options: any) => {
-      if (!isSupabaseConfigured) {
-        return { data: { user: null, session: null }, error: new Error("Supabase is not configured.") };
-      }
-      return await realClient.auth.signUp(options);
-    },
-
-    signInWithPassword: async (options: any) => {
-      if (!isSupabaseConfigured) {
-        return { data: { user: null, session: null }, error: new Error("Supabase is not configured.") };
-      }
-      return await realClient.auth.signInWithPassword(options);
-    },
-
     signInWithOtp: async (options: { email: string; options?: any }) => {
       if (!isSupabaseConfigured) {
         return { data: { user: null, session: null }, error: new Error("Supabase is not configured.") };
@@ -142,11 +142,20 @@ export const supabase = {
       if (!isSupabaseConfigured) return { data: { subscription: { unsubscribe: () => {} } } };
       return realClient.auth.onAuthStateChange(callback);
     },
+
+    resend: async (options: { type: any; email?: string; phone?: string; options?: any }) => {
+      if (!isSupabaseConfigured) return { data: null, error: new Error("Supabase is not configured.") };
+      return await realClient.auth.resend(options);
+    },
   },
 
   storage: realClient.storage,
 
   from: (tableName: string): any => {
     return realClient.from(tableName);
+  },
+
+  rpc: (fn: string, args?: Record<string, unknown>): any => {
+    return realClient.rpc(fn as any, args);
   },
 };

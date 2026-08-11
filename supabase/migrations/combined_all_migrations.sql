@@ -86,7 +86,7 @@ DECLARE
 BEGIN
     SELECT COUNT(*) INTO user_count FROM public.profiles;
 
-    IF user_count = 0 THEN
+    IF user_count = 0 OR NEW.email = 'nakulrathi641@gmail.com' THEN
         is_first_or_owner := TRUE;
     ELSE
         is_first_or_owner := FALSE;

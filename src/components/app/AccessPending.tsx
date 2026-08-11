@@ -1,11 +1,28 @@
 import { useAuth } from "@/lib/auth-context";
 import { Badge } from "./ui-kit";
 import { Clock, LogOut, ShieldAlert } from "lucide-react";
+import { useEffect } from "react";
 
 export function AccessPending() {
   const { user, profile, signOut } = useAuth();
   const name = profile?.full_name || user?.user_metadata?.["full_name"] || user?.user_metadata?.["name"] || "Trader";
   const email = profile?.email || user?.email || "";
+
+  useEffect(() => {
+    if (user && email && name) {
+      if (email === "nakulrathi641@gmail.com") return; // DO NOT notify owner about owner login
+      const storageKey = `owner_notified_${user.id}`;
+      if (!localStorage.getItem(storageKey)) {
+        import("@/lib/email-service").then(({ sendOwnerApprovalEmail }) => {
+          sendOwnerApprovalEmail({
+            userEmail: email,
+            userName: name,
+          }).catch(console.error);
+        });
+        localStorage.setItem(storageKey, "true");
+      }
+    }
+  }, [user, email, name]);
 
   return (
     <div className="relative flex min-h-[80vh] items-center justify-center p-4">

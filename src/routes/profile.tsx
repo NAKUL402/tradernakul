@@ -19,11 +19,11 @@ import { useAuth } from "@/lib/auth-context";
 
 function Profile() {
   const s = stats();
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, isOwner, isAdmin, isApproved } = useAuth();
   const name = profile?.full_name || user?.user_metadata?.["full_name"] || user?.user_metadata?.["name"] || "Trader";
   const email = profile?.email || user?.email || "";
-  const roleLabel = profile?.is_owner ? "Owner Admin" : profile?.role === "admin" ? "Admin" : "Trader";
-  const statusLabel = profile?.status ? profile.status.toUpperCase() : "APPROVED";
+  const roleLabel = isOwner ? "Owner Admin" : isAdmin ? "Admin" : "Trader";
+  const statusLabel = isOwner || isApproved ? "APPROVED" : profile?.status ? profile.status.toUpperCase() : "PENDING";
 
   const initials = name
     .split(" ")
@@ -49,7 +49,7 @@ function Profile() {
               <p className="text-sm text-muted-foreground">{email}</p>
               <div className="mt-2 flex flex-wrap justify-center gap-2 sm:justify-start">
                 <Badge tone="primary">{roleLabel}</Badge>
-                <Badge tone={profile?.status === "approved" || profile?.is_owner ? "win" : "muted"}>{statusLabel}</Badge>
+                <Badge tone={isApproved || isOwner ? "win" : "muted"}>{statusLabel}</Badge>
                 <Badge>Smart Money Concepts</Badge>
               </div>
             </div>

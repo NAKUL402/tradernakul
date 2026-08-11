@@ -97,7 +97,7 @@ function FilterSelect({ label, value, onChange, options }: { label: string, valu
 }
 
 function Journal() {
-  const { user } = useAuth();
+  const { user, siteSettings } = useAuth();
   const [allTrades, setAllTrades] = useState<Trade[]>([]);
   const [q, setQ] = useState("");
   const [pair, setPair] = useState("All");
@@ -194,17 +194,30 @@ function Journal() {
     <AppShell title="Trading Journal" subtitle={`${list.length} trades logged`}>
       <Panel
         action={
-          <button
-            onClick={() => {
-              setEditingTrade(null);
-              setIsLogModalOpen(true);
-            }}
-            className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-primary to-accent px-4 py-2 text-xs font-semibold text-primary-foreground transition hover:opacity-90 glow-primary"
-          >
-            <Plus className="size-4" /> Log Trade
-          </button>
+          siteSettings?.journal_enabled !== false ? (
+            <button
+              onClick={() => {
+                setEditingTrade(null);
+                setIsLogModalOpen(true);
+              }}
+              className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-primary to-accent px-4 py-2 text-xs font-semibold text-primary-foreground transition hover:opacity-90 glow-primary"
+            >
+              <Plus className="size-4" /> Log Trade
+            </button>
+          ) : (
+            <span className="text-xs text-destructive font-semibold bg-destructive/10 px-3 py-1.5 rounded-xl border border-destructive/20">
+              Journal Read-Only
+            </span>
+          )
         }
       >
+        {siteSettings?.journal_enabled === false && (
+          <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-amber-200">
+            <p className="text-xs font-medium">
+              ⚠️ The Trading Journal is in read-only mode. Adding, editing, and deleting trades is temporarily disabled.
+            </p>
+          </div>
+        )}
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-2 rounded-xl border border-border bg-card/60 px-3 py-2">
             <Search className="size-4 text-muted-foreground" />
@@ -264,29 +277,33 @@ function Journal() {
                 <p className="text-xs text-muted-foreground">{open.date} · {open.session} session</p>
               </div>
               <div className="flex items-center gap-1">
-                <button
-                  onClick={() => {
-                    const currentOpen = open;
-                    setOpen(null);
-                    setEditingTrade(currentOpen);
-                    setIsLogModalOpen(true);
-                  }}
-                  className="rounded-lg p-1.5 text-muted-foreground hover:text-foreground"
-                  title="Edit trade"
-                >
-                  <Edit3 className="size-4" />
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setConfirmDeleteId(open.id);
-                  }}
-                  className="rounded-lg p-1.5 text-muted-foreground hover:text-destructive"
-                  title="Delete trade"
-                >
-                  <Trash2 className="size-4" />
-                </button>
+                {siteSettings?.journal_enabled !== false && (
+                  <button
+                    onClick={() => {
+                      const currentOpen = open;
+                      setOpen(null);
+                      setEditingTrade(currentOpen);
+                      setIsLogModalOpen(true);
+                    }}
+                    className="rounded-lg p-1.5 text-muted-foreground hover:text-foreground"
+                    title="Edit trade"
+                  >
+                    <Edit3 className="size-4" />
+                  </button>
+                )}
+                {siteSettings?.journal_enabled !== false && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setConfirmDeleteId(open.id);
+                    }}
+                    className="rounded-lg p-1.5 text-muted-foreground hover:text-destructive"
+                    title="Delete trade"
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
+                )}
                 <button aria-label="Close" onClick={() => { setOpen(null); setConfirmDeleteId(null); }} className="rounded-lg p-1.5 text-muted-foreground hover:text-foreground">
                   <X className="size-4" />
                 </button>
