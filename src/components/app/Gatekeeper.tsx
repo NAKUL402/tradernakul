@@ -31,16 +31,16 @@ export function Gatekeeper({ children }: { children: ReactNode }) {
     return null; // Will redirect via useEffect
   }
 
+  if (isApproved) {
+    return <>{children}</>;
+  }
+
   if (profile?.status === "rejected" || profile?.status === "suspended") {
     return <AccessDenied />;
   }
   
   if (profile?.status === "pending") {
     return <AccessPending />;
-  }
-  
-  if (isApproved) {
-    return <>{children}</>;
   }
 
   return <AccessDenied />;

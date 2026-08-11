@@ -280,16 +280,16 @@ function AuthGuard({ children }: { children: ReactNode }) {
         return <Navigate to="/" />;
       }
     } else {
+      if (isApproved) {
+        return <>{children}</>;
+      }
+
       if (profile?.status === "rejected" || profile?.status === "suspended") {
         return <RejectedComponent />;
       }
       
       if (profile?.status === "pending") {
         return <PendingApprovalComponent />;
-      }
-      
-      if (isApproved) {
-        return <>{children}</>;
       }
       
       // Fallback deny to prevent unexpected bypasses
