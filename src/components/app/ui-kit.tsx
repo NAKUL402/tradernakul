@@ -29,13 +29,13 @@ export function StatCard({
   const ring = {
     primary: "from-primary/25 group-hover:from-primary/40", 
     accent: "from-accent/25 group-hover:from-accent/40", 
-    success: "from-[oklch(0.72_0.19_155)]/25 group-hover:from-[oklch(0.72_0.19_155)]/40", 
+    success: "from-success/25 group-hover:from-success/40", 
     destructive: "from-destructive/25 group-hover:from-destructive/40",
   }[accent];
   const shadow = {
     primary: "hover:shadow-[0_8px_25px_-8px_var(--color-primary)] hover:border-primary/40",
     accent: "hover:shadow-[0_8px_25px_-8px_var(--color-accent)] hover:border-accent/40",
-    success: "hover:shadow-[0_8px_25px_-8px_oklch(0.72_0.19_155)] hover:border-[oklch(0.72_0.19_155)]/40",
+    success: "hover:shadow-[0_8px_25px_-8px_var(--success)] hover:border-success/40",
     destructive: "hover:shadow-[0_8px_25px_-8px_var(--color-destructive)] hover:border-destructive/40",
   }[accent];
   const inner = (
@@ -48,7 +48,7 @@ export function StatCard({
       <p className="mt-2 font-display text-2xl font-semibold layer-3d-extreme">{value}</p>
       <div className="mt-1 flex items-center gap-2 text-xs">
         {typeof delta === "number" && (
-          <span className={cn("inline-flex items-center gap-0.5 font-medium", delta >= 0 ? "text-[oklch(0.72_0.19_155)]" : "text-destructive")}>
+          <span className={cn("inline-flex items-center gap-0.5 font-medium", delta >= 0 ? "text-success" : "text-destructive")}>
             {delta >= 0 ? <ArrowUpRight className="size-3" /> : <ArrowDownRight className="size-3" />}
             {Math.abs(delta).toFixed(1)}%
           </span>
@@ -68,7 +68,7 @@ export function StatCard({
 
 export function Badge({ children, tone = "muted", className }: { children: ReactNode; tone?: "win" | "loss" | "muted" | "primary" | "accent"; className?: string }) {
   const tones = {
-    win: "bg-[oklch(0.72_0.19_155)]/15 text-[oklch(0.78_0.17_155)] border-[oklch(0.72_0.19_155)]/30",
+    win: "bg-success/15 text-success border-success/30",
     loss: "bg-destructive/15 text-destructive border-destructive/30",
     primary: "bg-primary/15 text-primary border-primary/30",
     accent: "bg-accent/15 text-accent border-accent/30",

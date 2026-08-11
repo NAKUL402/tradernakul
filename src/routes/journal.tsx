@@ -60,7 +60,7 @@ function TradeCard({ t, onOpen }: { t: Trade; onOpen: () => void }) {
       <div className="mt-3 flex flex-wrap items-center gap-1.5 layer-3d">
         <Badge tone="primary">{t.setup}</Badge>
         {(t.tags || []).map((tag) => <Badge key={tag}>{tag}</Badge>)}
-        <span className={cn("ml-auto font-display text-sm font-semibold layer-3d-extreme", pnl >= 0 ? "text-[oklch(0.72_0.19_155)]" : "text-destructive")}>{money(pnl, currencySymbol)}</span>
+        <span className={cn("ml-auto font-display text-sm font-semibold layer-3d-extreme", pnl >= 0 ? "text-success" : "text-destructive")}>{money(pnl, currencySymbol)}</span>
       </div>
     </button>
   );

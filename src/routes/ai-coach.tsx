@@ -77,7 +77,7 @@ function List3D({ items, tone }: { items: string[]; tone: "good" | "bad" }) {
           className="flex items-start gap-3 rounded-xl border border-border/40 bg-card/40 p-3 backdrop-blur-sm transition hover:bg-card/70"
         >
           {tone === "good" ? (
-            <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-[oklch(0.72_0.19_155)]" />
+            <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-success" />
           ) : (
             <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
           )}

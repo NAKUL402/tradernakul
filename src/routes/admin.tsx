@@ -963,7 +963,7 @@ function AdminPage() {
                                   {u.status !== "approved" && (
                                     <button
                                       onClick={() => handleUpdateUserStatus(u.id, "approved")}
-                                      className="flex items-center gap-1 rounded-lg bg-[oklch(0.72_0.19_155)]/20 px-2 py-1 text-xs font-semibold text-[oklch(0.8_0.17_155)] hover:bg-[oklch(0.72_0.19_155)]/30 transition"
+                                      className="flex items-center gap-1 rounded-lg bg-success/20 px-2 py-1 text-xs font-semibold text-success hover:bg-success/30 transition"
                                     >
                                       Approve
                                     </button>
@@ -979,7 +979,7 @@ function AdminPage() {
                                   {u.status === "suspended" && (
                                     <button
                                       onClick={() => handleUpdateUserStatus(u.id, "approved")}
-                                      className="flex items-center gap-1 rounded-lg bg-[oklch(0.72_0.19_155)]/20 px-2 py-1 text-xs font-semibold text-[oklch(0.8_0.17_155)] hover:bg-[oklch(0.72_0.19_155)]/30 transition"
+                                      className="flex items-center gap-1 rounded-lg bg-success/20 px-2 py-1 text-xs font-semibold text-success hover:bg-success/30 transition"
                                     >
                                       Unsuspend
                                     </button>
@@ -1068,7 +1068,7 @@ function AdminPage() {
                             <button
                               onClick={() => handleUpdateUserStatus(selectedUser.id, "approved")}
                               disabled={isUpdatingUser}
-                              className="w-full text-center py-2 bg-[oklch(0.72_0.19_155)]/20 text-[oklch(0.8_0.17_155)] border border-[oklch(0.72_0.19_155)]/30 rounded-xl hover:bg-[oklch(0.72_0.19_155)]/35 transition font-semibold text-xs"
+                              className="w-full text-center py-2 bg-success/20 text-success border border-success/30 rounded-xl hover:bg-success/35 transition font-semibold text-xs"
                             >
                               Approve Access
                             </button>
@@ -1095,7 +1095,7 @@ function AdminPage() {
                             <button
                               onClick={() => handleUpdateUserStatus(selectedUser.id, "approved")}
                               disabled={isUpdatingUser}
-                              className="w-full text-center py-2 bg-[oklch(0.72_0.19_155)]/20 text-[oklch(0.8_0.17_155)] border border-[oklch(0.72_0.19_155)]/30 rounded-xl hover:bg-[oklch(0.72_0.19_155)]/35 transition font-semibold text-xs"
+                              className="w-full text-center py-2 bg-success/20 text-success border border-success/30 rounded-xl hover:bg-success/35 transition font-semibold text-xs"
                             >
                               Unsuspend Access
                             </button>
@@ -1140,7 +1140,7 @@ function AdminPage() {
                         <div className="flex items-center gap-2 w-full sm:w-auto">
                           <button
                             onClick={() => handleUpdateUserStatus(u.id, "approved")}
-                            className="flex-1 sm:flex-initial py-1.5 px-4 bg-[oklch(0.72_0.19_155)]/20 text-[oklch(0.8_0.17_155)] border border-[oklch(0.72_0.19_155)]/30 rounded-xl hover:bg-[oklch(0.72_0.19_155)]/35 transition font-semibold text-xs"
+                            className="flex-1 sm:flex-initial py-1.5 px-4 bg-success/20 text-success border border-success/30 rounded-xl hover:bg-success/35 transition font-semibold text-xs"
                           >
                             Approve Access
                           </button>
@@ -1745,7 +1745,7 @@ function AdminPage() {
                         onClick={() => setTestEmailStatus("approved")}
                         className={`flex-1 text-center py-2 border rounded-xl font-semibold transition text-xs ${
                           testEmailStatus === "approved"
-                            ? "bg-[oklch(0.72_0.19_155)]/10 text-[oklch(0.8_0.17_155)] border-[oklch(0.72_0.19_155)]/30"
+                            ? "bg-success/10 text-success border-success/30"
                             : "border-border text-muted-foreground hover:bg-card/40"
                         }`}
                       >
@@ -1818,7 +1818,7 @@ function AdminPage() {
                           setEmergencyConfirmMaint("");
                           toast.info("Toggling Maintenance OFF. Please save below.");
                         }}
-                        className="w-full text-center py-2 bg-[oklch(0.72_0.19_155)]/20 text-[oklch(0.8_0.17_155)] border border-[oklch(0.72_0.19_155)]/30 rounded-xl hover:bg-[oklch(0.72_0.19_155)]/35 transition font-semibold"
+                        className="w-full text-center py-2 bg-success/20 text-success border border-success/30 rounded-xl hover:bg-success/35 transition font-semibold"
                       >
                         <Unlock className="inline size-4 mr-1.5" /> Deactivate Maintenance Mode
                       </button>
@@ -1895,7 +1895,7 @@ function AdminPage() {
                           setEmergencyConfirmReg("");
                           toast.info("Toggling registrations ON. Please save below.");
                         }}
-                        className="w-full text-center py-2 bg-[oklch(0.72_0.19_155)]/20 text-[oklch(0.8_0.17_155)] border border-[oklch(0.72_0.19_155)]/30 rounded-xl hover:bg-[oklch(0.72_0.19_155)]/35 transition font-semibold"
+                        className="w-full text-center py-2 bg-success/20 text-success border border-success/30 rounded-xl hover:bg-success/35 transition font-semibold"
                       >
                         <Unlock className="inline size-4 mr-1.5" /> Enable Registrations
                       </button>
@@ -1956,7 +1956,7 @@ function AdminPage() {
                           setEmergencyConfirmLogin("");
                           toast.info("Toggling logins ON. Please save below.");
                         }}
-                        className="w-full text-center py-2 bg-[oklch(0.72_0.19_155)]/20 text-[oklch(0.8_0.17_155)] border border-[oklch(0.72_0.19_155)]/30 rounded-xl hover:bg-[oklch(0.72_0.19_155)]/35 transition font-semibold"
+                        className="w-full text-center py-2 bg-success/20 text-success border border-success/30 rounded-xl hover:bg-success/35 transition font-semibold"
                       >
                         <Unlock className="inline size-4 mr-1.5" /> Reactivate Site Logins
                       </button>

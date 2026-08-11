@@ -35,7 +35,7 @@ function Table({ rows }: { rows: { name: string; trades: number; winRate: number
               <td className="py-2.5 font-medium">{row.name}</td>
               <td className="py-2.5 text-muted-foreground">{row.trades}</td>
               <td className="py-2.5 text-muted-foreground">{pct(row.winRate)}</td>
-              <td className={`py-2.5 text-right font-semibold ${row.pnl >= 0 ? "text-[oklch(0.72_0.19_155)]" : "text-destructive"}`}>
+              <td className={`py-2.5 text-right font-semibold ${row.pnl >= 0 ? "text-success" : "text-destructive"}`}>
                 {money(row.pnl)}
               </td>
             </tr>

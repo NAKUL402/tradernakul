@@ -170,7 +170,7 @@ function Dashboard() {
         <Panel title="Win / Loss Split">
           <WinLossPie wins={s.wins} losses={s.losses} />
           <div className="mt-2 flex justify-center gap-5 text-xs">
-            <span className="flex items-center gap-2"><i className="size-2 rounded-full bg-[oklch(0.72_0.19_155)]" />{s.wins} Wins</span>
+            <span className="flex items-center gap-2"><i className="size-2 rounded-full bg-success" />{s.wins} Wins</span>
             <span className="flex items-center gap-2"><i className="size-2 rounded-full bg-destructive" />{s.losses} Losses</span>
           </div>
         </Panel>
@@ -205,7 +205,7 @@ function Dashboard() {
                   <td className="px-2 py-3 text-muted-foreground">{t.session}</td>
                   <td className="px-2 py-3">1:{t.rrr}</td>
                   <td className="px-2 py-3"><Badge tone={t.result === "Win" ? "win" : "loss"}>{t.result}</Badge></td>
-                  <td className={`px-2 py-3 font-semibold ${pnlUsd(t) >= 0 ? "text-[oklch(0.72_0.19_155)]" : "text-destructive"}`}>{money(pnlUsd(t))}</td>
+                  <td className={`px-2 py-3 font-semibold ${pnlUsd(t) >= 0 ? "text-success" : "text-destructive"}`}>{money(pnlUsd(t))}</td>
                 </tr>
               ))}
             </tbody>

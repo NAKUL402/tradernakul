@@ -99,7 +99,7 @@ export type SiteSettings = {
 
 export type UserSettings = {
   user_id: string;
-  theme: "dark" | "light" | "system";
+  theme: "dark" | "light" | "system" | "special";
   accent_color: string;
   compact_ui: boolean;
   currency: string;

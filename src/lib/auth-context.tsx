@@ -226,11 +226,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Apply theme and accent color globally whenever userSettings change
   useEffect(() => {
     if (userSettings) {
-      const isDark = userSettings.theme === "dark" || (userSettings.theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
-      document.documentElement.classList.toggle("dark", isDark);
+      const isDark = userSettings.theme === "dark" || userSettings.theme === "special" || (userSettings.theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
       
-      document.documentElement.style.setProperty("--primary", userSettings.accent_color);
-      document.documentElement.style.setProperty("--ring", userSettings.accent_color);
+      document.documentElement.classList.toggle("dark", isDark);
+      document.documentElement.classList.toggle("theme-special", userSettings.theme === "special");
+      
+      if (userSettings.theme === "special") {
+        document.documentElement.style.removeProperty("--primary");
+        document.documentElement.style.removeProperty("--ring");
+      } else {
+        document.documentElement.style.setProperty("--primary", userSettings.accent_color);
+        document.documentElement.style.setProperty("--ring", userSettings.accent_color);
+      }
       
       if (userSettings.compact_ui) {
         document.documentElement.setAttribute("data-compact", "true");

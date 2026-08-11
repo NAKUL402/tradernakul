@@ -39,7 +39,7 @@ function Reports() {
               <div key={m.name} className="flex items-center justify-between rounded-xl bg-muted/40 px-3 py-2.5 text-sm">
                 <span className="font-medium">{m.label}</span>
                 <span className="text-xs text-muted-foreground">{m.trades} trades · {pct(m.winRate)}</span>
-                <span className={m.pnl >= 0 ? "font-semibold text-[oklch(0.72_0.19_155)]" : "font-semibold text-destructive"}>{money(m.pnl)}</span>
+                <span className={m.pnl >= 0 ? "font-semibold text-success" : "font-semibold text-destructive"}>{money(m.pnl)}</span>
               </div>
             ))}
           </div>

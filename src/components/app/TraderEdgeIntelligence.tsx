@@ -145,7 +145,7 @@ export function TraderEdgeIntelligence({ trades }: { trades: Trade[] }) {
                 <p className="text-[10px] font-bold uppercase tracking-wider text-primary mb-1">Your Trading Fingerprint</p>
                 <p className="text-sm font-medium text-foreground leading-relaxed">{edgeData.edgeMessage}</p>
                 <div className="mt-2.5 flex flex-wrap items-center gap-3 text-xs font-semibold">
-                  <span className="flex items-center gap-1.5 text-[oklch(0.72_0.19_155)] bg-[oklch(0.72_0.19_155)]/10 px-2 py-1 rounded-md">
+                  <span className="flex items-center gap-1.5 text-success bg-success/10 px-2 py-1 rounded-md">
                     Win Rate: {edgeData.best.winRate.toFixed(1)}%
                   </span>
                   <span className="flex items-center gap-1.5 text-accent bg-accent/10 px-2 py-1 rounded-md">

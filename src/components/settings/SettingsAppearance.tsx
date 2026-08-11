@@ -37,9 +37,28 @@ export function SettingsAppearance() {
           <p className="text-sm font-medium">Theme</p>
           <p className="text-xs text-muted-foreground">Switch between dark and light mode</p>
         </div>
-        <div className="flex rounded-xl border border-border p-1">
-          <button onClick={() => setTheme(true)} className={cn("flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs", isDark && "bg-primary/20 text-primary")}><Moon className="size-3.5" /> Dark</button>
-          <button onClick={() => setTheme(false)} className={cn("flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs", !isDark && "bg-primary/20 text-primary")}><Sun className="size-3.5" /> Light</button>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex rounded-xl border border-border p-1 bg-background/50">
+            <button 
+              onClick={() => updateUserSettings({ theme: "dark" })} 
+              className={cn("flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs transition-all", userSettings.theme === "dark" ? "bg-primary/20 text-primary" : "hover:bg-muted")}
+            >
+              <Moon className="size-3.5" /> Dark
+            </button>
+            <button 
+              onClick={() => updateUserSettings({ theme: "light" })} 
+              className={cn("flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs transition-all", userSettings.theme === "light" ? "bg-primary/20 text-primary" : "hover:bg-muted")}
+            >
+              <Sun className="size-3.5" /> Light
+            </button>
+          </div>
+          <button 
+            onClick={() => updateUserSettings({ theme: "special" })} 
+            className={cn("flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-all shadow-sm", userSettings.theme === "special" ? "bg-foreground text-background border-foreground glow-primary" : "border-border bg-background hover:bg-muted")}
+          >
+            <span className="flex h-2 w-2 rounded-full bg-gradient-to-r from-red-500 to-green-500" />
+            Unique Color (Gamer Premium)
+          </button>
         </div>
       </div>
       <div className="mt-5">

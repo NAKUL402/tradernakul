@@ -137,6 +137,68 @@
   --sidebar-ring: oklch(0.65 0.2 270);
 }
 
+/* ============================================================================
+   PREMIUM GAMER THEME (UNIQUE COLOR)
+   A highly aesthetic trading terminal theme leveraging Red/Green semantics
+   ============================================================================ */
+.theme-special {
+  /* Extreme dark neutral base */
+  --background: oklch(0.12 0.01 270);
+  --foreground: oklch(0.98 0 0);
+  
+  /* Glassy dark cards */
+  --card: oklch(0.14 0.02 270 / 70%);
+  --card-foreground: oklch(0.98 0 0);
+  
+  --popover: oklch(0.13 0.02 270);
+  --popover-foreground: oklch(0.98 0 0);
+  
+  /* Neutral/Dark primary fallback for non-semantic items */
+  --primary: oklch(0.95 0 0);
+  --primary-foreground: oklch(0.1 0.02 270);
+  
+  --secondary: oklch(0.16 0.02 270);
+  --secondary-foreground: oklch(0.95 0 0);
+  
+  --muted: oklch(0.16 0.02 270);
+  --muted-foreground: oklch(0.65 0 0);
+  
+  --accent: oklch(0.18 0.02 270);
+  --accent-foreground: oklch(0.98 0 0);
+  
+  /* NEON SEMANTIC COLORS (The Core of the Theme) */
+  /* Premium Neon Green for Profit/Positive */
+  --success: oklch(0.75 0.22 150);
+  /* Premium Neon Red for Risk/Negative */
+  --destructive: oklch(0.62 0.28 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  
+  --border: oklch(0.20 0.02 270);
+  --input: oklch(0.18 0.02 270);
+  --ring: oklch(0.95 0 0 / 20%);
+  
+  --chart-1: oklch(0.75 0.22 150); /* Profit dominant */
+  --chart-2: oklch(0.62 0.28 25); /* Loss dominant */
+  --chart-3: oklch(0.8 0.05 270);
+  --chart-4: oklch(0.5 0.1 270);
+  --chart-5: oklch(0.3 0.05 270);
+  
+  --sidebar: oklch(0.11 0.02 270 / 80%);
+  --sidebar-foreground: oklch(0.95 0 0);
+  --sidebar-primary: oklch(0.95 0 0);
+  --sidebar-primary-foreground: oklch(0.1 0.02 270);
+  --sidebar-accent: oklch(0.15 0.02 270);
+  --sidebar-accent-foreground: oklch(0.95 0 0);
+  --sidebar-border: oklch(0.18 0.02 270);
+  --sidebar-ring: oklch(0.95 0 0 / 20%);
+}
+
+.theme-special .glass-card {
+  box-shadow: inset 0 1px 1px 0 rgba(255,255,255,0.05),
+              0 10px 30px -10px rgba(0,0,0,0.8);
+  border: 1px solid oklch(0.25 0.02 270);
+}
+
 @layer base {
   * {
     border-color: var(--color-border);

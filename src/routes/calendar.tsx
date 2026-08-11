@@ -59,19 +59,26 @@ function CalendarPage() {
             if (!d) return <div key={`e${i}`} />;
             const key = `${monthKey}-${String(d).padStart(2, "0")}`;
             const pnl = byDay.get(key);
-            const tone = pnl === undefined ? "bg-muted/25 text-muted-foreground"
-              : pnl >= 0 ? "bg-[oklch(0.72_0.19_155)]/20 text-[oklch(0.8_0.17_155)] ring-1 ring-[oklch(0.72_0.19_155)]/40"
-              : "bg-destructive/20 text-destructive ring-1 ring-destructive/40";
+            const hasTrades = pnl !== undefined;
             return (
-              <div key={key} className={cn("flex aspect-square flex-col items-center justify-center rounded-xl p-1 transition hover:scale-105", tone)}>
+              <div
+                key={key}
+                className={cn(
+                  "group relative flex aspect-square flex-col items-center justify-center rounded-xl p-1 transition hover:scale-105",
+                  !hasTrades
+                    ? "bg-muted/30"
+                    : pnl >= 0 ? "bg-success/20 text-success ring-1 ring-success/40"
+                    : "bg-destructive/20 text-destructive ring-1 ring-destructive/40"
+                )}
+              >
                 <span className="text-[11px] font-medium">{d}</span>
-                {pnl !== undefined && <span className="text-[9px] font-semibold sm:text-[10px]">{money(pnl)}</span>}
+                {hasTrades && <span className="text-[9px] font-semibold sm:text-[10px]">{money(pnl)}</span>}
               </div>
             );
           })}
         </div>
         <div className="mt-4 flex items-center justify-center gap-4 text-[11px] text-muted-foreground">
-          <span className="flex items-center gap-1.5"><i className="size-2.5 rounded bg-[oklch(0.72_0.19_155)]/60" /> Profit day</span>
+          <span className="flex items-center gap-1.5"><i className="size-2.5 rounded bg-success/60" /> Profit day</span>
           <span className="flex items-center gap-1.5"><i className="size-2.5 rounded bg-destructive/60" /> Loss day</span>
           <span className="flex items-center gap-1.5"><i className="size-2.5 rounded bg-muted" /> No trade</span>
         </div>
