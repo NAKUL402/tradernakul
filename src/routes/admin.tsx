@@ -16,7 +16,7 @@ import {
 export const Route = createFileRoute("/admin")({
   head: () => ({
     meta: [
-      { title: "Owner Admin Control Center — Trading Journal AI" },
+      { title: "Owner Admin Control Center — Edge Journal" },
       { name: "description", content: "Secure Owner Admin Portal: User approvals, access control, website settings, and analytics." },
     ],
   }),

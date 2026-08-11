@@ -22,12 +22,10 @@ const mobileNav = nav.slice(0, 5);
 function Brand({ compact }: { compact?: boolean }) {
   return (
     <div className="flex items-center gap-3">
-      <div className="grid size-9 shrink-0 animate-float-slow place-items-center rounded-xl bg-gradient-to-br from-primary to-accent text-sm font-bold text-primary-foreground shadow-[0_0_15px_-3px_var(--color-primary)]">
-        TJ
-      </div>
+      <img src="/logo.jpg" alt="Edge Journal Logo" className="size-9 shrink-0 animate-float-slow rounded-xl object-cover shadow-[0_0_15px_-3px_var(--color-primary)]" />
       {!compact && (
         <div className="leading-tight">
-          <p className="font-display text-sm font-semibold">Trading Journal AI</p>
+          <p className="font-display text-sm font-semibold">Edge Journal</p>
           <p className="text-[11px] text-muted-foreground">Track. Analyze. Improve.</p>
         </div>
       )}

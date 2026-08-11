@@ -1,5 +1,5 @@
 /**
- * Local API Development Server for TraderNakul
+ * Local API Development Server for Edge Journal
  * =============================================
  * Serves Vercel serverless functions locally on port 3001.
  * Vite dev server proxies /api/* → http://localhost:3001

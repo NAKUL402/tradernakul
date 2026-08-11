@@ -64,7 +64,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center glass p-8 rounded-3xl">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          TraderNakul AI Dashboard
+          Edge Journal Dashboard
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Reconnecting to your session...
@@ -94,25 +94,25 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Dashboard — Trading Journal AI" },
-      { name: "description", content: "Track, analyze and improve your trading with AI-powered analytics, equity curves and performance insights." },
-      { name: "author", content: "Trading Journal AI" },
-      { property: "og:title", content: "Dashboard — Trading Journal AI" },
-      { property: "og:description", content: "Track, analyze and improve your trading with AI-powered analytics, equity curves and performance insights." },
+      { title: "Edge Journal" },
+      { name: "description", content: "Track, analyze and improve your trading with Edge Journal's AI-powered analytics, equity curves and performance insights." },
+      { name: "author", content: "Edge Journal" },
+      { property: "og:title", content: "Edge Journal" },
+      { property: "og:description", content: "Track, analyze and improve your trading with Edge Journal's AI-powered analytics, equity curves and performance insights." },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://EdgeJournal.site" },
+      { property: "og:image", content: "https://EdgeJournal.site/logo.jpg" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "Dashboard — Trading Journal AI" },
-      { name: "twitter:description", content: "Track, analyze and improve your trading with AI-powered analytics, equity curves and performance insights." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/f700659d-7641-4ea6-ad65-aeb5c2121e42/id-preview-7c0b8476--acc96bba-8a8e-45ce-8970-e7eb67c83866.lovable.app-1785921707611.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/f700659d-7641-4ea6-ad65-aeb5c2121e42/id-preview-7c0b8476--acc96bba-8a8e-45ce-8970-e7eb67c83866.lovable.app-1785921707611.png" },
+      { name: "twitter:title", content: "Edge Journal" },
+      { name: "twitter:description", content: "Track, analyze and improve your trading with Edge Journal's AI-powered analytics, equity curves and performance insights." },
+      { name: "twitter:image", content: "https://EdgeJournal.site/logo.jpg" },
     ],
     links: [
       {
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/favicon.jpg", type: "image/jpeg" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
@@ -192,7 +192,7 @@ function MaintenanceComponent() {
         <Wrench className="mx-auto size-16 text-destructive animate-pulse" />
         <h1 className="mt-4 font-display text-2xl font-bold text-foreground">Under Maintenance</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          TraderNakul AI is currently undergoing scheduled upgrades. We will be back online shortly. Thank you for your patience!
+          Edge Journal is currently undergoing scheduled upgrades. We will be back online shortly. Thank you for your patience!
         </p>
         <button
           onClick={signOut}

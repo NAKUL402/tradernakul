@@ -12,9 +12,9 @@ import { DecisionReplayCard } from "@/components/app/DecisionReplayCard";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Dashboard — Trading Journal AI" },
+      { title: "Dashboard — Edge Journal" },
       { name: "description", content: "Track, analyze and improve your trading with AI-powered analytics, equity curves and performance insights." },
-      { property: "og:title", content: "Dashboard — Trading Journal AI" },
+      { property: "og:title", content: "Dashboard — Edge Journal" },
       { property: "og:description", content: "Track, analyze and improve your trading with AI-powered analytics, equity curves and performance insights." },
     ],
   }),

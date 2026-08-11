@@ -23,7 +23,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const resendApiKey = process.env['RESEND_API_KEY'];
   const smtpUser = process.env['EMAIL_USER'];
   const smtpPass = process.env['EMAIL_PASS'];
-  const resendFrom = process.env['RESEND_FROM_EMAIL'] || "TraderNakul AI <onboarding@resend.dev>";
+  const resendFrom = process.env['RESEND_FROM_EMAIL'] || "Edge Journal <onboarding@resend.dev>";
   const hasGmail = !!(smtpUser && smtpPass);
 
   console.log(`[send-status-email] Sending ${status} notification to: ${email}`);
@@ -35,7 +35,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const htmlBody = `
     <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:520px;margin:0 auto;background:#0b0c16;color:#fff;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,0.08);">
       <div style="background:${headerColor};padding:32px 40px;text-align:center;">
-        <h1 style="margin:0;font-size:22px;font-weight:700;">TraderNakul AI</h1>
+        <h1 style="margin:0;font-size:22px;font-weight:700;">Edge Journal</h1>
         <p style="margin:6px 0 0;font-size:13px;opacity:0.9;text-transform:uppercase;letter-spacing:1px;">${statusLabel}</p>
       </div>
       <div style="padding:36px 40px;background:#131524;">
@@ -44,17 +44,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         </p>
         ${isApproved ? `
           <p style="font-size:15px;color:#cbd5e1;line-height:1.6;margin:0 0 24px;">
-            We are pleased to inform you that your request for access to <strong style="color:#10b981;">TraderNakul AI</strong> has been approved by the administrator.
+            We are pleased to inform you that your request for access to <strong style="color:#10b981;">Edge Journal</strong> has been approved by the administrator.
           </p>
           <div style="text-align:center;margin:30px 0;">
-            <a href="${process.env['VITE_SITE_URL'] || "https://tradernakul.vercel.app"}/login" 
+            <a href="${process.env['VITE_SITE_URL'] || "https://Edge Journal.vercel.app"}/login" 
                style="display:inline-block;background:#10b981;color:#ffffff;text-decoration:none;padding:12px 30px;border-radius:10px;font-weight:700;font-size:15px;box-shadow:0 4px 12px rgba(16,185,129,0.3);">
               Log In to Dashboard
             </a>
           </div>
         ` : `
           <p style="font-size:15px;color:#cbd5e1;line-height:1.6;margin:0 0 24px;">
-            Thank you for your interest in TraderNakul AI. Unfortunately, your request for access has been declined by the administrator at this time.
+            Thank you for your interest in Edge Journal. Unfortunately, your request for access has been declined by the administrator at this time.
           </p>
           <p style="font-size:14px;color:#94a3b8;line-height:1.6;margin:0 0 24px;">
             If you believe this is a mistake or have questions, please contact us.
@@ -62,15 +62,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         `}
         <hr style="border:0;border-top:1px solid rgba(255,255,255,0.08);margin:24px 0;" />
         <p style="font-size:12px;color:#64748b;text-align:center;margin:0;">
-          This is an automated notification from TraderNakul AI.
+          This is an automated notification from Edge Journal.
         </p>
       </div>
     </div>
   `;
 
   const textBody = isApproved 
-    ? `Hello ${name},\n\nYour request for access to TraderNakul AI has been approved! You can now log in here: ${process.env['VITE_SITE_URL'] || "https://tradernakul.vercel.app"}/login`
-    : `Hello ${name},\n\nYour request for access to TraderNakul AI was declined by the administrator.`;
+    ? `Hello ${name},\n\nYour request for access to Edge Journal has been approved! You can now log in here: ${process.env['VITE_SITE_URL'] || "https://Edge Journal.vercel.app"}/login`
+    : `Hello ${name},\n\nYour request for access to Edge Journal was declined by the administrator.`;
 
   let resendError: string | null = null;
   let gmailError: string | null = null;
@@ -88,7 +88,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         body: JSON.stringify({
           from: resendFrom,
           to: [email],
-          subject: `TraderNakul AI — ${statusLabel}`,
+          subject: `Edge Journal — ${statusLabel}`,
           html: htmlBody,
           text: textBody,
         }),
@@ -123,9 +123,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
 
       await transporter.sendMail({
-        from: `"TraderNakul AI" <${smtpUser}>`,
+        from: `"Edge Journal" <${smtpUser}>`,
         to: email,
-        subject: `TraderNakul AI — ${statusLabel}`,
+        subject: `Edge Journal — ${statusLabel}`,
         html: htmlBody,
         text: textBody,
       });

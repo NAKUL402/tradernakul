@@ -15,9 +15,9 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/journal")({
   head: () => ({
     meta: [
-      { title: "Trading Journal — Trading Journal AI" },
+      { title: "Trading Journal — Edge Journal" },
       { name: "description", content: "Log every trade with setup, session, RRR, risk, tags, screenshots and notes in a premium journal interface." },
-      { property: "og:title", content: "Trading Journal — Trading Journal AI" },
+      { property: "og:title", content: "Trading Journal — Edge Journal" },
       { property: "og:description", content: "Premium trade logging with filters, tags, screenshots and detailed notes." },
     ],
   }),

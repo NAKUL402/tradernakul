@@ -10,9 +10,9 @@ export function AuthLayout({ title, subtitle, children, footer }: { title: strin
 
       <div className="glass relative w-full max-w-md animate-rise rounded-3xl p-6 sm:p-8">
         <Link to="/" className="flex items-center gap-3">
-          <span className="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-primary to-accent text-sm font-bold text-primary-foreground glow-primary">TJ</span>
+          <img src="/logo.jpg" alt="Edge Journal Logo" className="size-10 rounded-xl object-cover glow-primary" />
           <span>
-            <span className="block font-display text-sm font-semibold">Trading Journal AI</span>
+            <span className="block font-display text-sm font-semibold">Edge Journal</span>
             <span className="block text-[11px] text-muted-foreground">Track. Analyze. Improve.</span>
           </span>
         </Link>

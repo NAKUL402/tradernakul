@@ -6,9 +6,9 @@ import { money, pct, stats } from "@/lib/trades";
 export const Route = createFileRoute("/profile")({
   head: () => ({
     meta: [
-      { title: "Profile — Trading Journal AI" },
+      { title: "Profile — Edge Journal" },
       { name: "description", content: "Your trader profile: plan, trading style, stats snapshot and account details." },
-      { property: "og:title", content: "Profile — Trading Journal AI" },
+      { property: "og:title", content: "Profile — Edge Journal" },
       { property: "og:description", content: "Trader profile with plan details and lifetime performance snapshot." },
     ],
   }),

@@ -9,9 +9,9 @@ import { Download, FileText } from "lucide-react";
 export const Route = createFileRoute("/reports")({
   head: () => ({
     meta: [
-      { title: "Reports — Trading Journal AI" },
+      { title: "Reports — Edge Journal" },
       { name: "description", content: "Weekly and monthly trading reports with exportable performance summaries." },
-      { property: "og:title", content: "Reports — Trading Journal AI" },
+      { property: "og:title", content: "Reports — Edge Journal" },
       { property: "og:description", content: "Download weekly and monthly trading performance reports." },
     ],
   }),

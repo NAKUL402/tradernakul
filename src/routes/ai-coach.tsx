@@ -31,9 +31,9 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/ai-coach")({
   head: () => ({
     meta: [
-      { title: "AI Coach — Trading Journal AI" },
+      { title: "AI Coach — Edge Journal" },
       { name: "description", content: "World-class AI trading mentor: weekly golden rules, institutional performance grades, psychology analysis, and risk reviews." },
-      { property: "og:title", content: "AI Coach — Trading Journal AI" },
+      { property: "og:title", content: "AI Coach — Edge Journal" },
       { property: "og:description", content: "World-class AI trading mentor & performance lab." },
     ],
   }),

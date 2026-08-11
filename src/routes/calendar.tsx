@@ -9,9 +9,9 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 export const Route = createFileRoute("/calendar")({
   head: () => ({
     meta: [
-      { title: "Calendar — Trading Journal AI" },
+      { title: "Calendar — Edge Journal" },
       { name: "description", content: "Daily PnL calendar heatmap showing which trading days made money and which cost you." },
-      { property: "og:title", content: "Calendar — Trading Journal AI" },
+      { property: "og:title", content: "Calendar — Edge Journal" },
       { property: "og:description", content: "Visual PnL heatmap of every trading day of the month." },
     ],
   }),

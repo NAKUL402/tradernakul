@@ -18,7 +18,7 @@ export function AccessDenied() {
 
         <h2 className="mt-6 font-display text-2xl font-semibold">Access Denied</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Your access request to TraderNakul has been rejected by the owner.
+          Your access request to Edge Journal has been rejected by the owner.
         </p>
 
         <div className="mt-6 rounded-2xl bg-card/60 p-4 text-left border border-border/60 space-y-3">

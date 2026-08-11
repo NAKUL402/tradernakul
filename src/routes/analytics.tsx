@@ -8,9 +8,9 @@ import { DOW, equityCurve, fetchUserTrades, groupStats, money, monthly, pct, sta
 export const Route = createFileRoute("/analytics")({
   head: () => ({
     meta: [
-      { title: "Analytics — Trading Journal AI" },
+      { title: "Analytics — Edge Journal" },
       { name: "description", content: "Deep performance analytics: pair, session, setup, day-of-week, time-of-day, drawdown and risk analysis." },
-      { property: "og:title", content: "Analytics — Trading Journal AI" },
+      { property: "og:title", content: "Analytics — Edge Journal" },
       { property: "og:description", content: "Interactive charts for pair, session and setup performance plus drawdown and risk analysis." },
     ],
   }),

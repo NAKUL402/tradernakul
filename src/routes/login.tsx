@@ -9,8 +9,8 @@ import { sendOwnerApprovalEmail } from "@/lib/email-service";
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
-      { title: "Login — Trading Journal AI" },
-      { name: "description", content: "Access your Trading Journal AI account securely." },
+      { title: "Login — Edge Journal" },
+      { name: "description", content: "Access your Edge Journal account securely." },
     ],
   }),
   component: LoginPage,
@@ -220,13 +220,11 @@ function LoginPage() {
           
           {/* Logo & Header */}
           <div className="flex flex-col items-center justify-center space-y-4">
-            <div className="grid size-12 place-items-center rounded-2xl bg-gradient-to-br from-primary to-accent shadow-lg shadow-primary/20">
-              <span className="text-lg font-bold text-primary-foreground tracking-wider">TJ</span>
-            </div>
+            <img src="/logo.jpg" alt="Edge Journal" className="size-20 rounded-[20px] object-cover shadow-lg shadow-primary/20" />
             
             <div className="space-y-1">
               <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
-                {showOtp ? "Verify Your Email" : "Welcome Back"}
+                {showOtp ? "Verify Your Email" : "Welcome to Edge Journal"}
               </h1>
               <p className="text-sm text-muted-foreground">
                 {showOtp ? (
@@ -358,7 +356,7 @@ function LoginPage() {
         
         {/* Footer info */}
         <p className="mt-8 text-center text-[13px] text-muted-foreground animate-in fade-in duration-700 delay-300 fill-mode-backwards">
-          Secure, passwordless authentication by Trading Journal AI.
+          Secure, passwordless authentication by Edge Journal.
         </p>
       </div>
     </div>

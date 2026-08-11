@@ -11,8 +11,8 @@ import { useAuth } from "@/lib/auth-context";
 export const Route = createFileRoute("/settings")({
   head: () => ({
     meta: [
-      { title: "Settings — Trading Journal AI" },
-      { name: "description", content: "Manage your TraderNakul experience." },
+      { title: "Settings — Edge Journal" },
+      { name: "description", content: "Manage your Edge Journal experience." },
     ],
   }),
   component: SettingsPage,
@@ -22,7 +22,7 @@ function SettingsPage() {
   const { userSettings, isLoading } = useAuth();
 
   return (
-    <AppShell title="Settings" subtitle="Manage your TraderNakul experience">
+    <AppShell title="Settings" subtitle="Manage your Edge Journal experience">
       {isLoading || !userSettings ? (
         <div className="flex h-32 items-center justify-center">
           <p className="text-sm text-muted-foreground">Loading settings...</p>

@@ -25,8 +25,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.error("[send-approval] FATAL: OWNER_EMAIL environment variable is missing.");
     return res.status(500).json({ success: false, error: "OWNER_EMAIL environment variable not set." });
   }
-  const baseUrl = process.env['VITE_SITE_URL'] || "https://tradernakul.vercel.app";
-  const resendFrom = process.env['RESEND_FROM_EMAIL'] || "TraderNakul AI <onboarding@resend.dev>";
+  const baseUrl = process.env['VITE_SITE_URL'] || "https://Edge Journal.vercel.app";
+  const resendFrom = process.env['RESEND_FROM_EMAIL'] || "Edge Journal <onboarding@resend.dev>";
 
   const adminLink = `${baseUrl}/admin`;
   const requestTime = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
@@ -38,11 +38,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:560px;margin:0 auto;background:#0b0c16;color:#fff;border-radius:16px;overflow:hidden;border:1px solid rgba(99,102,241,0.2);">
       <div style="background:linear-gradient(135deg,#4338ca 0%,#6366f1 100%);padding:28px 40px;text-align:center;">
         <h1 style="margin:0;font-size:20px;font-weight:700;">🔔 New Access Request</h1>
-        <p style="margin:6px 0 0;font-size:13px;opacity:0.85;">TraderNakul AI — Admin Notification</p>
+        <p style="margin:6px 0 0;font-size:13px;opacity:0.85;">Edge Journal — Admin Notification</p>
       </div>
       <div style="padding:32px 40px;">
         <p style="font-size:15px;color:#cbd5e1;line-height:1.6;margin:0 0 20px;">
-          A new user has requested access to <strong style="color:#a5b4fc;">TraderNakul AI</strong>.
+          A new user has requested access to <strong style="color:#a5b4fc;">Edge Journal</strong>.
         </p>
         <table style="width:100%;border-collapse:collapse;margin-bottom:28px;background:#1e1b4b;border-radius:10px;overflow:hidden;">
           <tr><td style="padding:14px 18px;border-bottom:1px solid rgba(99,102,241,0.2);color:#94a3b8;font-size:13px;width:80px;">Name</td><td style="padding:14px 18px;border-bottom:1px solid rgba(99,102,241,0.2);font-weight:600;">${userName}</td></tr>
