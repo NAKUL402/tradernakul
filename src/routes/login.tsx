@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { ArrowRight, Mail, User } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { sendOwnerApprovalEmail } from "@/lib/email-service";
+import { LoginGuide } from "@/components/app/LoginGuide";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -371,6 +372,8 @@ function LoginPage() {
           Secure, passwordless authentication by Edge Journal.
         </p>
       </div>
+
+      <LoginGuide />
     </div>
   );
 }
