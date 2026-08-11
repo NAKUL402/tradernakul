@@ -200,6 +200,34 @@ function Journal() {
     };
   }, []);
 
+  const list = useMemo(() => {
+    let l = allTrades.filter((t) => {
+      const tagsText = Array.isArray(t.tags) ? t.tags.join(" ") : "";
+      const text =
+        `${t.pair || ""} ${t.setup || ""} ${t.notes || ""} ${tagsText} ${t.session || ""}`.toLowerCase();
+      return (
+        text.includes(q.toLowerCase()) &&
+        (pair === "All" || (t.pair?.toLowerCase() || "").includes(pair.toLowerCase())) &&
+        (result === "All" || t.result === result) &&
+        (setup === "All" || (t.setup?.toLowerCase() || "").includes(setup.toLowerCase()))
+      );
+    });
+    l = [...l].sort((a, b) =>
+      sort === "newest"
+        ? a.date < b.date
+          ? 1
+          : -1
+        : sort === "oldest"
+          ? a.date > b.date
+            ? 1
+            : -1
+          : sort === "rrr"
+            ? parseFloat(b.rrr || "0") - parseFloat(a.rrr || "0")
+            : pnlUsd(b) - pnlUsd(a),
+    );
+    return l;
+  }, [allTrades, q, pair, result, setup, sort]);
+
   useEffect(() => {
     if (!open) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -245,34 +273,6 @@ function Journal() {
       setIsDeleting(false);
     }
   };
-
-  const list = useMemo(() => {
-    let l = allTrades.filter((t) => {
-      const tagsText = Array.isArray(t.tags) ? t.tags.join(" ") : "";
-      const text =
-        `${t.pair || ""} ${t.setup || ""} ${t.notes || ""} ${tagsText} ${t.session || ""}`.toLowerCase();
-      return (
-        text.includes(q.toLowerCase()) &&
-        (pair === "All" || (t.pair?.toLowerCase() || "").includes(pair.toLowerCase())) &&
-        (result === "All" || t.result === result) &&
-        (setup === "All" || (t.setup?.toLowerCase() || "").includes(setup.toLowerCase()))
-      );
-    });
-    l = [...l].sort((a, b) =>
-      sort === "newest"
-        ? a.date < b.date
-          ? 1
-          : -1
-        : sort === "oldest"
-          ? a.date > b.date
-            ? 1
-            : -1
-          : sort === "rrr"
-            ? parseFloat(b.rrr || "0") - parseFloat(a.rrr || "0")
-            : pnlUsd(b) - pnlUsd(a),
-    );
-    return l;
-  }, [allTrades, q, pair, result, setup, sort]);
 
   return (
     <AppShell title="Trading Journal" subtitle={`${list.length} trades logged`}>
