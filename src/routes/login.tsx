@@ -147,9 +147,8 @@ function LoginPage() {
           return;
         }
 
-        const { data, error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signInWithOtp({
           email,
-          password,
           options: {
             data: {
               full_name: name.trim(),
@@ -159,12 +158,6 @@ function LoginPage() {
 
         if (error) throw error;
         
-        if (data.user?.identities?.length === 0) {
-          toast.error("An account with this email already exists. Please log in.");
-          setIsLogin(true);
-          return;
-        }
-
         toast.success("Verification code sent to your email.");
         setShowOtp(true);
         setOtpToken("");
@@ -187,7 +180,7 @@ function LoginPage() {
       const { data, error } = await supabase.auth.verifyOtp({
         email,
         token: otpToken,
-        type: "signup",
+        type: "email",
       });
       if (error) throw error;
 
@@ -375,20 +368,22 @@ function LoginPage() {
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-foreground">Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full rounded-xl border border-border bg-background/50 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
-                    required
-                  />
+              {isLogin && (
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-foreground">Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full rounded-xl border border-border bg-background/50 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
+                      required
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
 
               <button
                 type="submit"
