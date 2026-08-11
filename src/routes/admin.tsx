@@ -393,11 +393,11 @@ function AdminPage() {
     try {
       const { error } = await supabase
         .from("site_settings")
-        .upsert({
-          id: 1,
+        .update({
           ...nextState,
           updated_at: new Date().toISOString(),
-        });
+        })
+        .eq("id", 1);
 
       if (error) {
         toast.error(`Error saving settings: ${error.message}`);

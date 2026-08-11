@@ -23,7 +23,7 @@ export function LogTradeModal({ isOpen, onClose, onSave, initialTrade, nextTrade
   const [session, setSession] = useState<"Asian" | "London" | "New York">("London");
   
   // REMOVED Entry Price & Exit Price per user request!
-  // ADDED Result Amount in Rupees (₹)
+  // ADDED Result Amount in USD ($)
   const [resultAmount, setResultAmount] = useState("");
   
   // 4. Entry Time & Exit Time
@@ -91,7 +91,7 @@ export function LogTradeModal({ isOpen, onClose, onSave, initialTrade, nextTrade
         setSetup("");
         setConfirmation("");
         setNotes("");
-        setTags("A+ Setup, Patience");
+        setTags("");
         setDate(new Date().toISOString().slice(0, 10));
         setRating(5);
         setReason("");
@@ -170,7 +170,7 @@ export function LogTradeModal({ isOpen, onClose, onSave, initialTrade, nextTrade
           {/* Header Row: Pair, Side, Session */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Pair (Manual Type)</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Pair</label>
               <input
                 type="text"
                 placeholder="e.g. GBPUSD"
@@ -197,10 +197,10 @@ export function LogTradeModal({ isOpen, onClose, onSave, initialTrade, nextTrade
             </div>
           </div>
 
-          {/* Result Amount in Rupees (₹) replaces Entry/Exit price */}
+          {/* Result Amount in USD ($) replaces Entry/Exit price */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <div className="col-span-2 sm:col-span-1">
-              <label className="block text-xs font-semibold text-primary mb-1">Result Amount ({userSettings?.currency?.split(' ')[1]?.replace(/[()]/g, '') || '₹'})</label>
+              <label className="block text-xs font-semibold text-primary mb-1">Result Amount ({userSettings?.currency?.split(' ')[1]?.replace(/[()]/g, '') || '$'})</label>
               <input
                 type="number"
                 step="any"
@@ -247,7 +247,7 @@ export function LogTradeModal({ isOpen, onClose, onSave, initialTrade, nextTrade
           {/* Setup, Date, Rating Row */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <div className="col-span-1">
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Set-up (Manual Type)</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Set-up</label>
               <input
                 type="text"
                 placeholder="e.g. Liquidity Sweep"
@@ -323,7 +323,7 @@ export function LogTradeModal({ isOpen, onClose, onSave, initialTrade, nextTrade
             <label className="block text-xs font-medium text-muted-foreground mb-1">Trade Notes & Rules Followed</label>
             <textarea
               rows={2}
-              placeholder="Plan ke according entry liya, TP tak patience rakha..."
+              placeholder="Log the details of your setup, execution, and exit. Did you follow your plan?"
               className="w-full rounded-xl border border-border bg-card/50 p-3 text-sm outline-none focus:border-primary/60 focus:ring-2 focus:ring-ring/40"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}

@@ -34,13 +34,11 @@ function SettingsPage() {
             <div className="space-y-6">
               <SettingsAppearance />
               <SettingsTradingPreferences />
-              <SettingsData />
             </div>
 
             {/* Right Column */}
             <div className="space-y-6">
-              <SettingsNotifications />
-              <SettingsAI />
+              <SettingsData />
               <SettingsAccount />
             </div>
           </div>

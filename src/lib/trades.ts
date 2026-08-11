@@ -30,8 +30,13 @@ export const PAIRS = ["XAUUSD", "EURUSD", "GBPUSD", "USDJPY", "BTCUSD", "NAS100"
 export const SETUPS = ["Order Block", "FVG Retest", "Liquidity Sweep", "Break & Retest", "Trend Continuation"];
 export const SESSIONS = ["Asian", "London", "New York"] as const;
 
-export const money = (n: number, currency = "₹") =>
-  `${n < 0 ? "-" : ""}${currency}${Math.abs(n).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+export const money = (n: number, currency = "$") =>
+  new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(n).replace("USD", "").trim();
 
 export const pct = (n: number) => `${n.toFixed(1)}%`;
 
@@ -160,8 +165,6 @@ function setLocalTrades(list: Trade[]) {
 }
 
 export async function fetchUserTrades(): Promise<Trade[]> {
-  let combined: Trade[] = getLocalTrades();
-
   if (isSupabaseConfigured) {
     try {
       const { data, error } = await supabase
@@ -169,8 +172,13 @@ export async function fetchUserTrades(): Promise<Trade[]> {
         .select("*")
         .order("date", { ascending: false });
 
-      if (!error && data && data.length > 0) {
-        const fetched: Trade[] = data.map((t: any) => ({
+      if (error) {
+        console.error("[Trades] Supabase fetch error:", error.message);
+        return [];
+      }
+
+      if (data) {
+        return data.map((t: any) => ({
           id: t.id,
           tradeNo: t.trade_no ? parseInt(t.trade_no, 10) : undefined,
           date: t.date,
@@ -195,23 +203,14 @@ export async function fetchUserTrades(): Promise<Trade[]> {
           rating: t.rating ? parseInt(t.rating, 10) : undefined,
           reason: t.reason || "",
         }));
-
-        // Merge fetched trades with local storage
-        const map = new Map<string, Trade>();
-        for (const tr of combined) map.set(tr.id, tr);
-        for (const tr of fetched) map.set(tr.id, tr);
-
-        combined = Array.from(map.values()).sort(
-          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-        );
-        setLocalTrades(combined);
       }
     } catch (err) {
       console.warn("[Trades] Supabase fetch notice:", err);
     }
   }
 
-  return combined;
+  // Fallback ONLY if Supabase is completely unconfigured (e.g. dev mock mode)
+  return getLocalTrades();
 }
 
 export async function saveTradeToSupabase(tradePayload: Partial<Trade>, userId: string, imageFile?: File): Promise<void> {
@@ -264,17 +263,7 @@ export async function saveTradeToSupabase(tradePayload: Partial<Trade>, userId: 
     reason: tradePayload.reason || "",
   };
 
-  // 1. Instantly save to local persistent storage
-  const currentList = getLocalTrades();
-  const existingIdx = currentList.findIndex((t) => t.id === tradeId);
-  if (existingIdx >= 0) {
-    currentList[existingIdx] = newTradeObj;
-  } else {
-    currentList.unshift(newTradeObj);
-  }
-  setLocalTrades(currentList);
-
-  // 2. Sync to Supabase Cloud if configured
+  // 1. Sync to Supabase Cloud if configured
   if (isSupabaseConfigured) {
     const row = {
       id: tradeId,
@@ -311,22 +300,35 @@ export async function saveTradeToSupabase(tradePayload: Partial<Trade>, userId: 
       }
     } catch (e) {
       console.warn("[Database] Trades sync notice:", e);
+      throw e; // Bubble error to UI
     }
+  } else {
+    // 2. Instantly save to local persistent storage ONLY IF NOT SUPABASE
+    const currentList = getLocalTrades();
+    const existingIdx = currentList.findIndex((t) => t.id === tradeId);
+    if (existingIdx >= 0) {
+      currentList[existingIdx] = newTradeObj;
+    } else {
+      currentList.unshift(newTradeObj);
+    }
+    setLocalTrades(currentList);
   }
 }
 
 export async function deleteTradeFromSupabase(tradeId: string): Promise<void> {
-  // 1. Remove from local storage
-  const currentList = getLocalTrades();
-  const remaining = currentList.filter((t) => t.id !== tradeId);
-  setLocalTrades(remaining);
-
-  // 2. Remove from Supabase Cloud if configured
+  // Remove from Supabase Cloud if configured
   if (isSupabaseConfigured) {
     try {
-      await supabase.from("trades").delete().eq("id", tradeId);
+      const { error } = await supabase.from("trades").delete().eq("id", tradeId);
+      if (error) throw error;
     } catch (e) {
       console.warn("[Database] Delete trade notice:", e);
+      throw e;
     }
+  } else {
+    // Remove from local storage ONLY IF NOT SUPABASE
+    const currentList = getLocalTrades();
+    const remaining = currentList.filter((t) => t.id !== tradeId);
+    setLocalTrades(remaining);
   }
 }

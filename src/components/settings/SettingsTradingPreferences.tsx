@@ -15,7 +15,7 @@ export function SettingsTradingPreferences() {
             onChange={(e) => updateUserSettings({ currency: e.target.value })}
             className="mt-2 w-full rounded-xl border border-border bg-card/60 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
           >
-            {["USD ($)", "INR (₹)", "EUR (€)", "GBP (£)", "AED (د.إ)"].map((c) => (
+            {["USD ($)", "EUR (€)", "GBP (£)"].map((c) => (
               <option key={c}>{c}</option>
             ))}
           </select>

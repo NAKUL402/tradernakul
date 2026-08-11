@@ -32,7 +32,7 @@ function Reports() {
   return (
     <AppShell title="Reports" subtitle="Weekly & monthly performance summaries">
       <div className="grid gap-4 lg:grid-cols-3">
-        <Panel title="Monthly Report" className="lg:col-span-2" action={<button className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-primary to-accent px-3 py-1.5 text-xs font-semibold text-primary-foreground"><Download className="size-3.5" /> Export</button>}>
+        <Panel title="Monthly Report" className="lg:col-span-2">
           <BarsChart data={months} />
           <div className="mt-4 grid gap-2 sm:grid-cols-2">
             {months.map((m) => (
@@ -55,14 +55,6 @@ function Reports() {
               <div key={k} className="flex items-center justify-between border-b border-border/50 pb-2">
                 <span className="text-muted-foreground">{k}</span><span className="font-medium">{v}</span>
               </div>
-            ))}
-          </div>
-          <div className="mt-4 space-y-2">
-            {["Monthly report — Jul 2026", "Weekly report — W27", "Tax summary 2026"].map((r) => (
-              <button key={r} className="flex w-full items-center gap-2 rounded-xl border border-border bg-card/50 px-3 py-2.5 text-left text-xs transition hover:border-primary/50">
-                <FileText className="size-4 text-primary" /> {r}
-                <Badge tone="primary">PDF</Badge>
-              </button>
             ))}
           </div>
         </Panel>

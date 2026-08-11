@@ -37,37 +37,60 @@ function Dashboard() {
   const dayIndex = Math.floor(Date.now() / 86400000);
   const todaysRule = "The goal of a successful trader is to make good trades. Money is secondary.";
 
+  const hasTrades = userTrades.length > 0;
+
+  if (!hasTrades) {
+    return (
+      <AppShell title="Dashboard" subtitle="Track. Analyze. Improve.">
+        <section className="glass-card-3d elevated-surface relative animate-rise overflow-hidden rounded-[2rem] p-8 text-center flex flex-col items-center justify-center min-h-[50vh] perspective-container">
+          <div className="parallax-bg pointer-events-none absolute -left-24 -top-32 size-80 rounded-full bg-primary/25 blur-[80px]" />
+          <div className="parallax-bg pointer-events-none absolute -right-20 -bottom-32 size-72 rounded-full bg-accent/20 blur-[80px]" />
+          <div className="relative z-10 grid shrink-0 size-16 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-[0_0_20px_-5px_var(--color-primary)] mb-6 layer-3d-extreme">
+            <Target className="size-8" />
+          </div>
+          <h2 className="relative z-10 font-display text-2xl font-bold mb-2 text-foreground layer-3d">Your trading journey starts here.</h2>
+          <p className="relative z-10 max-w-sm text-sm text-muted-foreground mb-8 layer-3d">
+            Log your first trade to unlock AI insights, performance analytics, and your personalized equity curve.
+          </p>
+          <Link to="/journal" className="relative z-10 rounded-xl bg-gradient-to-r from-primary to-accent px-6 py-3 text-sm font-semibold text-primary-foreground transition hover:-translate-y-0.5 shadow-[0_8px_25px_-8px_var(--color-primary)] layer-3d">
+            Log your first trade
+          </Link>
+        </section>
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell title="Dashboard" subtitle="Track. Analyze. Improve.">
-      <section className="glass relative animate-rise overflow-hidden rounded-[2rem] p-6 sm:p-8">
-        <div className="pointer-events-none absolute -left-24 -top-32 size-80 rounded-full bg-primary/25 blur-3xl" />
-        <div className="pointer-events-none absolute -right-20 -bottom-32 size-72 rounded-full bg-accent/20 blur-3xl" />
-        <div className="relative grid gap-8 lg:grid-cols-[1.1fr_1fr] lg:items-center">
-          <div>
-            <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-primary">
+      <section className="glass-card-3d elevated-surface relative animate-rise overflow-hidden rounded-[2rem] p-6 sm:p-8 perspective-container">
+        <div className="parallax-bg pointer-events-none absolute -left-24 -top-32 size-80 rounded-full bg-primary/25 blur-3xl" />
+        <div className="parallax-bg pointer-events-none absolute -right-20 -bottom-32 size-72 rounded-full bg-accent/20 blur-3xl" />
+        <div className="relative grid gap-8 lg:grid-cols-[1.1fr_1fr] lg:items-center transform-3d layer-3d">
+          <div className="transform-3d">
+            <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-primary layer-3d">
               Net Performance
             </span>
-            <p className="mt-5 font-display text-5xl leading-none text-gradient sm:text-6xl lg:text-7xl">
+            <p className="mt-5 font-display text-5xl leading-none text-gradient sm:text-6xl lg:text-7xl layer-3d-extreme">
               {money(s.net)}
             </p>
-            <p className="mt-4 max-w-md text-sm text-muted-foreground">
+            <p className="mt-4 max-w-md text-sm text-muted-foreground layer-3d">
               {s.total} trades logged · {pct(s.winRate)} win rate · profit factor {s.profitFactor.toFixed(2)}. Aapka edge data mein clearly visible hai.
             </p>
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="mt-6 flex flex-wrap gap-3 layer-3d">
               <Link to="/journal" className="rounded-xl bg-gradient-to-r from-primary to-accent px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 glow-primary">
                 Log a trade
               </Link>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-3 sm:gap-4">
+          <div className="grid grid-cols-3 gap-3 sm:gap-4 transform-3d">
             {[
               { k: "Win Rate", v: pct(s.winRate) },
               { k: "Avg RRR", v: `1:${s.avgRRR.toFixed(2)}` },
               { k: "Monthly", v: money(s.monthlyPnl) },
             ].map((i) => (
-              <div key={i.k} className="hairline rounded-2xl bg-background/30 p-4 text-center">
-                <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">{i.k}</p>
-                <p className="mt-2 font-display text-xl sm:text-2xl">{i.v}</p>
+              <div key={i.k} className="hairline rounded-2xl bg-card/60 border border-border/50 p-4 text-center glass-card-3d">
+                <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground layer-3d">{i.k}</p>
+                <p className="mt-2 font-display text-xl sm:text-2xl layer-3d-extreme">{i.v}</p>
               </div>
             ))}
           </div>
@@ -95,13 +118,13 @@ function Dashboard() {
             </div>
 
             <div className="mt-4 sm:mt-auto">
-              <button 
-                onClick={() => window.dispatchEvent(new CustomEvent("open-ai-coach"))}
+              <Link 
+                to="/ai-coach"
                 className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-muted/50 px-4 py-3 text-sm font-medium transition hover:bg-primary hover:text-primary-foreground"
               >
-                Open Coach Workspace
+                Open Mentor Session
                 <ChevronRight className="size-4" />
-              </button>
+              </Link>
             </div>
           </div>
         </Panel>
@@ -124,16 +147,16 @@ function Dashboard() {
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
-        <StatCard label="Total Trades" value={String(s.total)} sub="all time" icon={<Activity className="size-4" />} />
-        <StatCard label="Win Rate" value={pct(s.winRate)} delta={4.2} icon={<Target className="size-4" />} accent="success" />
-        <StatCard label="Average RRR" value={`1 : ${s.avgRRR.toFixed(2)}`} sub="risk / reward" icon={<Scale className="size-4" />} accent="accent" />
-        <StatCard label="Profit Factor" value={s.profitFactor.toFixed(2)} delta={1.8} icon={<Percent className="size-4" />} />
-        <StatCard label="Monthly PnL" value={money(s.monthlyPnl)} delta={s.monthlyPnl >= 0 ? 8.4 : -6.1} icon={<Wallet className="size-4" />} accent={s.monthlyPnl >= 0 ? "success" : "destructive"} />
-        <StatCard label="Win Streak" value={`${s.winStreak}`} sub="consecutive wins" icon={<Flame className="size-4" />} accent="success" />
-        <StatCard label="Loss Streak" value={`${s.lossStreak}`} sub="consecutive losses" icon={<Snowflake className="size-4" />} accent="destructive" />
-        <StatCard label="Best Pair" value={s.bestPair.name} sub={`${money(s.bestPair.pnl)} · ${pct(s.bestPair.winRate)}`} icon={<Trophy className="size-4" />} accent="success" />
-        <StatCard label="Worst Pair" value={s.worstPair.name} sub={`${money(s.worstPair.pnl)} · ${pct(s.worstPair.winRate)}`} icon={<TrendingDown className="size-4" />} accent="destructive" />
-        <StatCard label="Weekly PnL" value={money(s.weeklyPnl)} delta={2.6} icon={<TrendingUp className="size-4" />} accent="accent" />
+        <StatCard label="Total Trades" value={String(s.total)} sub="all time" icon={<Activity className="size-4" />} to="/journal" />
+        <StatCard label="Win Rate" value={pct(s.winRate)} delta={4.2} icon={<Target className="size-4" />} accent="success" to="/analytics" />
+        <StatCard label="Average RRR" value={`1 : ${s.avgRRR.toFixed(2)}`} sub="risk / reward" icon={<Scale className="size-4" />} accent="accent" to="/analytics" />
+        <StatCard label="Profit Factor" value={s.profitFactor.toFixed(2)} delta={1.8} icon={<Percent className="size-4" />} to="/analytics" />
+        <StatCard label="Monthly PnL" value={money(s.monthlyPnl)} delta={s.monthlyPnl >= 0 ? 8.4 : -6.1} icon={<Wallet className="size-4" />} accent={s.monthlyPnl >= 0 ? "success" : "destructive"} to="/analytics" />
+        <StatCard label="Win Streak" value={`${s.winStreak}`} sub="consecutive wins" icon={<Flame className="size-4" />} accent="success" to="/analytics" />
+        <StatCard label="Loss Streak" value={`${s.lossStreak}`} sub="consecutive losses" icon={<Snowflake className="size-4" />} accent="destructive" to="/analytics" />
+        <StatCard label="Best Pair" value={s.bestPair.name} sub={`${money(s.bestPair.pnl)} · ${pct(s.bestPair.winRate)}`} icon={<Trophy className="size-4" />} accent="success" to="/analytics" />
+        <StatCard label="Worst Pair" value={s.worstPair.name} sub={`${money(s.worstPair.pnl)} · ${pct(s.worstPair.winRate)}`} icon={<TrendingDown className="size-4" />} accent="destructive" to="/analytics" />
+        <StatCard label="Weekly PnL" value={money(s.weeklyPnl)} delta={2.6} icon={<TrendingUp className="size-4" />} accent="accent" to="/analytics" />
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-3">

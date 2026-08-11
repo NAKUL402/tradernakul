@@ -16,19 +16,37 @@ type AuthContextType = {
   fetchError: string | null;
   signOut: () => Promise<void>;
   refreshSettings: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
   updateUserSettings: (newSettings: Partial<UserSettings>) => Promise<boolean>;
+  deleteAccount: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const isDevTestMode = import.meta.env.DEV && String(import.meta.env.VITE_DEV_TEST_MODE).trim() === "true";
+  const mockUser = isDevTestMode ? ({ id: "dev-test-owner-id", email: "test-owner@local.test" } as User) : null;
+  const mockProfile: Profile | null = isDevTestMode ? {
+    id: mockUser!.id,
+    email: mockUser!.email!,
+    full_name: "Test Owner",
+    avatar_url: null,
+    role: "admin",
+    status: "approved",
+    is_owner: true,
+    subscription_plan: "enterprise",
+    subscription_status: "active",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  } : null;
+
+  const [user, setUser] = useState<User | null>(mockUser);
+  const [session, setSession] = useState<Session | null>(isDevTestMode ? ({ user: mockUser, access_token: "mock-token" } as Session) : null);
+  const [profile, setProfile] = useState<Profile | null>(mockProfile);
   const [siteSettings, setSiteSettings] = useState<SiteSettings | null>(null);
   const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!isDevTestMode);
 
   async function refreshSettings() {
     try {
@@ -46,12 +64,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function refreshProfile() {
+    if (user) {
+      await fetchProfile(user.id);
+    }
+  }
+
   useEffect(() => {
     let mounted = true;
 
     async function loadAuth() {
       try {
         await refreshSettings();
+
+        // DEV_TEST_MODE Authentication Bypass
+        if (isDevTestMode) {
+          console.warn("DEV_TEST_MODE IS ACTIVE: Synchronous mock owner session initialized.");
+          if (mounted) {
+            await fetchUserSettings(mockUser!.id);
+          }
+          return;
+        }
+
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) throw error;
         
@@ -72,6 +106,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loadAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: string, session: Session | null) => {
+      if (isDevTestMode) return; // Ignore real auth changes in test mode
+
       if (!mounted) return;
 
       if (event === "SIGNED_OUT" || !session) {
@@ -221,6 +257,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const deleteAccount = async () => {
+    if (!user) return;
+    setIsLoading(true);
+    try {
+      if (isDevTestMode) {
+        // Clean up mock local storage databases
+        for (const key of Object.keys(localStorage)) {
+          if (key.startsWith('tn_mock_')) {
+            localStorage.removeItem(key);
+          }
+        }
+        await signOut();
+        return;
+      }
+
+      // 1. Delete all screenshots from storage
+      const { data: files } = await supabase.storage.from("trade-screenshots").list(user.id);
+      if (files && files.length > 0) {
+        const filePaths = files.map((f) => `${user.id}/${f.name}`);
+        const { error: storageError } = await supabase.storage.from("trade-screenshots").remove(filePaths);
+        if (storageError) {
+          console.error("Failed to delete user storage files:", storageError);
+          // Non-fatal, continue with account deletion
+        }
+      }
+
+      // 2. Call RPC to delete account
+      const { error: rpcError } = await supabase.rpc('delete_own_account');
+      if (rpcError) {
+        throw rpcError;
+      }
+
+      // 3. Clear local session
+      await supabase.auth.signOut();
+      setUser(null);
+      setSession(null);
+      setProfile(null);
+    } catch (err: any) {
+      console.error("Failed to delete account:", err);
+      throw err; // Re-throw to be handled by the UI
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const isOwner = profile?.is_owner === true || user?.email === "nakulrathi641@gmail.com";
   const isApproved = profile?.status === "approved" || profile?.is_owner === true || user?.email === "nakulrathi641@gmail.com";
   const isAdmin = profile?.role === "admin" || profile?.is_owner === true || user?.email === "nakulrathi641@gmail.com";
@@ -240,7 +321,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         fetchError,
         signOut,
         refreshSettings,
+        refreshProfile,
         updateUserSettings,
+        deleteAccount,
       }}
     >
       {children}

@@ -22,7 +22,7 @@ const mobileNav = nav.slice(0, 5);
 function Brand({ compact }: { compact?: boolean }) {
   return (
     <div className="flex items-center gap-3">
-      <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary to-accent text-sm font-bold text-primary-foreground glow-primary">
+      <div className="grid size-9 shrink-0 animate-float-slow place-items-center rounded-xl bg-gradient-to-br from-primary to-accent text-sm font-bold text-primary-foreground shadow-[0_0_15px_-3px_var(--color-primary)]">
         TJ
       </div>
       {!compact && (
@@ -38,6 +38,7 @@ function Brand({ compact }: { compact?: boolean }) {
 import { Gatekeeper } from "@/components/app/Gatekeeper";
 import { FloatingAICoach } from "@/components/app/FloatingAICoach";
 import { useAuth } from "@/lib/auth-context";
+import { LocalTestControlPanel } from "@/components/app/LocalTestControlPanel";
 
 export function AppShell({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -54,6 +55,11 @@ export function AppShell({ title, subtitle, children }: { title: string; subtitl
 
   return (
     <div className="flex min-h-screen w-full">
+      {import.meta.env.DEV && String(import.meta.env.VITE_DEV_TEST_MODE).trim() === "true" && (
+        <div className="fixed bottom-2 right-2 z-50 rounded bg-red-600/90 px-2 py-1 text-[10px] font-bold tracking-widest text-white shadow-lg pointer-events-none">
+          LOCAL DEV TEST MODE
+        </div>
+      )}
       <aside
         className={cn(
           "sticky top-0 hidden h-screen shrink-0 flex-col gap-6 border-r border-border/60 bg-sidebar/70 p-4 backdrop-blur-xl transition-[width] duration-300 lg:flex",
@@ -209,6 +215,7 @@ export function AppShell({ title, subtitle, children }: { title: string; subtitl
           })}
         </div>
       </nav>
+      <LocalTestControlPanel />
       <FloatingAICoach />
     </div>
   );

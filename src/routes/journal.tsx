@@ -27,13 +27,13 @@ export const Route = createFileRoute("/journal")({
 function TradeCard({ t, onOpen }: { t: Trade; onOpen: () => void }) {
   const { userSettings } = useAuth();
   const pnl = pnlUsd(t);
-  const currencySymbol = userSettings?.currency?.split(' ')[1]?.replace(/[()]/g, '') || '₹';
+  const currencySymbol = userSettings?.currency?.split(' ')[1]?.replace(/[()]/g, '') || '$';
   return (
     <button
       onClick={onOpen}
-      className="glass group animate-rise w-full rounded-2xl p-4 text-left transition-transform duration-300 hover:-translate-y-1"
+      className="glass-card-3d group animate-rise w-full rounded-2xl p-4 text-left transition-transform duration-300 hover:-translate-y-1"
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-3 layer-3d">
         <div>
           <p className="font-display text-base font-semibold">
             {t.pair} {t.tradeNo ? `#${t.tradeNo}` : ""}
@@ -42,25 +42,25 @@ function TradeCard({ t, onOpen }: { t: Trade; onOpen: () => void }) {
         </div>
         <Badge tone={t.result === "Win" ? "win" : "loss"}>{t.result}</Badge>
       </div>
-      <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+      <div className="mt-3 grid grid-cols-3 gap-2 text-xs layer-3d">
         <div className="rounded-xl bg-muted/40 p-2"><p className="text-muted-foreground">Side</p><p className="font-medium">{t.side}</p></div>
         <div className="rounded-xl bg-muted/40 p-2"><p className="text-muted-foreground">RRR</p><p className="font-medium">{t.rrr}</p></div>
         <div className="rounded-xl bg-muted/40 p-2"><p className="text-muted-foreground">Risk</p><p className="font-medium">{t.riskPct}%</p></div>
       </div>
-      <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+      <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground layer-3d">
         <Clock className="size-3.5" /> {t.entryTime} → {t.exitTime}
         <span className="ml-auto flex items-center gap-1 truncate max-w-[120px]"><ImageIcon className="size-3.5" /> Screenshot</span>
       </div>
       {t.screenshot && t.screenshot.startsWith("http") ? (
-        <img src={t.screenshot} alt={t.pair} className="mt-3 h-24 w-full rounded-xl object-cover ring-1 ring-border" />
+        <img src={t.screenshot} alt={t.pair} className="mt-3 h-24 w-full rounded-xl object-cover ring-1 ring-border layer-3d" />
       ) : (
-        <div className="mt-3 h-16 overflow-hidden rounded-xl bg-gradient-to-br from-primary/25 via-accent/15 to-transparent ring-1 ring-border" />
+        <div className="mt-3 h-16 overflow-hidden rounded-xl bg-gradient-to-br from-primary/25 via-accent/15 to-transparent ring-1 ring-border layer-3d" />
       )}
-      <p className="mt-3 line-clamp-2 text-xs text-muted-foreground">{t.notes}</p>
-      <div className="mt-3 flex flex-wrap items-center gap-1.5">
+      <p className="mt-3 line-clamp-2 text-xs text-muted-foreground layer-3d">{t.notes}</p>
+      <div className="mt-3 flex flex-wrap items-center gap-1.5 layer-3d">
         <Badge tone="primary">{t.setup}</Badge>
         {(t.tags || []).map((tag) => <Badge key={tag}>{tag}</Badge>)}
-        <span className={cn("ml-auto font-display text-sm font-semibold", pnl >= 0 ? "text-[oklch(0.72_0.19_155)]" : "text-destructive")}>{money(pnl, currencySymbol)}</span>
+        <span className={cn("ml-auto font-display text-sm font-semibold layer-3d-extreme", pnl >= 0 ? "text-[oklch(0.72_0.19_155)]" : "text-destructive")}>{money(pnl, currencySymbol)}</span>
       </div>
     </button>
   );
@@ -259,8 +259,17 @@ function Journal() {
         </div>
       </Panel>
 
-      {list.length === 0 ? (
-        <div className="mt-4"><EmptyState title="No trades match your filters" hint="Try clearing the search box or switching the pair / result filter." /></div>
+      {allTrades.length === 0 ? (
+        <div className="mt-4">
+          <EmptyState 
+            title="Your journal is empty" 
+            hint="Start logging your first trade to build your journal and unlock AI insights." 
+          />
+        </div>
+      ) : list.length === 0 ? (
+        <div className="mt-4">
+          <EmptyState title="No trades match your filters" hint="Try clearing the search box or switching the pair / result filter." />
+        </div>
       ) : (
         <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {list.slice(0, 30).map((t) => <TradeCard key={t.id} t={t} onOpen={() => setOpen(t)} />)}
@@ -351,7 +360,7 @@ function Journal() {
             <div className="mt-4 grid grid-cols-2 gap-2 text-xs sm:grid-cols-3">
               {[
                 ["Entry Time", open.entryTime], ["Exit Time", open.exitTime],
-                ["Result Amount (₹)", `₹${Math.abs(open.pnl).toLocaleString("en-IN")}`],
+                ["Result Amount", `${currencySymbol}${Math.abs(open.pnl).toLocaleString("en-US")}`],
                 ["Lots Size", open.lots || "—"], ["RRR", open.rrr],
                 ["Risk", `${open.riskPct}%`], ["Setup", open.setup],
                 ["Confirmation", open.confirmation || "—"], ["Result Status", open.result],

@@ -102,39 +102,39 @@
 }
 
 .dark {
-  --background: oklch(0.115 0.028 285);
-  --foreground: oklch(0.97 0.008 275);
-  --card: oklch(0.185 0.045 285 / 62%);
-  --card-foreground: oklch(0.97 0.008 275);
-  --popover: oklch(0.175 0.045 285);
-  --popover-foreground: oklch(0.97 0.008 275);
-  --primary: oklch(0.58 0.22 277);
-  --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.27 0.075 283);
-  --secondary-foreground: oklch(0.97 0.008 275);
-  --muted: oklch(0.235 0.05 285);
-  --muted-foreground: oklch(0.73 0.028 280);
-  --accent: oklch(0.66 0.19 292);
-  --accent-foreground: oklch(0.99 0 0);
-  --destructive: oklch(0.63 0.24 20);
-  --destructive-foreground: oklch(0.99 0 0);
-  --success: oklch(0.72 0.19 155);
-  --border: oklch(0.78 0.09 285 / 14%);
-  --input: oklch(0.78 0.09 285 / 18%);
-  --ring: oklch(0.58 0.22 277);
-  --chart-1: oklch(0.62 0.22 277);
-  --chart-2: oklch(0.68 0.19 292);
-  --chart-3: oklch(0.72 0.19 155);
-  --chart-4: oklch(0.63 0.24 20);
-  --chart-5: oklch(0.78 0.16 85);
-  --sidebar: oklch(0.14 0.035 285 / 82%);
-  --sidebar-foreground: oklch(0.95 0.008 275);
-  --sidebar-primary: oklch(0.58 0.22 277);
-  --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.25 0.055 285);
-  --sidebar-accent-foreground: oklch(0.97 0.008 275);
-  --sidebar-border: oklch(0.78 0.09 285 / 12%);
-  --sidebar-ring: oklch(0.58 0.22 277);
+  --background: oklch(0.13 0.01 270);
+  --foreground: oklch(0.98 0.005 270);
+  --card: oklch(0.17 0.02 270 / 80%);
+  --card-foreground: oklch(0.98 0.005 270);
+  --popover: oklch(0.16 0.02 270);
+  --popover-foreground: oklch(0.98 0.005 270);
+  --primary: oklch(0.65 0.2 270);
+  --primary-foreground: oklch(0.98 0.005 270);
+  --secondary: oklch(0.22 0.04 270);
+  --secondary-foreground: oklch(0.98 0.005 270);
+  --muted: oklch(0.2 0.03 270);
+  --muted-foreground: oklch(0.65 0.02 270);
+  --accent: oklch(0.7 0.15 285);
+  --accent-foreground: oklch(0.98 0.005 270);
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.98 0.005 270);
+  --success: oklch(0.68 0.18 150);
+  --border: oklch(0.28 0.04 270);
+  --input: oklch(0.25 0.04 270);
+  --ring: oklch(0.65 0.2 270);
+  --chart-1: oklch(0.65 0.2 270);
+  --chart-2: oklch(0.7 0.15 285);
+  --chart-3: oklch(0.68 0.18 150);
+  --chart-4: oklch(0.55 0.22 25);
+  --chart-5: oklch(0.75 0.15 80);
+  --sidebar: oklch(0.14 0.015 270 / 85%);
+  --sidebar-foreground: oklch(0.95 0.005 270);
+  --sidebar-primary: oklch(0.65 0.2 270);
+  --sidebar-primary-foreground: oklch(0.98 0.005 270);
+  --sidebar-accent: oklch(0.22 0.04 270);
+  --sidebar-accent-foreground: oklch(0.98 0.005 270);
+  --sidebar-border: oklch(0.25 0.04 270);
+  --sidebar-ring: oklch(0.65 0.2 270);
 }
 
 @layer base {
@@ -206,3 +206,92 @@
   to { opacity: 1; transform: translateY(0); }
 }
 @utility animate-rise { animation: rise 0.5s cubic-bezier(0.22,1,0.36,1) both; }
+
+@utility glass-card {
+  background: color-mix(in oklab, var(--card) 60%, transparent);
+  backdrop-filter: blur(16px);
+  border: 1px solid color-mix(in oklab, var(--border) 50%, transparent);
+  box-shadow: inset 0 1px 1px 0 color-mix(in oklab, var(--foreground) 5%, transparent),
+              0 10px 30px -10px color-mix(in oklab, #000 80%, transparent);
+}
+
+@utility elevated-surface {
+  background: linear-gradient(180deg, color-mix(in oklab, var(--card) 90%, transparent), var(--background));
+  border: 1px solid var(--border);
+  box-shadow: inset 0 1px 0 0 color-mix(in oklab, var(--primary) 15%, transparent),
+              0 4px 20px -5px color-mix(in oklab, #000 90%, transparent);
+}
+
+@utility depth-hover {
+  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  &:hover {
+    transform: translateY(-2px) scale(1.01);
+    box-shadow: inset 0 1px 1px 0 color-mix(in oklab, var(--foreground) 10%, transparent),
+                0 15px 35px -10px color-mix(in oklab, var(--primary) 15%, #000);
+    border-color: color-mix(in oklab, var(--primary) 30%, transparent);
+  }
+}
+
+/* ============================================================================
+   WORLD-CLASS 3D DESIGN SYSTEM (CSS-BASED, LIGHTWEIGHT)
+   ============================================================================ */
+
+/* 1. Perspective Container - applied to a parent to give children 3D context */
+@utility perspective-container {
+  perspective: 1200px;
+  transform-style: preserve-3d;
+}
+
+/* 2. Transform 3D Context - allows an element to exist in 3D space and pass it to children */
+@utility transform-3d {
+  transform-style: preserve-3d;
+}
+
+/* 3. Dimensional 3D Card */
+@utility glass-card-3d {
+  background: linear-gradient(135deg, color-mix(in oklab, var(--card) 65%, transparent), color-mix(in oklab, var(--background) 85%, transparent));
+  backdrop-filter: blur(16px);
+  border: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
+  box-shadow: inset 0 1px 1px 0 color-mix(in oklab, var(--foreground) 8%, transparent),
+              inset 0 -1px 2px 0 color-mix(in oklab, #000 20%, transparent),
+              0 15px 35px -10px color-mix(in oklab, #000 80%, transparent);
+  transform-style: preserve-3d;
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease;
+  
+  &:hover {
+    transform: translateZ(20px) rotateX(2deg) rotateY(-2deg);
+    box-shadow: inset 0 1px 1px 0 color-mix(in oklab, var(--primary) 15%, transparent),
+                0 25px 45px -12px color-mix(in oklab, var(--primary) 20%, #000);
+    border-color: color-mix(in oklab, var(--primary) 35%, transparent);
+  }
+}
+
+/* 4. Floating 3D Layer - for elements inside a glass-card-3d */
+@utility layer-3d {
+  transform: translateZ(30px);
+  transition: transform 0.4s ease;
+}
+
+/* 5. Extreme Layer - for standout elements like icons or primary stats */
+@utility layer-3d-extreme {
+  transform: translateZ(60px);
+  transition: transform 0.4s ease;
+  text-shadow: 0 10px 20px color-mix(in oklab, #000 50%, transparent);
+}
+
+/* 6. Subtle Parallax Background Layer */
+@utility parallax-bg {
+  transform: translateZ(-20px) scale(1.05);
+  transition: transform 0.4s ease;
+  opacity: 0.6;
+}
+
+/* Reduced motion fallback */
+@media (prefers-reduced-motion: reduce) {
+  .glass-card-3d:hover {
+    transform: translateY(-2px) scale(1.01) !important;
+  }
+  .layer-3d { transform: none !important; }
+  .layer-3d-extreme { transform: none !important; text-shadow: none !important; }
+  .parallax-bg { transform: none !important; }
+}
