@@ -146,19 +146,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     try {
-      const { data, error } = await supabase
-        .from("user_settings")
-        .select("*")
-        .eq("user_id", userId)
-        .single();
-
+      const { data, error } = await supabase.auth.getUser();
       if (error) {
-        if (error.code !== "PGRST116") {
-          console.warn("Failed to fetch user settings (fallback to default):", error);
-        }
+        console.warn("Failed to fetch user settings from metadata:", error);
         setUserSettings(defaultSettings);
-      } else if (data) {
-        setUserSettings(data as UserSettings);
+        return;
+      }
+      
+      const meta = data?.user?.user_metadata?.settings;
+      if (meta) {
+        setUserSettings({ ...defaultSettings, ...meta, user_id: userId });
       } else {
         setUserSettings(defaultSettings);
       }
@@ -173,15 +170,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const updated = { ...userSettings, ...newSettings } as UserSettings;
     setUserSettings(updated); // Optimistic
     try {
-      const { error } = await supabase
-        .from("user_settings")
-        .upsert({ ...updated, user_id: user.id });
+      const { error } = await supabase.auth.updateUser({
+        data: { settings: updated }
+      });
       if (error) throw error;
       return true;
-    } catch (err) {
-      console.error("Error updating settings:", err);
-      toast.error("Failed to save settings");
-      // Revert optimistic if needed, but for simplicity we keep it or refetch
+    } catch (err: any) {
+      console.error("Error updating settings in metadata:", {
+        message: err?.message || err,
+        code: err?.code
+      });
+      toast.error(`Failed to save settings: ${err?.message || "Unknown error"}`);
+      // Revert optimistic if needed
       await fetchUserSettings(user.id);
       return false;
     }
