@@ -127,6 +127,7 @@ function LoginPage() {
           data: {
             full_name: name.trim(),
           },
+          emailRedirectTo: window.location.origin,
         },
       });
 
@@ -195,6 +196,9 @@ function LoginPage() {
       const { error } = await supabase.auth.resend({
         type: "signup", // Supabase requires "signup" for resend when using signInWithOtp for new users
         email,
+        options: {
+          emailRedirectTo: window.location.origin,
+        },
       });
 
       if (error) throw error;
