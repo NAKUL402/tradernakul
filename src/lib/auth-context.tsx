@@ -249,22 +249,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.signOut();
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
       
-      // Explicitly drop local state immediately
-      setSession(null);
       setUser(null);
+      setSession(null);
       setProfile(null);
-      setSiteSettings(null);
-      setUserSettings(null);
-      setFetchError(null);
       
       toast.success("Successfully logged out");
     } catch (err: any) {
-      console.error("SignOut error:", err);
-      toast.error(err?.message || "Failed to log out");
+      toast.error(`Failed to log out: ${err?.message || "Unknown error"}`);
     } finally {
       setIsLoading(false);
     }
