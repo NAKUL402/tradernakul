@@ -128,6 +128,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function fetchUserSettings(userId: string) {
+    const defaultSettings: UserSettings = {
+      user_id: userId,
+      theme: "system",
+      accent_color: "oklch(0.64 0.21 268)",
+      compact_ui: false,
+      currency: "USD ($)",
+      default_session: null,
+      default_risk_pct: null,
+      default_rrr: null,
+      daily_summary: true,
+      weekly_report: true,
+      ai_coach_alerts: false,
+      ai_response_style: "Balanced",
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
     try {
       const { data, error } = await supabase
         .from("user_settings")
@@ -136,34 +153,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .single();
 
       if (error) {
-        if (error.code === "PGRST116") {
-          // No settings found, default one will be created via trigger eventually, 
-          // or we create it now.
-          const defaultSettings: UserSettings = {
-            user_id: userId,
-            theme: "system",
-            accent_color: "oklch(0.64 0.21 268)",
-            compact_ui: false,
-            currency: "USD ($)",
-            default_session: null,
-            default_risk_pct: null,
-            default_rrr: null,
-            daily_summary: true,
-            weekly_report: true,
-            ai_coach_alerts: false,
-            ai_response_style: "Balanced",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          };
-          setUserSettings(defaultSettings);
-        } else {
-          console.warn("Failed to fetch user settings:", error);
+        if (error.code !== "PGRST116") {
+          console.warn("Failed to fetch user settings (fallback to default):", error);
         }
+        setUserSettings(defaultSettings);
       } else if (data) {
         setUserSettings(data as UserSettings);
+      } else {
+        setUserSettings(defaultSettings);
       }
     } catch (err) {
       console.error("Exception fetching user settings:", err);
+      setUserSettings(defaultSettings);
     }
   }
 
