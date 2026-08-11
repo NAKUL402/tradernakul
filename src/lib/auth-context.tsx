@@ -158,7 +158,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             (payload) => {
               if (payload.new) {
                 console.log("[REALTIME-DEBUG] Received profile update");
-                setProfile(payload.new as Profile);
+                setProfile((prev) => 
+                  prev ? { ...prev, ...payload.new } as Profile : payload.new as Profile
+                );
               }
             }
           )
