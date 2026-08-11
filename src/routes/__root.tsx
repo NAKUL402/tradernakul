@@ -66,7 +66,11 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
           Edge Journal Dashboard
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">Reconnecting to your session...</p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {error?.message?.toLowerCase().includes("session") || error?.message?.toLowerCase().includes("auth")
+            ? "Your session needs to be refreshed."
+            : "Something went wrong while loading the application."}
+        </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             type="button"

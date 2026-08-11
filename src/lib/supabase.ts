@@ -483,4 +483,21 @@ export const supabase = {
   rpc: (fn: string, args?: Record<string, unknown>): any => {
     return realClient.rpc(fn as any, args);
   },
+
+  channel: (name: string): any => {
+    if (isDevTestMode) {
+      const mockChannel: any = {
+        on: () => mockChannel,
+        subscribe: () => mockChannel,
+        unsubscribe: () => Promise.resolve(),
+      };
+      return mockChannel;
+    }
+    return realClient.channel(name);
+  },
+
+  removeChannel: (channel: any): any => {
+    if (isDevTestMode) return Promise.resolve("ok");
+    return realClient.removeChannel(channel);
+  },
 };

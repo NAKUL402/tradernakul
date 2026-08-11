@@ -143,28 +143,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let realtimeChannel: ReturnType<typeof supabase.channel> | null = null;
     
     if (user && !isDevTestMode) {
-      realtimeChannel = supabase
-        .channel(`profile-updates-${user.id}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "UPDATE",
-            schema: "public",
-            table: "profiles",
-            filter: `id=eq.${user.id}`,
-          },
-          (payload) => {
-            if (payload.new) {
-              setProfile(payload.new as Profile);
+      try {
+        console.log("[REALTIME-DEBUG] Creating profile channel for user:", user.id);
+        realtimeChannel = supabase
+          .channel(`profile-updates-${user.id}`)
+          .on(
+            "postgres_changes",
+            {
+              event: "UPDATE",
+              schema: "public",
+              table: "profiles",
+              filter: `id=eq.${user.id}`,
+            },
+            (payload) => {
+              if (payload.new) {
+                console.log("[REALTIME-DEBUG] Received profile update");
+                setProfile(payload.new as Profile);
+              }
             }
-          }
-        )
-        .subscribe();
+          )
+          .subscribe((status: string) => {
+            console.log("[REALTIME-DEBUG] Subscription status:", status);
+          });
+      } catch (err) {
+        console.error("[REALTIME-DEBUG] Exception during channel creation:", err);
+      }
     }
 
     return () => {
       if (realtimeChannel) {
-        supabase.removeChannel(realtimeChannel);
+        try {
+          supabase.removeChannel(realtimeChannel);
+        } catch (err) {
+          console.error("[REALTIME-DEBUG] Exception during channel cleanup:", err);
+        }
       }
     };
   }, [user?.id]);
