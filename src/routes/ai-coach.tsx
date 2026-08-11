@@ -578,12 +578,12 @@ function CoachPage() {
           <p className="text-sm leading-relaxed text-muted-foreground">{ai.psychologyText}</p>
           <div className="mt-auto pt-4 grid grid-cols-3 gap-2 sm:gap-3">
             {[
-              ["FOMO Risk", "Low"],
-              ["Revenge Tilt", "Controlled"],
+              ["FOMO Trading", "Low"],
+              ["Revenge Trading", "Controlled"],
               ["Overconfidence", "Low"],
             ].map(([k, v]) => (
-              <div key={k} className="flex flex-col items-center justify-center text-center rounded-xl border border-border/40 bg-muted/30 p-2 sm:p-3 h-[72px] sm:h-[84px]">
-                <p className="text-[10px] sm:text-[11px] font-medium uppercase tracking-wider text-muted-foreground line-clamp-1 break-all w-full">{k}</p>
+              <div key={k} className="flex flex-col items-center justify-center text-center rounded-xl border border-border/40 bg-muted/30 p-2 sm:p-3 min-h-[72px] sm:min-h-[84px] gap-1">
+                <p className="text-[10px] sm:text-[11px] font-medium uppercase tracking-wider text-muted-foreground w-full break-words">{k}</p>
                 <p className="mt-1 sm:mt-1.5 text-xs sm:text-sm font-bold text-foreground">{v}</p>
               </div>
             ))}

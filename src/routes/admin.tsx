@@ -1129,7 +1129,7 @@ function AdminPage() {
                     <p className="text-xs text-muted-foreground mt-1">There are no access requests currently waiting in the approval queue.</p>
                   </div>
                 ) : (
-                  <div className="space-y-3.5">
+                  <div className="space-y-3.5 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
                     {usersList.filter(u => u.status === "pending").map(u => (
                       <div key={u.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 border border-border/50 bg-card/40 rounded-2xl gap-3">
                         <div>
@@ -1142,13 +1142,13 @@ function AdminPage() {
                             onClick={() => handleUpdateUserStatus(u.id, "approved")}
                             className="flex-1 sm:flex-initial py-1.5 px-4 bg-success/20 text-success border border-success/30 rounded-xl hover:bg-success/35 transition font-semibold text-xs"
                           >
-                            Approve Access
+                            Approve
                           </button>
                           <button
                             onClick={() => handleUpdateUserStatus(u.id, "rejected")}
                             className="flex-1 sm:flex-initial py-1.5 px-4 bg-destructive/10 text-destructive border border-destructive/20 rounded-xl hover:bg-destructive/20 transition font-semibold text-xs"
                           >
-                            Reject Request
+                            Reject
                           </button>
                         </div>
                       </div>

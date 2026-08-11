@@ -4,9 +4,17 @@ import { Clock, LogOut, ShieldAlert } from "lucide-react";
 import { useEffect } from "react";
 
 export function AccessPending() {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, refreshProfile } = useAuth();
   const name = profile?.full_name || user?.user_metadata?.["full_name"] || user?.user_metadata?.["name"] || "Trader";
   const email = profile?.email || user?.email || "";
+
+  useEffect(() => {
+    // Gentle polling to check if admin has approved the user
+    const interval = setInterval(() => {
+      if (refreshProfile) refreshProfile();
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [refreshProfile]);
 
   useEffect(() => {
     if (user && email && name) {

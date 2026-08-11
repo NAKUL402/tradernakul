@@ -141,6 +141,22 @@ function Journal() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.key === "ArrowRight") {
+        const idx = list.findIndex(t => t.id === open.id);
+        if (idx >= 0 && idx < list.length - 1) setOpen(list[idx + 1]);
+      } else if (e.key === "ArrowLeft") {
+        const idx = list.findIndex(t => t.id === open.id);
+        if (idx > 0) setOpen(list[idx - 1]);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open, list]);
+
   const loadTrades = async () => {
     const data = await fetchUserTrades();
     setAllTrades(data);
