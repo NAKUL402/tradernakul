@@ -13,6 +13,7 @@ import {
   Bell,
   Search,
   ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
@@ -156,16 +157,14 @@ export function AppShell({
         </nav>
 
         {!collapsed && (
-          <div className="glass rounded-2xl p-4">
-            <p className="font-display text-sm font-semibold">Pro Plan</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Unlimited AI coach reviews &amp; reports.
-            </p>
+          <div className="px-3 pb-2">
             <Link
               to="/ai-coach"
-              className="mt-3 flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-primary to-accent px-3 py-2 text-xs font-semibold text-primary-foreground transition hover:opacity-90"
+              className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl border border-primary/20 bg-gradient-to-r from-primary/10 to-accent/10 px-3 py-3 text-xs font-semibold text-primary transition-all duration-300 hover:scale-[1.02] hover:border-primary/40 hover:from-primary/20 hover:to-accent/20 hover:shadow-[0_0_15px_-3px_var(--color-primary)] active:scale-95"
             >
-              Open AI Coach
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/10 to-primary/0 translate-x-[-100%] transition-transform duration-700 group-hover:translate-x-[100%]" />
+              <Sparkles className="size-3.5 transition-transform duration-300 group-hover:rotate-12" />
+              <span>Analyze your trade with AI</span>
             </Link>
           </div>
         )}
