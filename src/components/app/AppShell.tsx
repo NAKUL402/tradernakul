@@ -82,7 +82,7 @@ export function AppShell({
 
   return (
     <div className="flex min-h-screen w-full">
-      {import.meta.env.DEV && String(import.meta.env.VITE_DEV_TEST_MODE).trim() === "true" && (
+      {import.meta.env.DEV && String((import.meta.env as any)["VITE_DEV_TEST_MODE"]).trim() === "true" && (
         <div className="fixed bottom-2 right-2 z-50 rounded bg-red-600/90 px-2 py-1 text-[10px] font-bold tracking-widest text-white shadow-lg pointer-events-none">
           LOCAL DEV TEST MODE
         </div>

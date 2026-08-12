@@ -17,6 +17,7 @@ import {
 
 const axis = {
   stroke: "var(--color-muted-foreground)",
+  fill: "var(--color-muted-foreground)",
   fontSize: 11,
   tickLine: false,
   axisLine: false,

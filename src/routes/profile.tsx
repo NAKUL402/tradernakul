@@ -79,12 +79,13 @@ function Profile() {
       if (!e.target.files || e.target.files.length === 0 || !user) return;
       setIsUploading(true);
       const file = e.target.files[0];
+      if (!file) return;
       const fileExt = file.name.split(".").pop();
       const fileName = `${user.id}/${Math.random()}.${fileExt}`;
 
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError } = (await supabase.storage
         .from("profile-avatars")
-        .upload(fileName, file, { upsert: true });
+        .upload(fileName, file, { upsert: true })) as any;
 
       if (uploadError) throw uploadError;
 

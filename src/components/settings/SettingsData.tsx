@@ -13,7 +13,7 @@ export function SettingsData() {
     if (!user) return;
     setIsExporting(true);
     try {
-      const trades = await fetchUserTrades(user.id);
+      const trades = await fetchUserTrades();
       if (!trades || trades.length === 0) {
         toast.info("No trades to export.");
         setIsExporting(false);

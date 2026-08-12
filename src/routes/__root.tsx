@@ -142,18 +142,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: ReactNode }) {
-  // Resolve environment variables on the server (handling the Vercel typo "ANOM_KEY")
+  // Resolve environment variables on the server (handling the Vercel typo "ANON_KEY")
   const envUrl =
-    typeof process !== "undefined" && process.env.VITE_SUPABASE_URL
-      ? process.env.VITE_SUPABASE_URL
-      : (import.meta as any).env?.VITE_SUPABASE_URL || "";
+    typeof process !== "undefined" && process.env["VITE_SUPABASE_URL"]
+      ? process.env["VITE_SUPABASE_URL"]
+      : (import.meta as any).env?.["VITE_SUPABASE_URL"] || "";
 
   const envKey =
     typeof process !== "undefined" &&
-    (process.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANOM_KEY)
-      ? process.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANOM_KEY
-      : (import.meta as any).env?.VITE_SUPABASE_ANON_KEY ||
-        (import.meta as any).env?.VITE_SUPABASE_ANOM_KEY ||
+    (process.env["VITE_SUPABASE_ANON_KEY"] || process.env["VITE_SUPABASE_ANON_KEY"])
+      ? process.env["VITE_SUPABASE_ANON_KEY"] || process.env["VITE_SUPABASE_ANON_KEY"]
+      : (import.meta as any).env?.["VITE_SUPABASE_ANON_KEY"] ||
+        (import.meta as any).env?.["VITE_SUPABASE_ANON_KEY"] ||
         "";
 
   const envScript = `

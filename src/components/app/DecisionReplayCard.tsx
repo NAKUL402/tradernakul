@@ -48,7 +48,7 @@ export function DecisionReplayCard({ trades }: { trades: Trade[] }) {
     ].sort((a, b) => b.count - a.count);
 
     const top = counts[0];
-    if (top.count < 1) return null; // Found no matching patterns
+    if (!top || top.count < 1) return null; // Found no matching patterns
 
     const sampleSize = recent.length;
 

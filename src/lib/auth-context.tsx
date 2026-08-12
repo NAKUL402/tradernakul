@@ -25,7 +25,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const isDevTestMode =
-    import.meta.env.DEV && String(import.meta.env.VITE_DEV_TEST_MODE).trim() === "true";
+    import.meta.env.DEV && String((import.meta.env as any)["VITE_DEV_TEST_MODE"]).trim() === "true";
   const mockUser = isDevTestMode
     ? ({ id: "dev-test-owner-id", email: "test-owner@local.test" } as User)
     : null;
@@ -47,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const [user, setUser] = useState<User | null>(mockUser);
   const [session, setSession] = useState<Session | null>(
-    isDevTestMode ? ({ user: mockUser, access_token: "mock-token" } as Session) : null,
+    isDevTestMode ? ({ user: mockUser, access_token: "mock-token" } as unknown as Session) : null,
   );
   const [profile, setProfile] = useState<Profile | null>(mockProfile);
   const [siteSettings, setSiteSettings] = useState<SiteSettings | null>(null);
@@ -96,8 +96,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (error) throw error;
 
         if (session && mounted) {
-          setSession(session);
-          setUser(session.user);
+          setSession(session as any);
+          setUser(session.user as any);
           await fetchProfile(session.user.id);
           await fetchUserSettings(session.user.id);
         } else if (mounted) {
@@ -155,7 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               table: "profiles",
               filter: `id=eq.${user.id}`,
             },
-            (payload) => {
+            (payload: any) => {
               if (payload.new) {
                 console.log("[REALTIME-DEBUG] Received profile update");
                 setProfile((prev) => 

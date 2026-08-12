@@ -102,6 +102,10 @@
 }
 
 .dark {
+  /* Tell the browser to render all native UI in dark mode.
+   * This is the key fix for black select/option/date-picker text. */
+  color-scheme: dark;
+
   --background: oklch(0.13 0.01 270);
   --foreground: oklch(0.98 0.005 270);
   --card: oklch(0.17 0.02 270 / 80%);
@@ -113,7 +117,8 @@
   --secondary: oklch(0.22 0.04 270);
   --secondary-foreground: oklch(0.98 0.005 270);
   --muted: oklch(0.2 0.03 270);
-  --muted-foreground: oklch(0.65 0.02 270);
+  /* Brighter muted foreground: 0.65 → 0.72 for improved readability */
+  --muted-foreground: oklch(0.72 0.02 270);
   --accent: oklch(0.7 0.15 285);
   --accent-foreground: oklch(0.98 0.005 270);
   --destructive: oklch(0.58 0.18 22); /* Deeper crimson */
@@ -216,6 +221,40 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+  }
+
+  /* ----------------------------------------------------------------
+   * DARK THEME — Native form element overrides
+   * Ensures <select>, <option>, date/time/number inputs render with
+   * proper dark background + light text across all browsers.
+   * color-scheme: dark on .dark is the primary fix; these rules are
+   * a belt-and-suspenders fallback for partial browser support.
+   * ---------------------------------------------------------------- */
+  .dark select,
+  .dark select option {
+    background-color: oklch(0.19 0.03 270);
+    color: oklch(0.95 0.005 270);
+  }
+
+  .dark input[type="date"],
+  .dark input[type="time"],
+  .dark input[type="number"],
+  .dark input[type="text"],
+  .dark input[type="email"],
+  .dark textarea {
+    color: oklch(0.95 0.005 270);
+    background-color: transparent;
+  }
+
+  /* Placeholder text — slightly dimmer than the input value */
+  .dark ::placeholder {
+    color: oklch(0.58 0.02 270);
+    opacity: 1;
+  }
+
+  /* Date/time picker calendar popup in dark mode */
+  .dark ::-webkit-calendar-picker-indicator {
+    filter: invert(0.8);
   }
 }
 

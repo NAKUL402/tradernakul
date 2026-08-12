@@ -75,7 +75,7 @@ function Dashboard() {
   const patternSummary = aggregateTradePatterns(userTrades);
   let dynamicInsight = "";
   if (patternSummary) {
-    if (patternSummary.topMistakes.length > 0) {
+    if (patternSummary.topMistakes.length > 0 && patternSummary.topMistakes[0]) {
       dynamicInsight = `Current focus: Reduce "${patternSummary.topMistakes[0].name}" mistakes.`;
     } else if (patternSummary.bestSetup) {
       dynamicInsight = `Strongest edge: ${patternSummary.bestSetup.name} (${patternSummary.bestSetup.winRate}% WR).`;

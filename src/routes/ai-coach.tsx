@@ -41,7 +41,7 @@ export const Route = createFileRoute("/ai-coach")({
   }),
   validateSearch: (search: Record<string, unknown>) => {
     return {
-      chat: (search.chat as string) === 'true' || search.chat === true,
+      chat: (search["chat"] as string) === 'true' || search["chat"] === true,
     }
   },
   component: CoachPage,

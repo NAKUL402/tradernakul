@@ -52,14 +52,14 @@ export function TraderEdgeIntelligence({ trades }: { trades: Trade[] }) {
     processGroup("pair", (t) => t.pair);
     processGroup("session", (t) => t.session);
 
-    if (insights.length === 0) return null;
+    if (insights.length === 0 || !insights[0]) return null;
 
     // Sort to find best and worst
     // Best: Highest win rate, tie breaker avg RRR
     insights.sort((a, b) => b.winRate - a.winRate || b.avgRrr - a.avgRrr);
 
-    const best = insights[0];
-    const worst = insights[insights.length - 1];
+    const best = insights[0]!;
+    const worst = insights[insights.length - 1]!;
 
     // Calculate a rough "Edge Score" based on consistency and profitability of the best edge
     const baseScore = 50;

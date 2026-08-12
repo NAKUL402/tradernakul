@@ -19,15 +19,15 @@ const getEnvVar = (key: string): string => {
 
   if (typeof process !== "undefined" && process.env) {
     if (process.env[key]) return process.env[key] as string;
-    if (key === "VITE_SUPABASE_ANON_KEY" && process.env.VITE_SUPABASE_ANOM_KEY) {
-      return process.env.VITE_SUPABASE_ANOM_KEY as string;
+    if (key === "VITE_SUPABASE_ANON_KEY" && process.env["VITE_SUPABASE_ANON_KEY"]) {
+      return process.env["VITE_SUPABASE_ANON_KEY"] as string;
     }
   }
 
   if (typeof import.meta !== "undefined" && (import.meta as any).env) {
     if ((import.meta as any).env[key]) return (import.meta as any).env[key];
-    if (key === "VITE_SUPABASE_ANON_KEY" && (import.meta as any).env.VITE_SUPABASE_ANOM_KEY) {
-      return (import.meta as any).env.VITE_SUPABASE_ANOM_KEY;
+    if (key === "VITE_SUPABASE_ANON_KEY" && (import.meta as any).env["VITE_SUPABASE_ANON_KEY"]) {
+      return (import.meta as any).env["VITE_SUPABASE_ANON_KEY"];
     }
   }
 
@@ -205,9 +205,9 @@ export const supabase = {
         return {
           data: {
             session: {
-              user: { id: "dev-test-owner-id", email: "test-owner@local.test" },
+              user: { id: "dev-test-owner-id", email: "test-owner@local.test" } as any,
               access_token: "mock",
-            },
+            } as any,
           },
           error: null,
         };
@@ -227,14 +227,14 @@ export const supabase = {
     resend: async (options: { type: any; email?: string; phone?: string; options?: any }) => {
       if (!isSupabaseConfigured)
         return { data: null, error: new Error("Supabase is not configured.") };
-      return await realClient.auth.resend(options);
+      return await realClient.auth.resend(options as any);
     },
   },
 
   storage: isDevTestMode
     ? {
         from: (bucket: string) => ({
-          upload: async (path: string, file: File) => {
+          upload: async (path: string, file: File, options?: any) => {
             return new Promise((resolve, reject) => {
               const reader = new FileReader();
               reader.onload = (e) => {
@@ -473,9 +473,9 @@ export const supabase = {
               return Promise.resolve({ data: null, error: null });
             },
           };
+          return delChain;
         },
       };
-      return mockQueryBuilder;
     }
     return realClient.from(tableName);
   },

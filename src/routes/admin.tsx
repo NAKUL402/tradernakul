@@ -741,7 +741,13 @@ function AdminPage() {
   }, [usersList, userSearch, userFilter]);
 
   // Sidebar navigation panel helper
-  const sidebarItems = [
+  const sidebarItems: Array<{
+    id: TabId;
+    label: string;
+    icon: any;
+    badge?: number | string | undefined;
+    badgeColor?: string | undefined;
+  }> = [
     { id: "overview", label: "Overview", icon: LayoutDashboard },
     { id: "users", label: "Trader Registry", icon: Users, badge: usersList.length },
     {
@@ -765,7 +771,7 @@ function AdminPage() {
       badge: siteSettings?.maintenance_mode ? "ON" : undefined,
       badgeColor: "bg-red-500/20 text-red-300 border-red-500/30 border animate-pulse",
     },
-  ] as const;
+  ];
 
   if (isAuthLoading) {
     return (
@@ -857,7 +863,7 @@ function AdminPage() {
                       className={`size-4 ${isSelected ? "text-primary" : "text-muted-foreground"}`}
                     />
                     <span className="flex-1 text-left">{item.label}</span>
-                    {item.badge !== undefined && item.badge > 0 && (
+                    {item.badge !== undefined && Number(item.badge) > 0 && (
                       <span
                         className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${item.badgeColor || "bg-muted text-foreground"}`}
                       >

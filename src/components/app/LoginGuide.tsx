@@ -208,7 +208,7 @@ export function LoginGuide() {
             )}
             
             {/* Quick Questions (only show if no user messages yet to keep UI clean, or always show if requested. We'll show at the end if the last message is from assistant) */}
-            {messages.length > 0 && messages[messages.length - 1].role === "assistant" && !isTyping && (
+            {messages.length > 0 && messages[messages.length - 1]?.role === "assistant" && !isTyping && (
               <div className="flex flex-wrap gap-2 pt-2 animate-in fade-in duration-500">
                 {QUICK_QUESTIONS.slice(0, 4).map((q) => (
                   <button

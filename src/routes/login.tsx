@@ -264,7 +264,7 @@ function LoginPage() {
                   {[0, 1, 2, 3, 4, 5].map((index) => (
                     <input
                       key={index}
-                      ref={(el) => (otpRefs.current[index] = el)}
+                      ref={(el) => { otpRefs.current[index] = el; }}
                       type="text"
                       inputMode="numeric"
                       autoComplete="one-time-code"

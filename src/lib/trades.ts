@@ -49,7 +49,7 @@ export const money = (n: number, currency = "$") =>
 
 export const pct = (n: number) => `${n.toFixed(1)}%`;
 
-const ACCOUNT = 10000;
+const ACCOUNT = 0;
 export const pnlUsd = (t: Trade) => Math.round(t.pnl || 0);
 
 export function streaks(list: Trade[]) {
@@ -143,7 +143,7 @@ export function equityCurve(list: Trade[] = []) {
       i: i + 1,
       date: t.date,
       equity: Math.round(eq),
-      drawdown: Math.round(((eq - peak) / peak) * 1000) / 10,
+      drawdown: Math.round(eq - peak),
     };
   });
 }
@@ -280,7 +280,6 @@ export async function fetchUserTrades(): Promise<Trade[]> {
           .filter((s: string) => s && s !== "chart-1" && !s.startsWith("http"));
 
         if (pathsToSign.length > 0) {
-          // @ts-expect-error createSignedUrls exists at runtime but may be missing from types
           const { data: signedUrlsData, error: signError } = await (supabase.storage
             .from("trade-screenshots") as any)
             .createSignedUrls(pathsToSign, 31536000); // 1 year expiry for cached viewing
@@ -411,7 +410,7 @@ export async function saveTradeToSupabase(
         hint: e.hint,
         status: e.status
       });
-      throw new Error(`Failed to save trade to database: ${msg}`);
+      throw new Error(`Failed to save trade to database: ${e.message || "Unknown error"}`);
     }
   } else {
     // 2. Instantly save to local persistent storage ONLY IF NOT SUPABASE

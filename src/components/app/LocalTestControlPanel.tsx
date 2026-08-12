@@ -17,7 +17,7 @@ export function LocalTestControlPanel() {
   const [mockDbStatus, setMockDbStatus] = useState<string>("");
 
   useEffect(() => {
-    if (!import.meta.env.DEV || import.meta.env.VITE_DEV_TEST_MODE !== "true") return;
+    if (!import.meta.env.DEV || (import.meta.env as any)["VITE_DEV_TEST_MODE"] !== "true") return;
 
     // Check size of localStorage mock keys
     let keys = 0;
@@ -27,7 +27,7 @@ export function LocalTestControlPanel() {
     setMockDbStatus(`Mock DB active with ${keys} tables tracked in memory.`);
   }, [isOpen]);
 
-  if (!import.meta.env.DEV || import.meta.env.VITE_DEV_TEST_MODE !== "true") {
+  if (!import.meta.env.DEV || (import.meta.env as any)["VITE_DEV_TEST_MODE"] !== "true") {
     return null; // Never render in production
   }
 
@@ -113,6 +113,7 @@ export function LocalTestControlPanel() {
         </Link>
         <Link
           to="/ai-coach"
+          search={{ chat: false }}
           className="flex items-center gap-2 rounded bg-muted p-2 hover:bg-primary/20"
         >
           <Bot className="size-3" /> AI Coach
