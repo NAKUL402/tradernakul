@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured } from "./supabase";
+import { supabase, isSupabaseConfigured, generateUUID } from "./supabase";
 
 export type Trade = {
   id: string;
@@ -158,6 +158,36 @@ export function monthly(list: Trade[] = []) {
     }));
 }
 
+export function weekly(list: Trade[] = []) {
+  const map = new Map<string, Trade[]>();
+  for (const t of list) {
+    if (!t.date) continue;
+    const d = new Date(`${t.date}T00:00:00Z`);
+    if (isNaN(d.getTime())) continue;
+    // Get Monday of the week
+    const day = d.getUTCDay();
+    const diff = d.getUTCDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(d.setUTCDate(diff));
+    const weekKey = monday.toISOString().slice(0, 10);
+    if (!map.has(weekKey)) map.set(weekKey, []);
+    map.get(weekKey)!.push(t);
+  }
+
+  return [...map.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([weekStart, weekTrades]) => {
+      const wins = weekTrades.filter((t) => t.result === "Win");
+      const pnl = weekTrades.reduce((sum, t) => sum + pnlUsd(t), 0);
+      return {
+        name: weekStart,
+        label: `W/C ${new Date(weekStart).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`,
+        trades: weekTrades.length,
+        winRate: weekTrades.length > 0 ? (wins.length / weekTrades.length) * 100 : 0,
+        pnl,
+      };
+    });
+}
+
 export const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 // ── Local Persistence Store Helpers for Trades ──────────────────────────────
@@ -292,9 +322,16 @@ export async function saveTradeToSupabase(
 ): Promise<void> {
   let screenshotUrl = tradePayload.screenshot || "chart-1";
 
+  const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+  
+  const tradeId =
+    tradePayload.id && isUUID(tradePayload.id)
+      ? tradePayload.id
+      : generateUUID();
+
   if (imageFile && isSupabaseConfigured) {
     const fileExt = imageFile.name.split(".").pop();
-    const filePath = `${userId}/${Date.now()}.${fileExt}`;
+    const filePath = `${userId}/${tradeId}/${Date.now()}.${fileExt}`;
     
     const { error: uploadError } = (await supabase.storage
       .from("trade-screenshots")
@@ -307,9 +344,6 @@ export async function saveTradeToSupabase(
     
     screenshotUrl = filePath;
   }
-
-  const tradeId =
-    tradePayload.id || `trade-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
 
   const newTradeObj: Trade = {
     id: tradeId,
@@ -340,8 +374,9 @@ export async function saveTradeToSupabase(
   // 1. Sync to Supabase Cloud if configured
   if (isSupabaseConfigured) {
     const row: any = {
+      id: tradeId,
       user_id: userId,
-      trade_no: newTradeObj.tradeNo,
+      trade_no: newTradeObj.tradeNo !== undefined && newTradeObj.tradeNo !== null ? newTradeObj.tradeNo : null,
       date: newTradeObj.date,
       pair: newTradeObj.pair,
       side: newTradeObj.side,
@@ -355,31 +390,28 @@ export async function saveTradeToSupabase(
       risk_pct: newTradeObj.riskPct,
       pnl: newTradeObj.pnl,
       setup: newTradeObj.setup,
-      confirmation: newTradeObj.confirmation,
-      notes: newTradeObj.notes,
+      confirmation: newTradeObj.confirmation || null,
+      notes: newTradeObj.notes || null,
       screenshot_url: screenshotUrl,
       tags: newTradeObj.tags,
-      lots: newTradeObj.lots,
-      mistakes: newTradeObj.mistakes,
-      rating: newTradeObj.rating,
-      reason: newTradeObj.reason,
+      lots: newTradeObj.lots || null,
+      mistakes: newTradeObj.mistakes || null,
+      rating: newTradeObj.rating !== undefined && newTradeObj.rating !== null ? newTradeObj.rating : null,
+      reason: newTradeObj.reason || null,
     };
-    
-    if (tradePayload.id) {
-      row.id = tradePayload.id;
-    }
 
     try {
       const { error } = await supabase.from("trades").upsert(row);
       if (error) throw error;
     } catch (e: any) {
-      console.warn("[Database] Trades sync notice:", e);
-      // Prevent raw database errors from reaching the user
-      const msg = e.message || "";
-      if (msg.includes("Could not find") || msg.includes("column")) {
-        throw new Error("Database schema update required. Please contact support.");
-      }
-      throw new Error("Failed to save trade to the database. Please try again.");
+      console.error("[Database] Trades sync failure details:", {
+        message: e.message,
+        code: e.code,
+        details: e.details,
+        hint: e.hint,
+        status: e.status
+      });
+      throw new Error(`Failed to save trade to database: ${msg}`);
     }
   } else {
     // 2. Instantly save to local persistent storage ONLY IF NOT SUPABASE
@@ -398,10 +430,23 @@ export async function deleteTradeFromSupabase(tradeId: string): Promise<void> {
   // Remove from Supabase Cloud if configured
   if (isSupabaseConfigured) {
     try {
+      // Fetch the trade first to check if there is a screenshot to delete
+      const { data: trade } = await supabase
+        .from("trades")
+        .select("screenshot_url")
+        .eq("id", tradeId)
+        .single();
+      
+      if (trade?.screenshot_url && !trade.screenshot_url.startsWith("http") && trade.screenshot_url !== "chart-1") {
+        await supabase.storage
+          .from("trade-screenshots")
+          .remove([trade.screenshot_url]);
+      }
+
       const { error } = await supabase.from("trades").delete().eq("id", tradeId);
       if (error) throw error;
     } catch (e) {
-      console.warn("[Database] Delete trade notice:", e);
+      console.error("[Database] Delete trade details:", e);
       throw new Error("Failed to delete trade. Please try again.");
     }
   } else {
