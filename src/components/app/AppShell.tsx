@@ -64,6 +64,7 @@ export function AppShell({
   children: ReactNode;
 }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { user, profile, isAdmin } = useAuth();
 
@@ -182,17 +183,41 @@ export function AppShell({
               {subtitle && <p className="truncate text-xs text-muted-foreground">{subtitle}</p>}
             </div>
             <div className="ml-auto flex items-center gap-2">
-              <div className="hidden items-center gap-2 rounded-xl border border-border/70 bg-card/50 px-3 py-2 text-xs text-muted-foreground sm:flex">
+              <Link 
+                to="/journal"
+                className="hidden items-center gap-2 rounded-xl border border-border/70 bg-card/50 px-3 py-2 text-xs text-muted-foreground transition hover:text-foreground hover:bg-muted/50 sm:flex"
+              >
                 <Search className="size-3.5" />
                 <span>Search trades…</span>
+              </Link>
+              
+              <div className="relative">
+                <button
+                  onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                  aria-label="Notifications"
+                  className="relative rounded-xl border border-border/70 bg-card/50 p-2 text-muted-foreground transition hover:bg-muted/50 hover:text-foreground"
+                >
+                  <Bell className="size-4" />
+                </button>
+                {isNotificationsOpen && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-40" 
+                      onClick={() => setIsNotificationsOpen(false)}
+                    />
+                    <div className="absolute right-0 top-full mt-2 w-72 z-50 rounded-2xl border border-border bg-card/95 backdrop-blur-xl p-4 shadow-xl animate-in fade-in slide-in-from-top-2">
+                      <div className="flex items-center justify-between border-b border-border/50 pb-2 mb-3">
+                        <h3 className="font-semibold text-sm">Notifications</h3>
+                      </div>
+                      <div className="flex flex-col items-center justify-center py-6 text-center">
+                        <Bell className="size-8 text-muted-foreground/30 mb-3" />
+                        <p className="text-sm font-medium text-foreground">All caught up!</p>
+                        <p className="text-xs text-muted-foreground mt-1">Check back later for updates</p>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
-              <button
-                aria-label="Notifications"
-                className="relative rounded-xl border border-border/70 bg-card/50 p-2 text-muted-foreground transition hover:text-foreground"
-              >
-                <Bell className="size-4" />
-                <span className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-accent" />
-              </button>
               <Link
                 to="/profile"
                 aria-label="Profile"

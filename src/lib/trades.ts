@@ -358,3 +358,60 @@ export async function deleteTradeFromSupabase(tradeId: string): Promise<void> {
     setLocalTrades(remaining);
   }
 }
+
+// ── Pattern Aggregation for AI Coach ────────────────────────────────────────
+
+export function aggregateTradePatterns(list: Trade[] = []) {
+  if (list.length === 0) return null;
+
+  const wins = list.filter((t) => t.result === "Win");
+  
+  // 1. Setup Performance
+  const setups = groupStats(list, (t) => t.setup || "Unknown").filter((g) => g.name !== "Unknown");
+  const bestSetup = setups.filter(s => s.trades >= 3).sort((a, b) => b.winRate - a.winRate)[0];
+  const worstSetup = setups.filter(s => s.trades >= 3).sort((a, b) => a.winRate - b.winRate)[0];
+
+  // 2. Pair Performance
+  const pairs = groupStats(list, (t) => t.pair || "Unknown").filter((g) => g.name !== "Unknown");
+  const bestPair = pairs.filter(p => p.trades >= 3).sort((a, b) => b.winRate - a.winRate)[0];
+  
+  // 3. Session Performance
+  const sessions = groupStats(list, (t) => t.session || "Unknown").filter((g) => g.name !== "Unknown");
+
+  // 4. Mistake Frequency
+  const mistakesMap = new Map<string, { count: number; pnl: number }>();
+  list.forEach(t => {
+    if (t.mistakes) {
+      const parts = t.mistakes.split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
+      parts.forEach(m => {
+        const cur = mistakesMap.get(m) ?? { count: 0, pnl: 0 };
+        cur.count += 1;
+        cur.pnl += t.pnl;
+        mistakesMap.set(m, cur);
+      });
+    }
+  });
+  const sortedMistakes = Array.from(mistakesMap.entries())
+    .map(([name, data]) => ({ name, ...data }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
+  // 5. Recent vs Historical Trend
+  const recent10 = list.slice(0, 10);
+  const recentWinRate = recent10.length > 0 ? (recent10.filter(t => t.result === "Win").length / recent10.length) * 100 : null;
+  const overallWinRate = (wins.length / list.length) * 100;
+
+  return {
+    totalTrades: list.length,
+    overallWinRate: Math.round(overallWinRate),
+    recent10WinRate: recentWinRate !== null ? Math.round(recentWinRate) : null,
+    trend: recentWinRate !== null ? (recentWinRate > overallWinRate ? "Improving" : recentWinRate < overallWinRate ? "Deteriorating" : "Stable") : "Unknown",
+    topMistakes: sortedMistakes,
+    setupsSummary: setups.map(s => ({ name: s.name, trades: s.trades, winRate: Math.round(s.winRate) })),
+    bestSetup: bestSetup ? { name: bestSetup.name, winRate: Math.round(bestSetup.winRate), trades: bestSetup.trades } : null,
+    worstSetup: worstSetup ? { name: worstSetup.name, winRate: Math.round(worstSetup.winRate), trades: worstSetup.trades } : null,
+    pairsSummary: pairs.map(p => ({ name: p.name, trades: p.trades, winRate: Math.round(p.winRate) })),
+    bestPair: bestPair ? { name: bestPair.name, winRate: Math.round(bestPair.winRate), trades: bestPair.trades } : null,
+    sessionsSummary: sessions.map(s => ({ name: s.name, trades: s.trades, winRate: Math.round(s.winRate) }))
+  };
+}

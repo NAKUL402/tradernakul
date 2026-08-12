@@ -138,7 +138,14 @@ STRICT RULES:
    - Match language exactly (English, Roman Hindi, Hinglish).
    - If Roman Hindi/Hinglish (e.g. "kyu fail hui?"), reply in natural, concise Roman Hindi/Hinglish. Keep trading terms in English.
    - Use simple, beginner-friendly English if asked in English.
-6. DETAILS ON DEMAND: ONLY provide deep/detailed analysis if explicitly requested ("detail mein bata", "explain deeply", "full analysis", "why exactly?"). Otherwise, stay extremely compact and punchy.`;
+6. DETAILS ON DEMAND: ONLY provide deep/detailed analysis if explicitly requested ("detail mein bata", "explain deeply", "full analysis", "why exactly?"). Otherwise, stay extremely compact and punchy.
+7. PATTERN DISCOVERY & HALLUCINATION PREVENTION:
+   - If a \`patternSummary\` is provided below, it contains the ACTUAL statistical analysis of the user's trading history (top mistakes, best/worst setups, sessions, etc.).
+   - YOU MUST NOT INVENT OR HALLUCINATE statistics, win rates, setups, or mistakes. ONLY use the data provided in the \`patternSummary\`.
+   - Distinguish between historical vs recent performance if the data shows a trend.
+   - If the user asks about their best setup or biggest mistake, answer directly using the \`patternSummary\`.
+   - If a setup or pattern has insufficient data (e.g. < 3 trades), explicitly state that the sample size is too small to make a firm conclusion.
+   - If no \`patternSummary\` is provided, inform the user they need to log more trades for pattern analysis.`;
     if (tradeContext && typeof tradeContext === "object") {
       systemText += `\n\nUser's Current Trade Summary:\n${JSON.stringify(tradeContext, null, 2)}`;
     }

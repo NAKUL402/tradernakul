@@ -12,6 +12,7 @@ import {
   pct,
   pnlUsd,
   stats,
+  aggregateTradePatterns,
   type Trade,
 } from "@/lib/trades";
 import {
@@ -28,6 +29,7 @@ import {
   Crown,
   Brain,
   ChevronRight,
+  Sparkles,
 } from "lucide-react";
 import { goldenRules } from "@/lib/golden-rules";
 import { DecisionReplayCard } from "@/components/app/DecisionReplayCard";
@@ -69,6 +71,20 @@ function Dashboard() {
 
   const dayIndex = Math.floor(Date.now() / 86400000);
   const todaysRule = "The goal of a successful trader is to make good trades. Money is secondary.";
+
+  const patternSummary = aggregateTradePatterns(userTrades);
+  let dynamicInsight = "";
+  if (patternSummary) {
+    if (patternSummary.topMistakes.length > 0) {
+      dynamicInsight = `Current focus: Reduce "${patternSummary.topMistakes[0].name}" mistakes.`;
+    } else if (patternSummary.bestSetup) {
+      dynamicInsight = `Strongest edge: ${patternSummary.bestSetup.name} (${patternSummary.bestSetup.winRate}% WR).`;
+    } else if (patternSummary.trend === "Improving") {
+      dynamicInsight = "Your recent performance is trending up. Keep it going!";
+    } else {
+      dynamicInsight = "Log more detailed trades to unlock deep pattern analysis.";
+    }
+  }
 
   const hasTrades = userTrades.length > 0;
 
@@ -161,6 +177,12 @@ function Dashboard() {
                 <p className="mt-1 text-sm text-muted-foreground break-words">
                   Ask questions, analyze your trading, and improve your performance instantly.
                 </p>
+                {dynamicInsight && (
+                  <div className="mt-3 inline-block rounded-lg bg-primary/10 px-3 py-1.5 text-[13px] font-medium text-primary">
+                    <Sparkles className="mr-1.5 inline size-3.5" />
+                    {dynamicInsight}
+                  </div>
+                )}
               </div>
             </div>
 

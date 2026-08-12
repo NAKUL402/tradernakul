@@ -435,19 +435,6 @@ export function LogTradeModal({
             />
           </div>
 
-          {/* Notes */}
-          <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">
-              Trade Notes & Rules Followed
-            </label>
-            <textarea
-              rows={2}
-              placeholder="Log the details of your setup, execution, and exit. Did you follow your plan?"
-              className="w-full rounded-xl border border-border bg-card/50 p-3 text-sm outline-none focus:border-primary/60 focus:ring-2 focus:ring-ring/40"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-            />
-          </div>
 
           {/* Image Upload */}
           <div>

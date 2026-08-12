@@ -1,4 +1,4 @@
-import { groupStats, money, stats, streaks, type Trade } from "./trades";
+import { groupStats, money, stats, streaks, aggregateTradePatterns, type Trade } from "./trades";
 
 export type WeeklyGoldenRule = {
   week: number;
@@ -191,6 +191,7 @@ export async function sendChatMessageToAI(
           totalTrades: userTrades.length,
           stats: stats(userTrades),
           streaks: streaks(userTrades),
+          patternSummary: aggregateTradePatterns(userTrades),
         }
       : null;
 
