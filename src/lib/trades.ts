@@ -194,31 +194,55 @@ export async function fetchUserTrades(): Promise<Trade[]> {
       }
 
       if (data) {
-        return data.map((t: any) => ({
-          id: t.id,
-          tradeNo: t.trade_no ? parseInt(t.trade_no, 10) : undefined,
-          date: t.date,
-          pair: t.pair,
-          side: t.side,
-          session: t.session,
-          entryTime: t.entry_time,
-          exitTime: t.exit_time,
-          entryPrice: parseFloat(t.entry_price || "0"),
-          exitPrice: parseFloat(t.exit_price || "0"),
-          result: t.result,
-          rrr: String(t.rrr || "1.0"),
-          riskPct: parseFloat(t.risk_pct || "1"),
-          pnl: parseFloat(t.pnl || "0"),
-          setup: t.setup,
-          confirmation: t.confirmation || "",
-          notes: t.notes || "",
-          screenshot: t.screenshot_url || "chart-1",
-          tags: t.tags || [],
-          lots: t.lots || "",
-          mistakes: t.mistakes || "",
-          rating: t.rating ? parseInt(t.rating, 10) : undefined,
-          reason: t.reason || "",
-        }));
+        return data.map((t: any) => {
+          let parsedTags: string[] = [];
+          if (Array.isArray(t.tags)) {
+            parsedTags = t.tags;
+          } else if (typeof t.tags === "string") {
+            try {
+              if (t.tags.startsWith("[")) {
+                parsedTags = JSON.parse(t.tags);
+              } else {
+                parsedTags = t.tags.replace(/^{|}$/g, "").replace(/"/g, "").split(",").map((s: string) => s.trim()).filter(Boolean);
+              }
+            } catch {
+              parsedTags = [];
+            }
+          }
+
+          let parsedMistakes = "";
+          if (typeof t.mistakes === "string") {
+            parsedMistakes = t.mistakes;
+          } else if (Array.isArray(t.mistakes)) {
+            parsedMistakes = t.mistakes.join(", ");
+          }
+
+          return {
+            id: t.id,
+            tradeNo: t.trade_no ? parseInt(t.trade_no, 10) : undefined,
+            date: t.date,
+            pair: t.pair,
+            side: t.side,
+            session: t.session,
+            entryTime: t.entry_time,
+            exitTime: t.exit_time,
+            entryPrice: parseFloat(t.entry_price || "0"),
+            exitPrice: parseFloat(t.exit_price || "0"),
+            result: t.result,
+            rrr: String(t.rrr || "1.0"),
+            riskPct: parseFloat(t.risk_pct || "1"),
+            pnl: parseFloat(t.pnl || "0"),
+            setup: t.setup,
+            confirmation: t.confirmation || "",
+            notes: t.notes || "",
+            screenshot: t.screenshot_url || "chart-1",
+            tags: parsedTags,
+            lots: t.lots || "",
+            mistakes: parsedMistakes,
+            rating: t.rating ? parseInt(t.rating, 10) : undefined,
+            reason: t.reason || "",
+          };
+        });
       }
     } catch (err) {
       console.warn("[Trades] Supabase fetch notice:", err);
