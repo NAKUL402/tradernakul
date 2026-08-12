@@ -57,6 +57,7 @@ export function LogTradeModal({
   const [mistakes, setMistakes] = useState("");
 
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { userSettings } = useAuth();
 
@@ -116,6 +117,7 @@ export function LogTradeModal({
         setMistakes("");
       }
       setImageFile(null);
+      setImagePreview(initialTrade?.screenshot && initialTrade.screenshot.startsWith("http") ? initialTrade.screenshot : null);
     }
   }, [isOpen, initialTrade, nextTradeNo, userSettings]);
 
@@ -441,15 +443,36 @@ export function LogTradeModal({
             <label className="block text-xs font-medium text-muted-foreground mb-1">
               Chart Screenshot (Storage Upload)
             </label>
-            <div className="flex items-center gap-3">
-              <label className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-card/40 p-3 text-xs text-muted-foreground hover:border-primary/60 cursor-pointer">
-                <Upload className="size-4 text-primary" />
-                <span>{imageFile ? imageFile.name : "Click to select screenshot image"}</span>
+            <div className="flex flex-col gap-3">
+              {imagePreview && (
+                <div className="relative h-48 w-full overflow-hidden rounded-xl border border-border bg-black/20">
+                  <img src={imagePreview} alt="Screenshot preview" className="h-full w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setImageFile(null);
+                      setImagePreview(null);
+                    }}
+                    className="absolute right-2 top-2 rounded-full bg-black/60 p-1.5 text-white backdrop-blur-sm transition-colors hover:bg-destructive"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </div>
+              )}
+              <label className={`flex flex-1 items-center justify-center gap-2 rounded-xl border border-dashed border-border p-3 text-xs text-muted-foreground transition-colors hover:border-primary/60 cursor-pointer ${imagePreview ? 'bg-card/20' : 'bg-card/40 py-6'}`}>
+                <Upload className={`size-4 text-primary ${imagePreview ? '' : 'size-5'}`} />
+                <span>{imageFile ? imageFile.name : imagePreview ? "Replace screenshot" : "Click to select screenshot image"}</span>
                 <input
                   type="file"
                   accept="image/*"
                   className="hidden"
-                  onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setImageFile(file);
+                      setImagePreview(URL.createObjectURL(file));
+                    }
+                  }}
                 />
               </label>
             </div>

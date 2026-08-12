@@ -194,7 +194,7 @@ export async function fetchUserTrades(): Promise<Trade[]> {
       }
 
       if (data) {
-        return data.map((t: any) => {
+        let parsedTrades = data.map((t: any) => {
           let parsedTags: string[] = [];
           if (Array.isArray(t.tags)) {
             parsedTags = t.tags;
@@ -243,6 +243,38 @@ export async function fetchUserTrades(): Promise<Trade[]> {
             reason: t.reason || "",
           };
         });
+
+        // Batch fetch signed URLs for valid relative paths
+        const pathsToSign = parsedTrades
+          .map((t: Trade) => t.screenshot)
+          .filter((s: string) => s && s !== "chart-1" && !s.startsWith("http"));
+
+        if (pathsToSign.length > 0) {
+          // @ts-expect-error createSignedUrls exists at runtime but may be missing from types
+          const { data: signedUrlsData, error: signError } = await (supabase.storage
+            .from("trade-screenshots") as any)
+            .createSignedUrls(pathsToSign, 31536000); // 1 year expiry for cached viewing
+
+          if (!signError && signedUrlsData) {
+            const urlMap = new Map<string, string>();
+            signedUrlsData.forEach((item: any) => {
+              if (item.signedUrl) {
+                urlMap.set(item.path, item.signedUrl);
+              }
+            });
+
+            parsedTrades = parsedTrades.map((t: Trade) => {
+              if (t.screenshot && urlMap.has(t.screenshot)) {
+                return { ...t, screenshot: urlMap.get(t.screenshot)! };
+              }
+              return t;
+            });
+          } else if (signError) {
+            console.error("[Storage] Failed to generate signed URLs:", signError);
+          }
+        }
+
+        return parsedTrades;
       }
     } catch (err) {
       console.warn("[Trades] Supabase fetch notice:", err);
@@ -261,22 +293,19 @@ export async function saveTradeToSupabase(
   let screenshotUrl = tradePayload.screenshot || "chart-1";
 
   if (imageFile && isSupabaseConfigured) {
-    try {
-      const fileExt = imageFile.name.split(".").pop();
-      const filePath = `${userId}/${Date.now()}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage
-        .from("trade-screenshots")
-        .upload(filePath, imageFile);
+    const fileExt = imageFile.name.split(".").pop();
+    const filePath = `${userId}/${Date.now()}.${fileExt}`;
+    
+    const { error: uploadError } = (await supabase.storage
+      .from("trade-screenshots")
+      .upload(filePath, imageFile)) as any;
 
-      if (!uploadError) {
-        const { data: publicUrlData } = supabase.storage
-          .from("trade-screenshots")
-          .getPublicUrl(filePath);
-        screenshotUrl = publicUrlData.publicUrl;
-      }
-    } catch (err) {
-      console.warn("[Storage] Image upload notice:", err);
+    if (uploadError) {
+      console.error("[Storage] Image upload failed:", uploadError);
+      throw new Error("Failed to upload screenshot: " + uploadError.message);
     }
+    
+    screenshotUrl = filePath;
   }
 
   const tradeId =
