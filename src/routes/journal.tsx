@@ -158,7 +158,8 @@ function FilterSelect({
 }
 
 function Journal() {
-  const { user, siteSettings } = useAuth();
+  const { user, siteSettings, userSettings } = useAuth();
+  const currencySymbol = userSettings?.currency?.split(" ")[1]?.replace(/[()]/g, "") || "$";
   const [allTrades, setAllTrades] = useState<Trade[]>([]);
   const [q, setQ] = useState("");
   const [pair, setPair] = useState("All");
@@ -234,10 +235,10 @@ function Journal() {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       if (e.key === "ArrowRight") {
         const idx = list.findIndex((t) => t.id === open.id);
-        if (idx >= 0 && idx < list.length - 1) setOpen(list[idx + 1]);
+        if (idx >= 0 && idx < list.length - 1) setOpen(list[idx + 1] ?? null);
       } else if (e.key === "ArrowLeft") {
         const idx = list.findIndex((t) => t.id === open.id);
-        if (idx > 0) setOpen(list[idx - 1]);
+        if (idx > 0) setOpen(list[idx - 1] ?? null);
       }
     };
     window.addEventListener("keydown", handleKeyDown);

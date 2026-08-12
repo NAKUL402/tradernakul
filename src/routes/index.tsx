@@ -189,6 +189,7 @@ function Dashboard() {
             <div className="mt-4 sm:mt-auto">
               <Link
                 to="/ai-coach"
+                search={{ chat: false }}
                 className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-muted/50 px-4 py-3 text-sm font-medium transition hover:bg-primary hover:text-primary-foreground"
               >
                 Open Mentor Session
