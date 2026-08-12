@@ -336,4 +336,19 @@ CREATE POLICY "Users delete own API keys" ON public.user_api_keys FOR DELETE TO 
          ) ;  
  E N D ;  
  $ $ ;  
+ - -   = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =  
+ - -   T R A D E R N A K U L :   F i x   m i s s i n g   c o l u m n s   f r o m   U I   i n   t h e   t r a d e s   t a b l e  
+ - -   = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =  
+  
+ - -   1 .   A d d   m i s s i n g   c o l u m n s   e x p e c t e d   b y   t h e   f r o n t e n d  
+ A L T E R   T A B L E   p u b l i c . t r a d e s  
+     A D D   C O L U M N   I F   N O T   E X I S T S   t r a d e _ n o   N U M E R I C   D E F A U L T   N U L L ,  
+     A D D   C O L U M N   I F   N O T   E X I S T S   l o t s   T E X T   D E F A U L T   ' ' ,  
+     A D D   C O L U M N   I F   N O T   E X I S T S   m i s t a k e s   T E X T   D E F A U L T   ' ' ,  
+     A D D   C O L U M N   I F   N O T   E X I S T S   r a t i n g   I N T E G E R   D E F A U L T   N U L L ,  
+     A D D   C O L U M N   I F   N O T   E X I S T S   r e a s o n   T E X T   D E F A U L T   ' ' ;  
+  
+ - -   2 .   M o d i f y   ` r r r `   t o   T E X T   b e c a u s e   t h e   U I   a l l o w s   f r e e   t e x t   i n p u t s   ( l i k e   " 1 : 3 " )  
+ A L T E R   T A B L E   p u b l i c . t r a d e s    
+     A L T E R   C O L U M N   r r r   T Y P E   T E X T   U S I N G   r r r : : t e x t ;  
  

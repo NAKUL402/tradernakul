@@ -110,7 +110,14 @@ export function stats(list: Trade[] = []) {
   return {
     total: list.length,
     winRate: (wins.length / list.length) * 100,
-    avgRRR: list.reduce((sum, t) => sum + (parseFloat(t.rrr) || 0), 0) / list.length,
+    avgRRR: list.reduce((sum, t) => {
+      let val = 0;
+      if (t.rrr) {
+        const parts = String(t.rrr).split(":");
+        val = parseFloat(parts[parts.length - 1] || "0") || 0;
+      }
+      return sum + val;
+    }, 0) / list.length,
     profitFactor: grossLoss === 0 ? gross : gross / grossLoss,
     winStreak: s.win,
     lossStreak: s.loss,
@@ -279,8 +286,7 @@ export async function saveTradeToSupabase(
 
   // 1. Sync to Supabase Cloud if configured
   if (isSupabaseConfigured) {
-    const row = {
-      id: tradeId,
+    const row: any = {
       user_id: userId,
       trade_no: newTradeObj.tradeNo,
       date: newTradeObj.date,
@@ -305,14 +311,22 @@ export async function saveTradeToSupabase(
       rating: newTradeObj.rating,
       reason: newTradeObj.reason,
     };
+    
+    if (tradePayload.id) {
+      row.id = tradePayload.id;
+    }
 
     try {
       const { error } = await supabase.from("trades").upsert(row);
       if (error) throw error;
     } catch (e: any) {
       console.warn("[Database] Trades sync notice:", e);
-      // RLS or Session error usually throws an object with a message
-      throw new Error(e.message || "Session Error or Database Permission Denied");
+      // Prevent raw database errors from reaching the user
+      const msg = e.message || "";
+      if (msg.includes("Could not find") || msg.includes("column")) {
+        throw new Error("Database schema update required. Please contact support.");
+      }
+      throw new Error("Failed to save trade to the database. Please try again.");
     }
   } else {
     // 2. Instantly save to local persistent storage ONLY IF NOT SUPABASE
@@ -335,7 +349,7 @@ export async function deleteTradeFromSupabase(tradeId: string): Promise<void> {
       if (error) throw error;
     } catch (e) {
       console.warn("[Database] Delete trade notice:", e);
-      throw e;
+      throw new Error("Failed to delete trade. Please try again.");
     }
   } else {
     // Remove from local storage ONLY IF NOT SUPABASE

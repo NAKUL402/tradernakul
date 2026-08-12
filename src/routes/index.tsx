@@ -335,7 +335,7 @@ function Dashboard() {
                       <Badge tone={t.side === "Buy" ? "primary" : "muted"}>{t.side}</Badge>
                     </td>
                     <td className="px-2 py-3 text-muted-foreground">{t.session}</td>
-                    <td className="px-2 py-3">1:{t.rrr}</td>
+                    <td className="px-2 py-3">{t.rrr}</td>
                     <td className="px-2 py-3">
                       <Badge tone={t.result === "Win" ? "win" : "loss"}>{t.result}</Badge>
                     </td>
