@@ -1,44 +1,38 @@
 import { createClient } from "@supabase/supabase-js";
 
 // ── Environment Variable Reading ────────────────────────────────────────────
-// CRITICAL: Vite's static replacement engine ONLY replaces dot notation:
-// import.meta.env.VITE_SUPABASE_URL
-// Bracket notation (import.meta.env['VITE_SUPABASE_URL']) is NOT replaced at build time.
-type ViteEnv = {
-  VITE_SUPABASE_URL: string | undefined;
-  VITE_SUPABASE_ANON_KEY: string | undefined;
-  [key: string]: string | undefined;
-};
+// IMPORTANT: Vite's static replacement engine ONLY replaces direct dot notation:
+//   import.meta.env.VITE_SUPABASE_URL  ✅ (inlined at build time)
+//   import.meta.env['VITE_SUPABASE_URL']  ❌ (NOT replaced at build time)
+// We must read these with direct dot notation so the values are baked into
+// the production bundle during `vite build`.
 
-const getEnvVar = (key: string): string => {
-  if (typeof window !== "undefined" && (window as any).__TRADERNAKUL_ENV__) {
-    if ((window as any).__TRADERNAKUL_ENV__[key]) {
-      return (window as any).__TRADERNAKUL_ENV__[key];
-    }
-  }
+// Read with direct dot notation — Vite inlines these at build time.
+const _viteUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const _viteKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
-  if (typeof process !== "undefined" && process.env) {
-    if (process.env[key]) return process.env[key] as string;
-    if (key === "VITE_SUPABASE_ANON_KEY" && process.env["VITE_SUPABASE_ANON_KEY"]) {
-      return process.env["VITE_SUPABASE_ANON_KEY"] as string;
-    }
-  }
+// SSR / Node.js fallback (for server-side rendering via Nitro)
+const _processUrl =
+  typeof process !== "undefined" && process.env
+    ? (process.env["VITE_SUPABASE_URL"] ?? "")
+    : "";
+const _processKey =
+  typeof process !== "undefined" && process.env
+    ? (process.env["VITE_SUPABASE_ANON_KEY"] ?? "")
+    : "";
 
-  if (typeof import.meta !== "undefined" && (import.meta as any).env) {
-    if ((import.meta as any).env[key]) return (import.meta as any).env[key];
-    if (key === "VITE_SUPABASE_ANON_KEY" && (import.meta as any).env["VITE_SUPABASE_ANON_KEY"]) {
-      return (import.meta as any).env["VITE_SUPABASE_ANON_KEY"];
-    }
-  }
+// Runtime window override (optional escape hatch, never set in prod)
+const _winUrl =
+  typeof window !== "undefined" && (window as any).__TRADERNAKUL_ENV__
+    ? ((window as any).__TRADERNAKUL_ENV__["VITE_SUPABASE_URL"] ?? "")
+    : "";
+const _winKey =
+  typeof window !== "undefined" && (window as any).__TRADERNAKUL_ENV__
+    ? ((window as any).__TRADERNAKUL_ENV__["VITE_SUPABASE_ANON_KEY"] ?? "")
+    : "";
 
-  return "";
-};
-
-const rawUrl = getEnvVar("VITE_SUPABASE_URL");
-const rawKey = getEnvVar("VITE_SUPABASE_ANON_KEY");
-
-export const supabaseUrl = rawUrl.trim();
-export const supabaseAnonKey = rawKey.trim();
+export const supabaseUrl = (_winUrl || _viteUrl || _processUrl || "").trim();
+export const supabaseAnonKey = (_winKey || _viteKey || _processKey || "").trim();
 
 export const isSupabaseConfigured = Boolean(
   supabaseUrl &&
@@ -118,10 +112,8 @@ export type UserSettings = {
 };
 
 const isDevTestMode =
-  typeof import.meta !== "undefined" &&
-  (import.meta as any).env &&
-  (import.meta as any).env.DEV &&
-  String((import.meta as any).env.VITE_DEV_TEST_MODE).trim() === "true";
+  import.meta.env.DEV === true &&
+  String(import.meta.env.VITE_DEV_TEST_MODE).trim() === "true";
 
 // ── Real Supabase Client Instance ───────────────────────────────────────────
 const realClient = createClient(

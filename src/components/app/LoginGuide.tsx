@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, KeyboardEvent } from "react";
 import { Sparkles, X, Send, Bot, User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { FormattedMarkdown } from "@/components/app/FormattedMarkdown";
 
 type Message = {
   id: string;
@@ -185,12 +186,16 @@ export function LoginGuide() {
                     ? "bg-primary text-primary-foreground rounded-br-sm" 
                     : "bg-muted/50 border border-border/50 text-foreground rounded-bl-sm"
                 )}>
-                  {msg.content.split('\n').map((line, i) => (
-                    <span key={i}>
-                      {line}
-                      {i !== msg.content.split('\n').length - 1 && <br />}
-                    </span>
-                  ))}
+                  {msg.role === "assistant" ? (
+                    <FormattedMarkdown content={msg.content} />
+                  ) : (
+                    msg.content.split('\n').map((line, i) => (
+                      <span key={i}>
+                        {line}
+                        {i !== msg.content.split('\n').length - 1 && <br />}
+                      </span>
+                    ))
+                  )}
                 </div>
               </div>
             ))}

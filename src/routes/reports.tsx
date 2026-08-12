@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, useMemo } from "react";
 import { AppShell } from "@/components/app/AppShell";
 import { Panel } from "@/components/app/ui-kit";
+import { FormattedMarkdown } from "@/components/app/FormattedMarkdown";
 import {
   fetchUserTrades,
   money,
@@ -482,7 +483,9 @@ function Reports() {
                       <span className={cn("text-[11px] font-semibold uppercase tracking-wider", cfg.labelColor)}>{cfg.label}</span>
                     </div>
                     <p className="text-sm font-semibold text-foreground">{insight.title}</p>
-                    <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{insight.body}</p>
+                    <div className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+                      <FormattedMarkdown content={insight.body} />
+                    </div>
                   </div>
                 );
               })}

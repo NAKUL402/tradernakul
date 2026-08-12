@@ -25,6 +25,7 @@ import {
   Award,
 } from "lucide-react";
 import { toast } from "sonner";
+import { FormattedMarkdown } from "@/components/app/FormattedMarkdown";
 
 export const Route = createFileRoute("/ai-coach")({
   head: () => ({
@@ -581,7 +582,11 @@ function CoachPage() {
                           : "border border-border/50 bg-card/90 text-foreground rounded-tl-sm"
                       }`}
                     >
-                      {msg.text}
+                      {msg.role === "coach" ? (
+                        <FormattedMarkdown content={msg.text} />
+                      ) : (
+                        msg.text
+                      )}
                     </div>
                   </div>
                 ))}
