@@ -42,7 +42,7 @@ function Table({
 }) {
   return (
     <div className="overflow-x-auto text-xs sm:text-sm">
-      <table className="w-full min-w-[320px]">
+      <table className="w-full min-w-[320px] text-foreground">
         <thead>
           <tr className="border-b border-border/60 text-left text-[11px] uppercase tracking-wide text-muted-foreground">
             <th className="pb-2 font-medium">Name</th>
@@ -54,7 +54,7 @@ function Table({
         <tbody>
           {rows.map((row) => (
             <tr key={row.name} className="border-b border-border/40 transition hover:bg-muted/10">
-              <td className="py-2.5 font-medium">{row.name}</td>
+              <td className="py-2.5 font-medium text-foreground">{row.name}</td>
               <td className="py-2.5 text-muted-foreground">{row.trades}</td>
               <td className="py-2.5 text-muted-foreground">{pct(row.winRate)}</td>
               <td

@@ -121,7 +121,7 @@
   --muted-foreground: oklch(0.72 0.02 270);
   --accent: oklch(0.7 0.15 285);
   --accent-foreground: oklch(0.98 0.005 270);
-  --destructive: oklch(0.58 0.18 22); /* Deeper crimson */
+  --destructive: oklch(0.68 0.22 22); /* High-contrast vibrant crimson for dark backgrounds */
   --destructive-foreground: oklch(0.98 0.005 270);
   --success: oklch(0.65 0.15 155); /* Elegant emerald */
   --border: oklch(0.28 0.04 270);
