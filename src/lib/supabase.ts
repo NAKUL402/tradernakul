@@ -14,11 +14,11 @@ const _viteKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 // SSR / Node.js fallback (for server-side rendering via Nitro)
 const _processUrl =
   typeof process !== "undefined" && process.env
-    ? (process.env["VITE_SUPABASE_URL"] ?? "")
+    ? (process.env["VITE_SUPABASE_URL"] ?? process.env["SUPABASE_URL"] ?? "")
     : "";
 const _processKey =
   typeof process !== "undefined" && process.env
-    ? (process.env["VITE_SUPABASE_ANON_KEY"] ?? "")
+    ? (process.env["VITE_SUPABASE_ANON_KEY"] ?? process.env["SUPABASE_ANON_KEY"] ?? "")
     : "";
 
 // Runtime window override (optional escape hatch, never set in prod)

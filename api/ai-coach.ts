@@ -164,8 +164,8 @@ STRICT RULES:
       try {
         const authHeaderRaw = req.headers.authorization;
         const authHeader = Array.isArray(authHeaderRaw) ? authHeaderRaw[0] : authHeaderRaw;
-        const supabaseUrl = process.env["VITE_SUPABASE_URL"];
-        const supabaseAnonKey = process.env["VITE_SUPABASE_ANON_KEY"];
+        const supabaseUrl = process.env["VITE_SUPABASE_URL"] || process.env["SUPABASE_URL"];
+        const supabaseAnonKey = process.env["VITE_SUPABASE_ANON_KEY"] || process.env["SUPABASE_ANON_KEY"];
 
         if (
           typeof authHeader === "string" &&
