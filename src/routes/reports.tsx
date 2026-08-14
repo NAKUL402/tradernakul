@@ -254,7 +254,8 @@ function Reports() {
 
   const instruments = useMemo(() => instrumentStats(filteredTrades), [filteredTrades]);
   const setups = useMemo(() => setupStats(filteredTrades), [filteredTrades]);
-  const weeklyData = useMemo(() => weekly(filteredTrades), [filteredTrades]);
+  // Rolling window of recent weeks (latest 8 weeks only, oldest drops off as new week is added)
+  const weeklyData = useMemo(() => weekly(filteredTrades).slice(-8), [filteredTrades]);
 
   // Click outside listener for dropdowns
   useEffect(() => {
