@@ -779,7 +779,7 @@ function Analytics() {
             {/* Streak Analysis — MAIN FIXED BOX */}
             <Panel3D title="Streak Analysis" className="neon-glow-purple flex flex-col justify-between h-full" info>
               <div className="flex flex-col justify-between h-full space-y-3 py-1">
-                {/* 1. Top Row: 3 Separate Metric Boxes */}
+                {/* BOX 1: 3 Metric Boxes */}
                 <div className="grid grid-cols-3 gap-2.5 w-full">
                   <div className="rounded-xl border border-border bg-muted/40 p-2.5 text-center flex flex-col justify-center items-center">
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Longest Win Streak</p>
@@ -804,33 +804,22 @@ function Analytics() {
                   </div>
                 </div>
 
-                {/* 2. Second Box Inside Main Box: Recent Streaks (Fixed Size Rolling Window) */}
-                <div className="rounded-xl border border-border/80 bg-muted/30 p-3 flex flex-col justify-center items-center w-full min-h-[72px]">
-                  <div className="flex items-center justify-between w-full mb-2 px-1">
-                    <span className="text-[10.5px] font-bold text-foreground tracking-wide uppercase">Recent Streaks</span>
-                    <span className="text-[9.5px] font-medium text-muted-foreground">Rolling 11 Window</span>
-                  </div>
-
-                  <div className="w-full overflow-hidden flex items-center justify-center">
-                    <div className="flex flex-nowrap items-center justify-center gap-1 sm:gap-1.5 w-full overflow-hidden">
-                      {recentResults.map((r, i) => (
-                        <div key={i} className="flex items-center gap-1 shrink-0">
-                          <span
-                            className={cn(
-                              "px-2 py-0.5 rounded-full text-[10px] font-bold border transition-all shrink-0",
-                              r === "Win"
-                                ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30 shadow-[0_0_8px_rgba(34,197,94,0.15)]"
-                                : "bg-rose-500/15 text-rose-400 border-rose-500/30 shadow-[0_0_8px_rgba(239,68,68,0.15)]"
-                            )}
-                          >
-                            {r === "Win" ? "WIN" : "LOSS"}
-                          </span>
-                          {i < recentResults.length - 1 && (
-                            <span className="text-[10px] text-muted-foreground/60 font-semibold select-none">→</span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                {/* BOX 2: Clean 11-Result Circular Badges Box (No Title, No Text, Exactly 11 W/L Badges) */}
+                <div className="rounded-xl border border-border/70 bg-muted/30 p-2.5 flex items-center justify-center w-full min-h-[52px]">
+                  <div className="flex flex-nowrap items-center justify-center gap-1.5 sm:gap-2 w-full overflow-hidden">
+                    {recentResults.map((r, i) => (
+                      <div
+                        key={i}
+                        className={cn(
+                          "flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold transition-all shadow-sm",
+                          r === "Win"
+                            ? "bg-emerald-500 text-white shadow-[0_0_10px_rgba(16,185,129,0.3)]"
+                            : "bg-rose-500 text-white shadow-[0_0_10px_rgba(239,68,68,0.3)]"
+                        )}
+                      >
+                        {r === "Win" ? "W" : "L"}
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
