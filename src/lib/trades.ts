@@ -37,14 +37,24 @@ export function isValidImageUrl(url?: string | null): boolean {
   );
 }
 
+export function parseTradeTimestamp(t: Trade): number {
+  if (t.createdAt) {
+    const ts = new Date(t.createdAt).getTime();
+    if (!isNaN(ts) && ts > 0) return ts;
+  }
+  if (t.date) {
+    const timePart = t.entryTime && t.entryTime.includes(":") ? t.entryTime : "00:00";
+    const dateIso = `${t.date.slice(0, 10)}T${timePart.padStart(5, "0")}:00Z`;
+    const ts = new Date(dateIso).getTime();
+    if (!isNaN(ts) && ts > 0) return ts;
+  }
+  return 0;
+}
+
 export function sortTradesNewestFirst(trades: Trade[]): Trade[] {
   return [...trades].sort((a, b) => {
-    const timeA = a.createdAt
-      ? new Date(a.createdAt).getTime()
-      : new Date(`${a.date}T${a.entryTime || "00:00"}`).getTime() || 0;
-    const timeB = b.createdAt
-      ? new Date(b.createdAt).getTime()
-      : new Date(`${b.date}T${b.entryTime || "00:00"}`).getTime() || 0;
+    const timeA = parseTradeTimestamp(a);
+    const timeB = parseTradeTimestamp(b);
     if (timeB !== timeA) return timeB - timeA;
     return (b.id || "").localeCompare(a.id || "");
   });

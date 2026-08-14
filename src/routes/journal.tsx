@@ -219,19 +219,16 @@ function Journal() {
         (setup === "All" || (t.setup?.toLowerCase() || "").includes(setup.toLowerCase()))
       );
     });
-    l = [...l].sort((a, b) =>
-      sort === "newest"
-        ? a.date < b.date
-          ? 1
-          : -1
-        : sort === "oldest"
-          ? a.date > b.date
-            ? 1
-            : -1
-          : sort === "rrr"
-            ? parseFloat(b.rrr || "0") - parseFloat(a.rrr || "0")
-            : pnlUsd(b) - pnlUsd(a),
-    );
+    if (sort === "oldest") {
+      l = sortTradesNewestFirst(l).reverse();
+    } else if (sort === "rrr") {
+      l = [...l].sort((a, b) => parseFloat(b.rrr || "0") - parseFloat(a.rrr || "0"));
+    } else if (sort === "pnl") {
+      l = [...l].sort((a, b) => pnlUsd(b) - pnlUsd(a));
+    } else {
+      // Default: newest first (global timeline)
+      l = sortTradesNewestFirst(l);
+    }
     return l;
   }, [allTrades, q, pair, result, setup, sort]);
 
