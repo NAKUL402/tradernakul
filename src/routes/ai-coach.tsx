@@ -587,7 +587,7 @@ function CoachPage() {
                 </div>
               </div>
 
-              {/* 3. Recent Coach Notes (Compact spacing & directly aligned inside main outer border) */}
+              {/* 3. Recent Coach Notes (3 Equal Cards matching top Recommendations grid) */}
               <div className="space-y-2.5 pt-3 border-t border-border/40">
                 <div className="flex items-center justify-between px-1">
                   <h2 className="text-[13.5px] font-bold text-zinc-100 tracking-wide">Recent Coach Notes</h2>
@@ -597,8 +597,8 @@ function CoachPage() {
                     className="text-[11px] text-zinc-400 bg-zinc-800/40 px-3 py-1 rounded-lg border border-zinc-700/40 font-medium hover:text-zinc-200 transition cursor-pointer"
                   >View all</button>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-                  {ai.improvementPlan.slice(0, 4).map((note, index) => {
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {ai.improvementPlan.slice(0, 3).map((note, index) => {
                     const isPositive = index === 0 && ai.overallGrade.startsWith("A");
                     const glow = isPositive ? "neon-glow-green" : "neon-glow-purple";
                     const iconColor = isPositive ? "text-emerald-500 bg-emerald-500/10 border-emerald-500/30" : "text-[#a855f7] bg-[#a855f7]/10 border-[#a855f7]/30";
@@ -626,8 +626,8 @@ function CoachPage() {
           {/* ────────────────── RIGHT COLUMN (Chat + Quick Actions) ────────────────── */}
           <div className="lg:col-span-1 space-y-4 flex flex-col w-full">
             
-            {/* 1. Chat with AI Coach (Slightly Larger Fixed Height h-[540px], Internal Scroll) */}
-            <div className="neon-card neon-glow-purple flex flex-col h-[540px] min-h-[540px] max-h-[540px] overflow-hidden relative border border-border">
+            {/* 1. Chat with AI Coach (Fixed Outer Height h-[565px], Internal Scroll) */}
+            <div className="neon-card neon-glow-purple flex flex-col h-[565px] min-h-[565px] max-h-[565px] overflow-hidden relative border border-border">
               {/* 4K HD Financial Trading Candlestick & Technical Chart Graphic Background Theme */}
               <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-30 select-none z-0">
                 <svg className="w-full h-full text-zinc-500/20" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" viewBox="0 0 800 600">
@@ -843,13 +843,6 @@ function CoachPage() {
               </div>
             </div>
           </div>
-        </div>
-
-        {/* ═══════ FOOTER NOTICE (Exact Reference Copy) ═══════ */}
-        <div className="text-center pt-2 pb-6">
-          <p className="text-[11px] text-zinc-500 font-medium">
-            AI Coach analyzes your real trading data to provide personalized insights. All analysis is based on your actual performance.
-          </p>
         </div>
       </div>
 
