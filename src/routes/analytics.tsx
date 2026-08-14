@@ -268,9 +268,9 @@ function Analytics() {
     ].filter(d => d.value > 0);
   }, [userTrades]);
 
-  // Rolling 11 Recent-Results Window (Newest trade at front/left position #1)
+  // Rolling 11 Recent-Results Window (Oldest visible trade at LEFT, Newest/Latest trade added at RIGHT)
   const recentResults = useMemo(() => {
-    return userTrades.slice(0, 11).map(t => t.result);
+    return userTrades.slice(0, 11).map(t => t.result).reverse();
   }, [userTrades]);
 
   // Current streak calculation
@@ -812,7 +812,7 @@ function Analytics() {
                     {recentResults.map((r, i) => (
                       <div
                         key={i}
-                        title={i === 0 ? "Latest Trade (Most Recent)" : `Trade #${i + 1}`}
+                        title={i === recentResults.length - 1 ? "Latest Trade (Most Recent)" : i === 0 ? "Oldest Visible Trade" : `Trade #${i + 1}`}
                         className={cn(
                           "flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold transition-all shadow-sm cursor-default",
                           r === "Win"
