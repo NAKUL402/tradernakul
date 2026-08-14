@@ -43,11 +43,34 @@ export const money = (n: number, currency = "$") =>
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   })
-    .format(n)
+    .format(n || 0)
     .replace("USD", "")
     .trim();
 
-export const pct = (n: number) => `${n.toFixed(1)}%`;
+export const compactMoney = (n: number) => {
+  const num = n || 0;
+  const abs = Math.abs(num);
+  const sign = num < 0 ? "-" : "";
+  if (abs >= 1_000_000_000) {
+    return `${sign}$${(abs / 1_000_000_000).toFixed(2)}B`;
+  }
+  if (abs >= 1_000_000) {
+    return `${sign}$${(abs / 1_000_000).toFixed(2)}M`;
+  }
+  if (abs >= 100_000) {
+    return `${sign}$${(abs / 1_000).toFixed(1)}K`;
+  }
+  return money(num);
+};
+
+export const formatProfitFactor = (pf: number) => {
+  if (isNaN(pf) || !isFinite(pf)) return "0.00";
+  if (pf >= 100) return ">99.0";
+  if (pf <= 0) return "0.00";
+  return pf.toFixed(2);
+};
+
+export const pct = (n: number) => `${(n || 0).toFixed(1)}%`;
 
 const ACCOUNT = 0;
 export const pnlUsd = (t: Trade) => Math.round(t.pnl || 0);
@@ -118,7 +141,7 @@ export function stats(list: Trade[] = []) {
       }
       return sum + val;
     }, 0) / list.length,
-    profitFactor: grossLoss === 0 ? gross : gross / grossLoss,
+    profitFactor: grossLoss === 0 ? (gross > 0 ? 100 : 0) : gross / grossLoss,
     winStreak: s.win,
     lossStreak: s.loss,
     bestPair: byPair[0] ?? { name: "N/A", trades: 0, wins: 0, pnl: 0, winRate: 0 },
@@ -447,15 +470,14 @@ export async function deleteTradeFromSupabase(tradeId: string): Promise<void> {
           .remove([trade.screenshot_url]);
       }
 
-      // Use .select() to ensure we actually deleted a row
-      const { data: deletedRows, error } = await supabase
+      // Use count: "exact" to ensure we actually deleted a row without relying on .select() returning the deleted row
+      const { count, error } = await supabase
         .from("trades")
-        .delete()
-        .eq("id", tradeId)
-        .select();
+        .delete({ count: "exact" })
+        .eq("id", tradeId);
         
       if (error) throw error;
-      if (!deletedRows || deletedRows.length === 0) {
+      if (count === 0) {
         throw new Error("Failed to delete trade. Record not found or permission denied.");
       }
     } catch (e: any) {

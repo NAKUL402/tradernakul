@@ -68,12 +68,17 @@ export function StatCard({
           </div>
         )}
       </div>
-      <div className="flex items-end gap-3 min-w-0">
-        <p className="font-display text-2xl sm:text-3xl font-bold tabular-nums text-foreground truncate max-w-full">{value}</p>
+      <div className="flex items-end gap-2 min-w-0">
+        <p 
+          title={typeof value === "string" ? value : undefined}
+          className="font-display text-xl sm:text-2xl lg:text-xl xl:text-2xl font-bold tabular-nums text-foreground truncate max-w-full"
+        >
+          {value}
+        </p>
         {typeof delta === "number" && (
           <span
             className={cn(
-              "mb-1 flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[11px] font-bold",
+              "mb-1 flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[11px] font-bold shrink-0",
               delta >= 0 ? "bg-success-bg text-success" : "bg-danger-bg text-danger",
             )}
           >
@@ -82,7 +87,7 @@ export function StatCard({
           </span>
         )}
       </div>
-      {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
+      {sub && <p className="text-xs text-muted-foreground truncate max-w-full">{sub}</p>}
     </div>
   );
 

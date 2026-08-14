@@ -55,21 +55,24 @@ export function FloatingAICoach() {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-tr from-primary to-accent text-primary-foreground shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 depth-hover ${isOpen ? "scale-0 opacity-0 pointer-events-none" : "scale-100 opacity-100 glow-primary"}`}
+        className={`fixed bottom-6 right-6 z-40 flex size-11 items-center justify-center rounded-xl bg-card/90 border border-purple-500/40 text-purple-400 backdrop-blur-md shadow-lg shadow-purple-950/40 transition-all duration-300 hover:scale-105 hover:border-purple-400 hover:text-purple-300 active:scale-95 cursor-pointer ${
+          isOpen ? "scale-0 opacity-0 pointer-events-none" : "scale-100 opacity-100"
+        }`}
         aria-label="Open Trade Pulse"
+        title="Trade Pulse Quick Insights"
       >
-        <Activity className="size-6 animate-pulse" />
+        <Activity className="size-5 animate-pulse" />
       </button>
 
       <div
-        className={`fixed inset-0 z-[60] bg-background/20 backdrop-blur-sm transition-opacity duration-300 ${
+        className={`fixed inset-0 z-40 bg-black/40 backdrop-blur-xs transition-opacity duration-300 ${
           isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
         onClick={() => setIsOpen(false)}
       />
 
       <div
-        className={`fixed bottom-24 right-6 z-[70] w-80 rounded-2xl neon-card neon-glow-purple bg-card/95 backdrop-blur-xl shadow-2xl transition-all duration-300 ease-out origin-bottom-right overflow-hidden ${
+        className={`fixed bottom-20 right-6 z-50 w-80 max-w-[calc(100vw-2rem)] rounded-2xl neon-card neon-glow-purple bg-card/95 backdrop-blur-xl shadow-2xl transition-all duration-300 ease-out origin-bottom-right overflow-hidden ${
           isOpen
             ? "scale-100 opacity-100 translate-y-0"
             : "scale-90 opacity-0 translate-y-4 pointer-events-none"
@@ -95,37 +98,37 @@ export function FloatingAICoach() {
           </svg>
         </div>
 
-        <div className="flex items-center justify-between border-b border-border/60 p-4 relative z-10 bg-card/40">
+        <div className="flex items-center justify-between border-b border-border/60 p-3.5 relative z-10 bg-card/40">
           <div className="flex items-center gap-2 text-purple-400">
-            <Activity className="size-5 animate-pulse" />
-            <span className="font-display font-bold text-sm tracking-wide text-foreground">TRADE PULSE</span>
+            <Activity className="size-4 animate-pulse" />
+            <span className="font-display font-bold text-xs tracking-wider text-foreground">TRADE PULSE</span>
           </div>
           <button
             onClick={() => setIsOpen(false)}
-            className="text-muted-foreground hover:text-foreground cursor-pointer"
+            className="text-muted-foreground hover:text-foreground cursor-pointer p-1 rounded-lg hover:bg-muted/40 transition"
           >
             <X className="size-4" />
           </button>
         </div>
 
-        <div className="p-5 relative z-10">
+        <div className="p-4 relative z-10">
           {pulseInsight ? (
             <div className="flex items-start gap-3">
               {pulseInsight.type === "positive" && (
-                <TrendingUp className="size-5 text-emerald-400 shrink-0 mt-0.5" />
+                <TrendingUp className="size-4 text-emerald-400 shrink-0 mt-0.5" />
               )}
               {pulseInsight.type === "negative" && (
-                <AlertTriangle className="size-5 text-destructive shrink-0 mt-0.5" />
+                <AlertTriangle className="size-4 text-destructive shrink-0 mt-0.5" />
               )}
               {pulseInsight.type === "neutral" && (
-                <Bot className="size-5 text-primary shrink-0 mt-0.5" />
+                <Bot className="size-4 text-purple-400 shrink-0 mt-0.5" />
               )}
-              <p className="text-sm font-medium leading-relaxed text-foreground">{pulseInsight.text}</p>
+              <p className="text-xs font-medium leading-relaxed text-foreground">{pulseInsight.text}</p>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center text-center gap-2 py-2">
-              <Activity className="size-6 text-muted-foreground opacity-50" />
-              <p className="text-sm text-muted-foreground">Trade Pulse needs more journal data.</p>
+            <div className="flex flex-col items-center justify-center text-center gap-2 py-3">
+              <Activity className="size-5 text-muted-foreground opacity-40" />
+              <p className="text-xs text-muted-foreground">Trade Pulse needs at least 5 logged trades.</p>
             </div>
           )}
         </div>

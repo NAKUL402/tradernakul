@@ -57,18 +57,24 @@ function CalendarPage() {
         className="neon-glow-blue"
         action={
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setOffset(0)}
+              className="rounded-lg border border-border bg-muted/30 px-2.5 py-1 text-[11px] font-bold text-foreground hover:bg-muted transition cursor-pointer"
+            >
+              Today
+            </button>
             <Badge tone={monthPnl >= 0 ? "win" : "loss"}>{money(monthPnl)}</Badge>
             <button
               aria-label="Previous month"
               onClick={() => setOffset((o) => o - 1)}
-              className="rounded-lg border border-border p-1.5 text-muted-foreground hover:text-foreground"
+              className="rounded-lg border border-border p-1.5 text-muted-foreground hover:text-foreground cursor-pointer"
             >
               <ChevronLeft className="size-4" />
             </button>
             <button
               aria-label="Next month"
               onClick={() => setOffset((o) => o + 1)}
-              className="rounded-lg border border-border p-1.5 text-muted-foreground hover:text-foreground"
+              className="rounded-lg border border-border p-1.5 text-muted-foreground hover:text-foreground cursor-pointer"
             >
               <ChevronRight className="size-4" />
             </button>
@@ -91,18 +97,23 @@ function CalendarPage() {
             return (
               <div
                 key={key}
+                onClick={() => {
+                  if (hasTrades) {
+                    window.location.href = `/journal?q=${key}`;
+                  }
+                }}
                 className={cn(
                   "group relative flex aspect-square flex-col items-center justify-center rounded-xl p-1 transition-all duration-200 hover:-translate-y-1 hover:scale-105 cursor-pointer",
                   !hasTrades
-                    ? "bg-muted/20 border border-border/40 hover:bg-muted/40"
+                    ? "bg-muted/20 border border-border/40 hover:bg-muted/40 text-foreground"
                     : pnl >= 0
                       ? "neon-glow-green bg-emerald-500/15 text-emerald-400 font-bold shadow-md"
                       : "neon-glow-red bg-rose-500/15 text-rose-400 font-bold shadow-md",
                 )}
               >
-                <span className="text-[11px] font-medium">{d}</span>
+                <span className={cn("text-[11px] font-medium", !hasTrades ? "text-muted-foreground" : "text-foreground")}>{d}</span>
                 {hasTrades && (
-                  <span className="text-[9px] font-semibold sm:text-[10px] mt-0.5">{money(pnl)}</span>
+                  <span className="text-[9px] font-bold sm:text-[10px] mt-0.5 tabular-nums truncate max-w-full px-0.5">{money(pnl)}</span>
                 )}
               </div>
             );

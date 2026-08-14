@@ -251,7 +251,18 @@ function Journal() {
 
   const loadTrades = async () => {
     const data = await fetchUserTrades();
-    setAllTrades(data);
+    // Sort descending by date and time (newest first)
+    const sortedTrades = [...data].sort((a, b) => {
+      const dateA = new Date(`${a.date}T${a.entryTime || "00:00"}`);
+      const dateB = new Date(`${b.date}T${b.entryTime || "00:00"}`);
+      return dateB.getTime() - dateA.getTime();
+    });
+    // Assign dynamic tradeNo (1 for most recent, 2 for next, etc.)
+    const tradesWithNumbers = sortedTrades.map((t, index) => ({
+      ...t,
+      tradeNo: index + 1,
+    }));
+    setAllTrades(tradesWithNumbers);
   };
 
   const handleSaveTrade = async (tradePayload: Partial<Trade>, imageFile?: File) => {

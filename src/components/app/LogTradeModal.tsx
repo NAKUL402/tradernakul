@@ -411,20 +411,6 @@ export function LogTradeModal({
             </div>
           </div>
 
-          {/* Reason for Taking Trade */}
-          <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">
-              Reason for Taking Trade
-            </label>
-            <input
-              type="text"
-              placeholder="e.g. Strong H4 support retest + dynamic liquidity sweep"
-              className={field}
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-            />
-          </div>
-
           {/* Mistakes Section */}
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-1">Mistakes</label>

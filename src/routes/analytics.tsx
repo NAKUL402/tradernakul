@@ -18,6 +18,8 @@ import {
 import {
   Activity,
   BarChart3,
+  CheckCircle2,
+  ChevronDown,
   Info,
   Percent,
   Scale,
@@ -34,6 +36,8 @@ import {
   fetchUserTrades,
   groupStats,
   money,
+  compactMoney,
+  formatProfitFactor,
   monthly,
   pct,
   pnlUsd,
@@ -131,8 +135,35 @@ function getRRBin(rrr: string): string {
 function Analytics() {
   const [userTrades, setUserTrades] = useState<Trade[]>([]);
 
+  // Stateful controls for Daily Performance, Performance Heatmap, Monthly Overview, and Header Date Range
+  const [dailyMode, setDailyMode] = useState<"Cumulative PnL" | "Daily PnL" | "Trades Count">("Cumulative PnL");
+  const [dailyDropdownOpen, setDailyDropdownOpen] = useState(false);
+
+  const [heatmapMode, setHeatmapMode] = useState<"Win Rate %" | "Net PnL $" | "Trade Count">("Win Rate %");
+  const [heatmapDropdownOpen, setHeatmapDropdownOpen] = useState(false);
+
+  const [monthlyYear, setMonthlyYear] = useState<"2026" | "2025" | "All Time">("2026");
+  const [monthlyDropdownOpen, setMonthlyDropdownOpen] = useState(false);
+
+  const [headerDateRangeOpen, setHeaderDateRangeOpen] = useState(false);
+  const [headerDateLabel, setHeaderDateLabel] = useState("Aug 07, 2025 – Aug 13, 2025");
+
   useEffect(() => {
     fetchUserTrades().then(setUserTrades);
+  }, []);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      const target = e.target as HTMLElement;
+      if (!target.closest(".analytics-dropdown-container")) {
+        setDailyDropdownOpen(false);
+        setHeatmapDropdownOpen(false);
+        setMonthlyDropdownOpen(false);
+        setHeaderDateRangeOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const s = useMemo(() => stats(userTrades), [userTrades]);
@@ -144,21 +175,25 @@ function Analytics() {
 
   // Daily PnL aggregation for the area chart
   const dailyPnl = useMemo(() => {
-    const map = new Map<string, number>();
+    const map = new Map<string, { pnl: number; count: number }>();
     for (const t of userTrades) {
-      map.set(t.date, (map.get(t.date) || 0) + pnlUsd(t));
+      const cur = map.get(t.date) || { pnl: 0, count: 0 };
+      cur.pnl += pnlUsd(t);
+      cur.count += 1;
+      map.set(t.date, cur);
     }
     let cum = 0;
     return [...map.entries()]
       .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([date, pnl]) => {
-        cum += pnl;
+      .map(([date, val]) => {
+        cum += val.pnl;
         const d = new Date(`${date}T00:00:00Z`);
         return {
           date,
           label: d.toLocaleDateString("en-US", { month: "short", day: "2-digit" }),
-          pnl,
+          pnl: val.pnl,
           cumPnl: cum,
+          count: val.count,
         };
       });
   }, [userTrades]);
@@ -171,15 +206,16 @@ function Analytics() {
   const heatmapData = useMemo(() => {
     const days = ["Mon", "Tue", "Wed", "Thu", "Fri"];
     const blocks = ["00-04", "04-08", "08-12", "12-16", "16-20", "20-24"];
-    const map = new Map<string, { wins: number; total: number }>();
+    const map = new Map<string, { wins: number; total: number; pnl: number }>();
     for (const t of userTrades) {
       const d = new Date(`${t.date}T00:00:00Z`);
       const dow = DOW[d.getUTCDay()];
       if (!dow || !days.includes(dow)) continue;
       const block = getTimeBlock(t.entryTime);
       const key = `${dow}-${block}`;
-      const cur = map.get(key) || { wins: 0, total: 0 };
+      const cur = map.get(key) || { wins: 0, total: 0, pnl: 0 };
       cur.total++;
+      cur.pnl += pnlUsd(t);
       if (t.result === "Win") cur.wins++;
       map.set(key, cur);
     }
@@ -192,7 +228,7 @@ function Analytics() {
     const short = userTrades.filter(t => t.side === "Sell").length;
     const be = 0;
     return [
-      { name: "Long", value: long, color: "#22c55e" },
+      { name: "Long", value: long, color: "#10b981" },
       { name: "Short", value: short, color: "#ef4444" },
       { name: "Breakeven", value: be, color: "#71717a" },
     ].filter(d => d.value > 0);
@@ -200,7 +236,7 @@ function Analytics() {
 
   // Time of day donut
   const timeData = useMemo(() => {
-    const colors = ["#8b5cf6", "#3b82f6", "#06b6d4", "#22c55e", "#eab308", "#f97316"];
+    const colors = ["#8b5cf6", "#3b82f6", "#06b6d4", "#10b981", "#f59e0b", "#ef4444"];
     const blocks = ["00-04", "04-08", "08-12", "12-16", "16-20", "20-24"];
     const counts = new Map<string, number>();
     for (const t of userTrades) {
@@ -223,9 +259,9 @@ function Analytics() {
     }
     return [
       { name: "0-1R", value: bins.get("0-1R") || 0, color: "#ef4444" },
-      { name: "1-2R", value: bins.get("1-2R") || 0, color: "#eab308" },
-      { name: "2-3R", value: bins.get("2-3R") || 0, color: "#22c55e" },
-      { name: "3R+", value: bins.get("3R+") || 0, color: "#06b6d4" },
+      { name: "1-2R", value: bins.get("1-2R") || 0, color: "#f59e0b" },
+      { name: "2-3R", value: bins.get("2-3R") || 0, color: "#10b981" },
+      { name: "3R+", value: bins.get("3R+") || 0, color: "#3b82f6" },
     ].filter(d => d.value > 0);
   }, [userTrades]);
 
@@ -256,20 +292,22 @@ function Analytics() {
     return { win: maxW, loss: maxL };
   }, [userTrades]);
 
-  // Monthly overview
+  // Monthly overview (filtered by monthlyYear)
   const monthlyBars = useMemo(() => {
     const map = new Map<string, number>();
     for (const t of userTrades) {
+      if (monthlyYear === "2026" && !t.date.startsWith("2026")) continue;
+      if (monthlyYear === "2025" && !t.date.startsWith("2025")) continue;
       const m = t.date.slice(0, 7);
       map.set(m, (map.get(m) || 0) + pnlUsd(t));
     }
-    const year = new Date().getFullYear();
+    const targetYear = monthlyYear === "2025" ? "2025" : "2026";
     const allMonths = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     return allMonths.map((label, i) => {
-      const key = `${year}-${String(i + 1).padStart(2, "0")}`;
+      const key = `${targetYear}-${String(i + 1).padStart(2, "0")}`;
       return { label, pnl: map.get(key) || 0 };
     });
-  }, [userTrades]);
+  }, [userTrades, monthlyYear]);
 
   const totalPnl = useMemo(() => monthlyBars.reduce((s, m) => s + m.pnl, 0), [monthlyBars]);
   const bestMonth = useMemo(() => {
@@ -315,6 +353,7 @@ function Analytics() {
       iconBg: "bg-ai-bg text-ai elevation-1 border border-ai/10",
       label: "Total Trades",
       value: String(s.total),
+      fullValue: String(s.total),
       trend: trendPct(prev7.rs.total, prev7.ps.total),
     },
     {
@@ -322,27 +361,31 @@ function Analytics() {
       iconBg: "bg-info-bg text-info elevation-1 border border-info/10",
       label: "Win Rate",
       value: pct(s.winRate),
+      fullValue: pct(s.winRate),
       trend: trendPct(prev7.rs.winRate, prev7.ps.winRate),
     },
     {
       icon: <Zap className="size-4" />,
       iconBg: "bg-info-bg text-info elevation-1 border border-info/10",
       label: "Profit Factor",
-      value: s.profitFactor.toFixed(2),
+      value: formatProfitFactor(s.profitFactor),
+      fullValue: isFinite(s.profitFactor) ? s.profitFactor.toFixed(2) : "N/A",
       trend: trendPct(prev7.rs.profitFactor, prev7.ps.profitFactor),
     },
     {
       icon: <Wallet className="size-4" />,
       iconBg: "bg-success-bg text-success elevation-1 border border-success/10",
       label: "Net PnL",
-      value: money(s.net),
+      value: Math.abs(s.net) >= 1_000_000 ? compactMoney(s.net) : money(s.net),
+      fullValue: money(s.net),
       trend: trendPct(prev7.rs.net, prev7.ps.net),
     },
     {
       icon: <TrendingUp className="size-4" />,
       iconBg: "bg-primary/10 text-primary elevation-1 border border-primary/10",
       label: "Expectancy",
-      value: money(expectancy),
+      value: Math.abs(expectancy) >= 1_000_000 ? compactMoney(expectancy) : money(expectancy),
+      fullValue: money(expectancy),
       trend: trendPct(expectancy, 0),
     },
     {
@@ -350,22 +393,48 @@ function Analytics() {
       iconBg: "bg-danger-bg text-danger elevation-1 border border-danger/10",
       label: "Average R:R",
       value: `1:${s.avgRRR ? s.avgRRR.toFixed(2) : "0.00"}`,
+      fullValue: `1:${s.avgRRR ? s.avgRRR.toFixed(2) : "0.00"}`,
       trend: trendPct(prev7.rs.avgRRR || 0, prev7.ps.avgRRR || 0),
     },
   ];
 
   const customHeader = (
     <div className="flex items-center gap-3">
-      <button 
-        className="flex items-center gap-2 text-[12px] text-foreground bg-surface px-3 py-1.5 rounded-lg border border-border font-medium hover:bg-muted transition cursor-pointer"
-      >
-        <span className="text-muted-foreground">📅</span>
-        <span>Aug 07, 2025 – Aug 13, 2025</span>
-        <span className="text-muted-foreground text-[10px]">▼</span>
-      </button>
+      <div className="relative analytics-dropdown-container z-30">
+        <button 
+          onClick={() => setHeaderDateRangeOpen(!headerDateRangeOpen)}
+          className="flex items-center gap-2 text-[12px] text-foreground bg-surface px-3 py-1.5 rounded-lg border border-border font-medium hover:bg-muted transition cursor-pointer"
+        >
+          <span className="text-muted-foreground">📅</span>
+          <span>{headerDateLabel}</span>
+          <ChevronDown className="size-3 text-muted-foreground" />
+        </button>
+        {headerDateRangeOpen && (
+          <div className="absolute right-0 top-full mt-1.5 w-48 bg-surface border border-border rounded-xl shadow-2xl py-1 z-50">
+            {[
+              "Aug 07, 2025 – Aug 13, 2025",
+              "Last 7 Days",
+              "Last 30 Days",
+              "Last 90 Days",
+              "This Month",
+              "This Year",
+              "All Time"
+            ].map(lbl => (
+              <button
+                key={lbl}
+                onClick={() => { setHeaderDateLabel(lbl); setHeaderDateRangeOpen(false); }}
+                className="w-full text-left px-3.5 py-2 text-[12px] text-muted-foreground hover:bg-muted hover:text-foreground flex items-center justify-between cursor-pointer"
+              >
+                {lbl}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       <button 
         aria-label="Filter"
+        onClick={() => setHeaderDateRangeOpen(!headerDateRangeOpen)}
         className="flex items-center justify-center size-8 rounded-lg border border-border bg-surface text-muted-foreground hover:text-foreground hover:bg-muted transition cursor-pointer"
       >
         <Scale className="size-3.5" />
@@ -391,7 +460,7 @@ function Analytics() {
             {topCards.map((card, idx) => (
               <div
                 key={card.label}
-                className={cn("neon-card group p-5 transition-all duration-200",
+                className={cn("neon-card group p-3.5 sm:p-4 xl:p-5 flex flex-col justify-between min-w-0 overflow-hidden transition-all duration-200",
                   idx === 0 ? "neon-glow-blue" :
                   idx === 1 ? "neon-glow-green" :
                   idx === 2 ? "neon-glow-purple" :
@@ -399,12 +468,19 @@ function Analytics() {
                   idx === 4 ? "neon-glow-amber" : "neon-glow-blue"
                 )}
               >
-                <div className={cn("flex size-9 items-center justify-center rounded-xl mb-4", card.iconBg)}>
-                  {card.icon}
+                <div>
+                  <div className={cn("flex size-8 sm:size-9 items-center justify-center rounded-xl mb-3", card.iconBg)}>
+                    {card.icon}
+                  </div>
+                  <p className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground mb-1 truncate">{card.label}</p>
+                  <p 
+                    title={card.fullValue}
+                    className="font-display text-lg sm:text-xl xl:text-2xl font-bold tabular-nums text-foreground truncate max-w-full"
+                  >
+                    {card.value}
+                  </p>
                 </div>
-                <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-1">{card.label}</p>
-                <p className="font-display text-2xl font-bold tabular-nums text-foreground">{card.value}</p>
-                <p className="text-[11px] font-medium text-muted-foreground mt-3">
+                <p className="text-[10px] sm:text-[11px] font-medium text-muted-foreground mt-3 truncate">
                   vs prev 7 days{" "}
                   <span className="text-success font-bold ml-1">{card.trend}</span>
                 </p>
@@ -420,9 +496,29 @@ function Analytics() {
               className="neon-glow-green"
               info
               action={
-                <span className="text-[11px] text-muted-foreground bg-surface px-2.5 py-1 rounded-lg border border-border font-medium">
-                  PnL ▾
-                </span>
+                <div className="relative analytics-dropdown-container z-20">
+                  <button 
+                    onClick={() => setDailyDropdownOpen(!dailyDropdownOpen)}
+                    className="flex items-center gap-1.5 text-[11px] text-foreground bg-muted/40 px-2.5 py-1 rounded-lg border border-border font-medium hover:bg-muted transition cursor-pointer"
+                  >
+                    {dailyMode}
+                    <ChevronDown className="size-3 text-muted-foreground" />
+                  </button>
+                  {dailyDropdownOpen && (
+                    <div className="absolute right-0 top-full mt-1.5 w-36 bg-surface border border-border rounded-xl shadow-2xl py-1 z-50">
+                      {(["Cumulative PnL", "Daily PnL", "Trades Count"] as const).map(opt => (
+                        <button
+                          key={opt}
+                          onClick={() => { setDailyMode(opt); setDailyDropdownOpen(false); }}
+                          className="w-full text-left px-3.5 py-1.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground flex items-center justify-between cursor-pointer"
+                        >
+                          {opt}
+                          {dailyMode === opt && <CheckCircle2 className="size-3 text-emerald-500" />}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               }
             >
               <div className="h-[240px]">
@@ -430,8 +526,8 @@ function Analytics() {
                   <AreaChart data={dailyPnl} margin={{ left: -10, right: 8, top: 8, bottom: 0 }}>
                     <defs>
                       <linearGradient id="dailyGreen" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#22c55e" stopOpacity="0.35" />
-                        <stop offset="100%" stopColor="#22c55e" stopOpacity="0" />
+                        <stop offset="0%" stopColor="#10b981" stopOpacity="0.35" />
+                        <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
                       </linearGradient>
                       <linearGradient id="dailyRed" x1="0" y1="1" x2="0" y2="0">
                         <stop offset="0%" stopColor="#ef4444" stopOpacity="0.25" />
@@ -440,12 +536,12 @@ function Analytics() {
                     </defs>
                     <CartesianGrid vertical={false} stroke="rgba(15,17,21,0.04)" />
                     <XAxis dataKey="label" {...axisProps} />
-                    <YAxis {...axisProps} width={52} tickFormatter={(v: number) => `$${(v / 1000).toFixed(1)}K`} />
-                    <Tooltip {...ttStyle} formatter={(v: number) => [money(v), "PnL"]} />
+                    <YAxis {...axisProps} width={52} tickFormatter={(v: number) => dailyMode === "Trades Count" ? `${v}` : `$${(v / 1000).toFixed(1)}K`} />
+                    <Tooltip {...ttStyle} formatter={(v: number) => [dailyMode === "Trades Count" ? `${v} trades` : money(v), dailyMode]} />
                     <Area
                       type="monotone"
-                      dataKey="cumPnl"
-                      stroke="#22c55e"
+                      dataKey={dailyMode === "Cumulative PnL" ? "cumPnl" : dailyMode === "Daily PnL" ? "pnl" : "count"}
+                      stroke="#10b981"
                       strokeWidth={2.5}
                       fill="url(#dailyGreen)"
                     />
@@ -477,9 +573,29 @@ function Analytics() {
               className="neon-glow-purple"
               info
               action={
-                <span className="text-[11px] text-muted-foreground bg-surface px-2.5 py-1 rounded-lg border border-border font-medium">
-                  Win Rate ▾
-                </span>
+                <div className="relative analytics-dropdown-container z-20">
+                  <button 
+                    onClick={() => setHeatmapDropdownOpen(!heatmapDropdownOpen)}
+                    className="flex items-center gap-1.5 text-[11px] text-foreground bg-muted/40 px-2.5 py-1 rounded-lg border border-border font-medium hover:bg-muted transition cursor-pointer"
+                  >
+                    {heatmapMode}
+                    <ChevronDown className="size-3 text-muted-foreground" />
+                  </button>
+                  {heatmapDropdownOpen && (
+                    <div className="absolute right-0 top-full mt-1.5 w-32 bg-surface border border-border rounded-xl shadow-2xl py-1 z-50">
+                      {(["Win Rate %", "Net PnL $", "Trade Count"] as const).map(opt => (
+                        <button
+                          key={opt}
+                          onClick={() => { setHeatmapMode(opt); setHeatmapDropdownOpen(false); }}
+                          className="w-full text-left px-3.5 py-1.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground flex items-center justify-between cursor-pointer"
+                        >
+                          {opt}
+                          {heatmapMode === opt && <CheckCircle2 className="size-3 text-[#10b981]" />}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               }
             >
               <div className="overflow-x-auto">
@@ -501,22 +617,35 @@ function Analytics() {
                           const cell = heatmapData.map.get(key);
                           const wr = cell && cell.total > 0 ? Math.round((cell.wins / cell.total) * 100) : null;
                           let bg = "bg-zinc-800/30";
-                          if (wr !== null) {
-                            if (wr >= 80) bg = "bg-emerald-500/70";
-                            else if (wr >= 70) bg = "bg-emerald-500/50";
-                            else if (wr >= 60) bg = "bg-emerald-500/35";
-                            else if (wr >= 50) bg = "bg-emerald-600/25";
-                            else if (wr >= 40) bg = "bg-amber-500/30";
-                            else bg = "bg-rose-500/35";
+                          if (cell && cell.total > 0) {
+                            if (heatmapMode === "Net PnL $") {
+                              bg = cell.pnl >= 0 ? "bg-emerald-500/35" : "bg-rose-500/35";
+                            } else if (heatmapMode === "Trade Count") {
+                              bg = "bg-indigo-500/35";
+                            } else {
+                              if (wr! >= 80) bg = "bg-emerald-500/70";
+                              else if (wr! >= 70) bg = "bg-emerald-500/50";
+                              else if (wr! >= 60) bg = "bg-emerald-500/35";
+                              else if (wr! >= 50) bg = "bg-emerald-600/25";
+                              else if (wr! >= 40) bg = "bg-amber-500/30";
+                              else bg = "bg-rose-500/35";
+                            }
                           }
+                          const displayVal = !cell || cell.total === 0 
+                            ? "—" 
+                            : heatmapMode === "Win Rate %" 
+                            ? `${wr}%` 
+                            : heatmapMode === "Net PnL $" 
+                            ? money(cell.pnl) 
+                            : `${cell.total}`;
                           return (
                             <td key={block} className="p-1">
                               <div className={cn(
-                                "rounded-lg py-2 px-1 font-semibold transition-all",
+                                "rounded-lg py-2 px-1 font-semibold transition-all text-[10.5px]",
                                 bg,
-                                wr !== null ? "text-foreground" : "text-muted-foreground"
+                                cell && cell.total > 0 ? "text-foreground" : "text-muted-foreground"
                               )}>
-                                {wr !== null ? `${wr}%` : "—"}
+                                {displayVal}
                               </div>
                             </td>
                           );
@@ -561,7 +690,7 @@ function Analytics() {
                 </div>
                 <div className="flex-1 space-y-3 text-sm">
                   {[
-                    { name: "Long", count: userTrades.filter(t => t.side === "Buy").length, color: "#22c55e" },
+                    { name: "Long", count: userTrades.filter(t => t.side === "Buy").length, color: "#10b981" },
                     { name: "Short", count: userTrades.filter(t => t.side === "Sell").length, color: "#ef4444" },
                     { name: "Breakeven", count: 0, color: "#71717a" },
                   ].map(item => (
@@ -622,9 +751,9 @@ function Analytics() {
                 <div className="flex-1 space-y-3 text-sm">
                   {[
                     { name: "0-1R", color: "#ef4444" },
-                    { name: "1-2R", color: "#eab308" },
-                    { name: "2-3R", color: "#22c55e" },
-                    { name: "3R+", color: "#06b6d4" },
+                    { name: "1-2R", color: "#f59e0b" },
+                    { name: "2-3R", color: "#10b981" },
+                    { name: "3R+", color: "#3b82f6" },
                   ].map(item => {
                     const count = rrData.find(d => d.name === item.name)?.value || 0;
                     return (
@@ -684,9 +813,29 @@ function Analytics() {
               className="neon-glow-blue"
               info
               action={
-                <span className="text-[11px] text-foreground bg-muted/40 px-2.5 py-1 rounded-lg border border-border font-semibold">
-                  {new Date().getFullYear()} ▾
-                </span>
+                <div className="relative analytics-dropdown-container z-20">
+                  <button 
+                    onClick={() => setMonthlyDropdownOpen(!monthlyDropdownOpen)}
+                    className="flex items-center gap-1.5 text-[11px] text-foreground bg-muted/40 px-2.5 py-1 rounded-lg border border-border font-semibold hover:bg-muted transition cursor-pointer"
+                  >
+                    {monthlyYear}
+                    <ChevronDown className="size-3 text-muted-foreground" />
+                  </button>
+                  {monthlyDropdownOpen && (
+                    <div className="absolute right-0 top-full mt-1.5 w-32 bg-surface border border-border rounded-xl shadow-2xl py-1 z-50">
+                      {(["2026", "2025", "All Time"] as const).map(opt => (
+                        <button
+                          key={opt}
+                          onClick={() => { setMonthlyYear(opt); setMonthlyDropdownOpen(false); }}
+                          className="w-full text-left px-3.5 py-1.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground flex items-center justify-between cursor-pointer"
+                        >
+                          {opt}
+                          {monthlyYear === opt && <CheckCircle2 className="size-3 text-emerald-500" />}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               }
             >
               <div className="flex flex-col sm:flex-row gap-5">

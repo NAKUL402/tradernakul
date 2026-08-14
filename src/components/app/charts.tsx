@@ -27,11 +27,17 @@ const tooltipStyle = {
   contentStyle: {
     background: "var(--color-popover)",
     border: "1px solid var(--color-border)",
-    borderRadius: 14,
+    borderRadius: 12,
     fontSize: 12,
     color: "var(--color-popover-foreground)",
+    boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.5)",
   },
-  labelStyle: { color: "var(--color-muted-foreground)" },
+  itemStyle: {
+    color: "var(--color-popover-foreground)",
+    fontSize: 12,
+    fontWeight: 600,
+  },
+  labelStyle: { color: "var(--color-muted-foreground)", fontSize: 11, fontWeight: 500, marginBottom: 4 },
 } as const;
 
 export function EquityChart({ data }: { data: { i: number; equity: number }[] }) {

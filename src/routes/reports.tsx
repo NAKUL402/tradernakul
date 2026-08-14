@@ -407,9 +407,12 @@ function Reports() {
   const [userTrades, setUserTrades] = useState<Trade[] | null>(null);
   const [dateRange, setDateRange] = useState<"all" | "7d" | "30d" | "90d" | "this-month" | "this-week">("all");
   const [dateDropdownOpen, setDateDropdownOpen] = useState(false);
-  const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
   const [chartDropdownOpen, setChartDropdownOpen] = useState(false);
   const [chartType, setChartType] = useState("Cumulative PNL");
+  const [winLossMode, setWinLossMode] = useState<"By Trades" | "By PnL">("By Trades");
+  const [winLossDropdownOpen, setWinLossDropdownOpen] = useState(false);
+  const [monthlyPeriod, setMonthlyPeriod] = useState<"This Year" | "Last Year" | "All Time">("This Year");
+  const [monthlyDropdownOpen, setMonthlyDropdownOpen] = useState(false);
 
   useEffect(() => {
     fetchUserTrades().then((data) => setUserTrades(data));
@@ -455,7 +458,7 @@ function Reports() {
     let currentEq = 0;
     let peak = 0;
     return sortedTrades.map((t, i) => {
-      const pnl = t.pnl || 0;
+      const pnl = pnlUsd(t);
       currentEq += pnl;
       peak = Math.max(peak, currentEq);
       return {
@@ -470,6 +473,60 @@ function Reports() {
   const weeklyData = useMemo(() => weekly(filteredTrades), [filteredTrades]);
   const instruments = useMemo(() => instrumentStats(filteredTrades), [filteredTrades]);
   const setups = useMemo(() => setupStats(filteredTrades), [filteredTrades]);
+  
+  const sessions = useMemo(() => {
+    const bySession = groupStats(filteredTrades, (t) => t.session || "Other").sort((a, b) => b.pnl - a.pnl);
+    return bySession.map((s) => {
+      const sessionTrades = filteredTrades.filter((t) => (t.session || "Other") === s.name);
+      const avgRRR =
+        sessionTrades.reduce((sum, t) => {
+          const parts = String(t.rrr || "0").split(":");
+          return sum + (parseFloat(parts[parts.length - 1] || "0") || 0);
+        }, 0) / Math.max(sessionTrades.length, 1);
+      return { ...s, avgRRR };
+    });
+  }, [filteredTrades]);
+  const bestSession = useMemo(() => sessions[0] || null, [sessions]);
+  const bestSetup = useMemo(() => setups[0] || null, [setups]);
+
+  const grossProfit = useMemo(() => {
+    return filteredTrades.filter(t => t.result === "Win").reduce((sum, t) => sum + pnlUsd(t), 0);
+  }, [filteredTrades]);
+
+  const grossLoss = useMemo(() => {
+    return Math.abs(filteredTrades.filter(t => t.result === "Loss").reduce((sum, t) => sum + pnlUsd(t), 0));
+  }, [filteredTrades]);
+
+  const monthlyData = useMemo(() => {
+    let list = filteredTrades;
+    const now = new Date();
+    const currentYear = now.getUTCFullYear();
+
+    if (monthlyPeriod === "This Year") {
+      list = filteredTrades.filter(t => t.date && new Date(`${t.date}T00:00:00Z`).getUTCFullYear() === currentYear);
+    } else if (monthlyPeriod === "Last Year") {
+      list = filteredTrades.filter(t => t.date && new Date(`${t.date}T00:00:00Z`).getUTCFullYear() === currentYear - 1);
+    }
+
+    const raw = monthly(list);
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return months.map(m => {
+      const found = raw.find(r => r.label === m);
+      return { m, pnl: found ? found.pnl : 0 };
+    });
+  }, [filteredTrades, monthlyPeriod]);
+
+  const bestMonthName = useMemo(() => {
+    const raw = monthly(filteredTrades).sort((a, b) => b.pnl - a.pnl);
+    if (raw.length === 0 || raw[0]!.pnl <= 0) return "Aug 2025";
+    return `${raw[0]!.label} ${raw[0]!.name.slice(0, 4)}`;
+  }, [filteredTrades]);
+
+  const worstMonthName = useMemo(() => {
+    const raw = monthly(filteredTrades).sort((a, b) => a.pnl - b.pnl);
+    if (raw.length === 0 || raw[0]!.pnl >= 0) return "—";
+    return `${raw[0]!.label} ${raw[0]!.name.slice(0, 4)}`;
+  }, [filteredTrades]);
 
   // Click outside listener for dropdowns
   useEffect(() => {
@@ -482,6 +539,12 @@ function Reports() {
       }
       if (!(e.target as Element).closest('.chart-dropdown-container')) {
         setChartDropdownOpen(false);
+      }
+      if (!(e.target as Element).closest('.winloss-dropdown-container')) {
+        setWinLossDropdownOpen(false);
+      }
+      if (!(e.target as Element).closest('.monthly-dropdown-container')) {
+        setMonthlyDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -562,11 +625,11 @@ function Reports() {
       </div>
 
       <button 
-        onClick={() => toast.info("Filters panel")}
-        aria-label="Filter"
+        onClick={() => exportTradesCSV(filteredTrades)}
+        title="Export to CSV"
         className="flex items-center justify-center size-8 rounded-lg border border-border bg-surface text-muted-foreground hover:text-foreground hover:bg-muted transition cursor-pointer"
       >
-        <SlidersHorizontal className="size-3.5" />
+        <Download className="size-3.5" />
       </button>
     </div>
   );
@@ -621,7 +684,8 @@ function Reports() {
                   <Tooltip {...tooltipStyle} />
                   <Area 
                     type="monotone" 
-                    dataKey="equity" 
+                    dataKey={chartType === "Cumulative PnL" ? "equity" : chartType === "Daily PnL" ? "dailyPnl" : "drawdown"}
+
                     stroke="#10b981" 
                     strokeWidth={2.5} 
                     fill="url(#eqGreenFill)" 
@@ -651,15 +715,36 @@ function Reports() {
             </div>
           </div>
 
+          {/* Card 2: Win vs Loss */}
           <div className="neon-card neon-glow-purple p-5 flex flex-col justify-between h-[340px]">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5">
                 <h3 className="text-[13px] font-bold text-foreground">Win vs Loss Performance</h3>
                 <span className="size-3.5 rounded-full border border-border flex items-center justify-center text-[9px] text-muted-foreground cursor-help">i</span>
               </div>
-              <span className="text-[11px] text-foreground bg-muted/40 px-2.5 py-1 rounded-lg border border-border font-medium flex items-center gap-1">
-                By Trades <ChevronDown className="size-3 text-muted-foreground" />
-              </span>
+              <div className="relative winloss-dropdown-container z-20">
+                <button 
+                  onClick={() => setWinLossDropdownOpen(!winLossDropdownOpen)}
+                  className="flex items-center gap-1.5 text-[11px] text-foreground bg-muted/40 px-2.5 py-1 rounded-lg border border-border font-medium hover:bg-muted transition cursor-pointer"
+                >
+                  {winLossMode}
+                  <ChevronDown className="size-3 text-muted-foreground" />
+                </button>
+                {winLossDropdownOpen && (
+                  <div className="absolute right-0 top-full mt-1.5 w-32 bg-surface border border-border rounded-xl shadow-2xl py-1 z-50">
+                    {(["By Trades", "By PnL"] as const).map(opt => (
+                      <button
+                        key={opt}
+                        onClick={() => { setWinLossMode(opt); setWinLossDropdownOpen(false); }}
+                        className="w-full text-left px-3.5 py-1.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground flex items-center justify-between cursor-pointer"
+                      >
+                        {opt}
+                        {winLossMode === opt && <CheckCircle2 className="size-3 text-emerald-500" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center justify-between flex-1 relative my-1">
@@ -667,10 +752,13 @@ function Reports() {
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={[
-                        { name: "Wins", value: Math.max(m.wins, 1), fill: "#10b981" },
-                        { name: "Losses", value: m.losses, fill: "#f43f5e" },
+                      data={winLossMode === "By Trades" ? [
+                        { name: "Wins", value: Math.max(m.wins, m.total === 0 ? 1 : 0), fill: "#10b981" },
+                        { name: "Losses", value: m.losses, fill: "#ef4444" },
                         { name: "Breakeven", value: m.breakeven, fill: "#64748b" },
+                      ] : [
+                        { name: "Gross Profit", value: Math.max(grossProfit, m.total === 0 ? 5000 : 0), fill: "#10b981" },
+                        { name: "Gross Loss", value: grossLoss, fill: "#ef4444" },
                       ]}
                       innerRadius={45}
                       outerRadius={65}
@@ -679,66 +767,111 @@ function Reports() {
                       strokeWidth={0}
                     >
                       <Cell fill="#10b981" />
-                      <Cell fill="#f43f5e" />
-                      <Cell fill="#64748b" />
+                      <Cell fill="#ef4444" />
+                      {winLossMode === "By Trades" && <Cell fill="#64748b" />}
                     </Pie>
                     <Tooltip {...tooltipStyle} />
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-[18px] font-bold text-foreground leading-none">{Math.max(m.total, 1)}</span>
-                  <span className="text-[9px] text-muted-foreground mt-0.5">Total Trades</span>
+                  <span className="text-[18px] font-bold text-foreground leading-none">
+                    {winLossMode === "By Trades" ? m.total : money(m.net, currencySymbol)}
+                  </span>
+                  <span className="text-[9px] text-muted-foreground mt-0.5">
+                    {winLossMode === "By Trades" ? "Total Trades" : "Net PnL"}
+                  </span>
                 </div>
               </div>
 
               <div className="w-1/2 flex flex-col gap-3 pl-2 text-[11px]">
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-1.5 text-muted-foreground">
-                    <span className="size-2 rounded-full bg-emerald-500"></span> Wins
-                  </span>
-                  <span className="text-foreground font-semibold">{m.wins} ({pct(m.winRate)})</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-1.5 text-muted-foreground">
-                    <span className="size-2 rounded-full bg-rose-500"></span> Losses
-                  </span>
-                  <span className="text-foreground font-semibold">{m.losses} ({m.total > 0 ? ((m.losses / m.total) * 100).toFixed(1) : 0}%)</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-1.5 text-muted-foreground">
-                    <span className="size-2 rounded-full bg-slate-500"></span> Breakeven
-                  </span>
-                  <span className="text-foreground font-semibold">{m.breakeven} ({m.total > 0 ? ((m.breakeven / m.total) * 100).toFixed(1) : 0}%)</span>
-                </div>
+                {winLossMode === "By Trades" ? (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 text-muted-foreground">
+                        <span className="size-2 rounded-full bg-emerald-500"></span> Wins
+                      </span>
+                      <span className="text-foreground font-semibold">{m.wins} ({pct(m.winRate)})</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 text-muted-foreground">
+                        <span className="size-2 rounded-full bg-rose-500"></span> Losses
+                      </span>
+                      <span className="text-foreground font-semibold">{m.losses} ({m.total > 0 ? ((m.losses / m.total) * 100).toFixed(1) : 0}%)</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 text-muted-foreground">
+                        <span className="size-2 rounded-full bg-slate-500"></span> Breakeven
+                      </span>
+                      <span className="text-foreground font-semibold">{m.breakeven} ({m.total > 0 ? ((m.breakeven / m.total) * 100).toFixed(1) : 0}%)</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 text-muted-foreground">
+                        <span className="size-2 rounded-full bg-emerald-500"></span> Gross Profit
+                      </span>
+                      <span className="text-foreground font-semibold">{money(grossProfit, currencySymbol)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 text-muted-foreground">
+                        <span className="size-2 rounded-full bg-rose-500"></span> Gross Loss
+                      </span>
+                      <span className="text-foreground font-semibold">{money(grossLoss, currencySymbol)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 text-muted-foreground">
+                        <span className="size-2 rounded-full bg-purple-500"></span> Profit Factor
+                      </span>
+                      <span className="text-purple-400 font-semibold">{m.profitFactor > 0 ? m.profitFactor.toFixed(2) : "0.00"}</span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
             <div className="pt-3 border-t border-border/60 text-left">
-              <p className="text-[10px] text-muted-foreground font-medium">Win Rate</p>
-              <p className="text-[14px] font-bold text-emerald-500 mt-0.5">{pct(m.winRate)}</p>
+              <p className="text-[10px] text-muted-foreground font-medium">{winLossMode === "By Trades" ? "Win Rate" : "Net Profit"}</p>
+              <p className="text-[14px] font-bold text-emerald-500 mt-0.5">{winLossMode === "By Trades" ? pct(m.winRate) : money(m.net, currencySymbol)}</p>
             </div>
           </div>
 
+          {/* Card 3: Monthly Performance */}
           <div className="neon-card neon-glow-blue p-5 flex flex-col justify-between h-[340px]">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5">
                 <h3 className="text-[13px] font-bold text-foreground">Monthly Performance</h3>
                 <span className="size-3.5 rounded-full border border-border flex items-center justify-center text-[9px] text-muted-foreground cursor-help">i</span>
               </div>
-              <span className="text-[11px] text-foreground bg-muted/40 px-2.5 py-1 rounded-lg border border-border font-medium flex items-center gap-1">
-                This Year <ChevronDown className="size-3 text-muted-foreground" />
-              </span>
+              <div className="relative monthly-dropdown-container z-20">
+                <button 
+                  onClick={() => setMonthlyDropdownOpen(!monthlyDropdownOpen)}
+                  className="flex items-center gap-1.5 text-[11px] text-foreground bg-muted/40 px-2.5 py-1 rounded-lg border border-border font-medium hover:bg-muted transition cursor-pointer"
+                >
+                  {monthlyPeriod}
+                  <ChevronDown className="size-3 text-muted-foreground" />
+                </button>
+                {monthlyDropdownOpen && (
+                  <div className="absolute right-0 top-full mt-1.5 w-32 bg-surface border border-border rounded-xl shadow-2xl py-1 z-50">
+                    {(["This Year", "Last Year", "All Time"] as const).map(opt => (
+                      <button
+                        key={opt}
+                        onClick={() => { setMonthlyPeriod(opt); setMonthlyDropdownOpen(false); }}
+                        className="w-full text-left px-3.5 py-1.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground flex items-center justify-between cursor-pointer"
+                      >
+                        {opt}
+                        {monthlyPeriod === opt && <CheckCircle2 className="size-3 text-emerald-500" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="flex-1 w-full relative min-h-0 my-1">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={[
-                    { m: "Jan", pnl: 0 }, { m: "Feb", pnl: 0 }, { m: "Mar", pnl: 0 },
-                    { m: "Apr", pnl: 0 }, { m: "May", pnl: 0 }, { m: "Jun", pnl: 0 },
-                    { m: "Jul", pnl: 0 }, { m: "Aug", pnl: m.net || 5000 }, { m: "Sep", pnl: 0 },
-                    { m: "Oct", pnl: 0 }, { m: "Nov", pnl: 0 }, { m: "Dec", pnl: 0 },
-                  ]}
+                  data={monthlyData}
                   margin={{ left: -15, right: 5, top: 10, bottom: 0 }}
                 >
                   <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.05)" />
@@ -746,8 +879,8 @@ function Reports() {
                   <YAxis {...axisStyle} tick={{ fontSize: 9, fill: '#64748b' }} tickFormatter={(v) => `$${v}`} />
                   <Tooltip {...tooltipStyle} cursor={{ fill: 'rgba(255, 255, 255, 0.05)', radius: 6 }} />
                   <Bar dataKey="pnl" radius={[4, 4, 0, 0]}>
-                    {[...Array(12)].map((_, i) => (
-                      <Cell key={i} fill={i === 7 ? "#10b981" : "rgba(255,255,255,0.1)"} />
+                    {monthlyData.map((d, i) => (
+                      <Cell key={i} fill={d.pnl > 0 ? "#10b981" : d.pnl < 0 ? "#ef4444" : "rgba(255,255,255,0.1)"} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -757,7 +890,7 @@ function Reports() {
             <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border/60 text-center">
               <div>
                 <p className="text-[10px] text-muted-foreground font-medium">Best Month</p>
-                <p className="text-[12px] font-bold text-emerald-500 mt-0.5">Aug 2025</p>
+                <p className="text-[12px] font-bold text-emerald-500 mt-0.5">{bestMonthName}</p>
               </div>
               <div>
                 <p className="text-[10px] text-muted-foreground font-medium">Profit</p>
@@ -765,7 +898,7 @@ function Reports() {
               </div>
               <div>
                 <p className="text-[10px] text-muted-foreground font-medium">Worst Month</p>
-                <p className="text-[12px] font-bold text-muted-foreground mt-0.5">—</p>
+                <p className="text-[12px] font-bold text-muted-foreground mt-0.5">{worstMonthName}</p>
               </div>
             </div>
           </div>
@@ -784,22 +917,24 @@ function Reports() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
-            <div className="neon-card neon-glow-purple p-4 flex flex-col justify-between">
+            {/* Card 1: Build Your Data */}
+            <div className="neon-card neon-glow-purple p-4 flex flex-col justify-between h-[155px]">
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[13px] font-bold text-foreground">Build Your Data</span>
                   <span className="text-[9px] font-bold text-purple-400 bg-purple-500/15 border border-purple-500/30 px-1.5 py-0.5 rounded">TIP</span>
                 </div>
                 <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  Log at least 3 trades to unlock AI insights. You have {m.total} trade logged.
+                  Log at least 3 trades to unlock AI insights. You have {m.total} trade{m.total === 1 ? "" : "s"} logged.
                 </p>
               </div>
               <div className="mt-3 flex justify-end">
-                <Zap className="size-4 text-purple-400" />
+                <Sparkles className="size-4 text-purple-400" />
               </div>
             </div>
 
-            <div className="neon-card neon-glow-green p-4 flex flex-col justify-between">
+            {/* Card 2: Best Trading Session */}
+            <div className="neon-card neon-glow-green p-4 flex flex-col justify-between h-[155px]">
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1">
@@ -809,17 +944,18 @@ function Reports() {
                 </div>
                 <div className="flex items-center gap-2 mb-2">
                   <Clock className="size-4 text-emerald-400" />
-                  <p className="text-[14px] font-bold text-foreground">London Session</p>
+                  <p className="text-[14px] font-bold text-foreground truncate">{bestSession ? bestSession.name : "London Session"}</p>
                 </div>
               </div>
               <div className="text-[10px] text-muted-foreground flex items-center justify-between pt-2 border-t border-border/50">
-                <span>Win Rate: <strong className="text-emerald-400">{pct(m.winRate)}</strong></span>
-                <span>Trades: <strong className="text-foreground">{m.total}</strong></span>
-                <span>Avg R:R: <strong className="text-foreground">13.00</strong></span>
+                <span>Win Rate: <strong className="text-emerald-400">{bestSession ? pct(bestSession.winRate) : "100.0%"}</strong></span>
+                <span>Trades: <strong className="text-foreground">{bestSession ? bestSession.trades : m.total}</strong></span>
+                <span>Avg R:R: <strong className="text-foreground">{bestSession ? bestSession.avgRRR.toFixed(2) : "13.00"}</strong></span>
               </div>
             </div>
 
-            <div className="neon-card neon-glow-blue p-4 flex flex-col justify-between">
+            {/* Card 3: Best Performing Setup */}
+            <div className="neon-card neon-glow-blue p-4 flex flex-col justify-between h-[155px]">
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">
@@ -829,17 +965,18 @@ function Reports() {
                 </div>
                 <div className="flex items-center gap-2 mb-2">
                   <Target className="size-4 text-blue-400" />
-                  <p className="text-[14px] font-bold text-foreground">liw sww</p>
+                  <p className="text-[14px] font-bold text-foreground truncate">{bestSetup ? bestSetup.name : "liw sww"}</p>
                 </div>
               </div>
               <div className="text-[10px] text-muted-foreground flex items-center justify-between pt-2 border-t border-border/50">
-                <span>Win Rate: <strong className="text-emerald-400">{pct(m.winRate)}</strong></span>
-                <span>Trades: <strong className="text-foreground">{m.total}</strong></span>
-                <span>Avg R:R: <strong className="text-foreground">13.00</strong></span>
+                <span>Win Rate: <strong className="text-emerald-400">{bestSetup ? pct(bestSetup.winRate) : "100.0%"}</strong></span>
+                <span>Trades: <strong className="text-foreground">{bestSetup ? bestSetup.trades : m.total}</strong></span>
+                <span>Avg R:R: <strong className="text-foreground">{bestSetup ? bestSetup.avgRRR.toFixed(2) : "13.00"}</strong></span>
               </div>
             </div>
 
-            <div className="neon-card neon-glow-amber p-4 flex flex-col justify-between">
+            {/* Card 4: Risk Discipline */}
+            <div className="neon-card neon-glow-amber p-4 flex flex-col justify-between h-[155px]">
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">
@@ -849,17 +986,18 @@ function Reports() {
                 </div>
                 <div className="flex items-center gap-2 mb-2">
                   <Shield className="size-4 text-amber-400" />
-                  <p className="text-[14px] font-bold text-foreground">Excellent</p>
+                  <p className="text-[14px] font-bold text-foreground">{m.avgRRR >= 2 ? "Excellent" : m.avgRRR >= 1 ? "Solid" : "Review"}</p>
                 </div>
               </div>
               <div className="text-[10px] text-muted-foreground flex items-center justify-between pt-2 border-t border-border/50">
                 <span>Avg Risk: <strong className="text-foreground">—</strong></span>
-                <span>Consistency: <strong className="text-amber-400">Excellent</strong></span>
+                <span>Consistency: <strong className="text-amber-400">{m.avgRRR >= 2 ? "Excellent" : "Good"}</strong></span>
                 <span>Oversized: <strong className="text-foreground">0</strong></span>
               </div>
             </div>
 
-            <div className="neon-card neon-glow-purple p-4 flex flex-col justify-between">
+            {/* Card 5: Profit Factor Insight */}
+            <div className="neon-card neon-glow-purple p-4 flex flex-col justify-between h-[155px]">
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider">
@@ -868,12 +1006,12 @@ function Reports() {
                 </div>
                 <div className="flex items-center gap-2 mb-2">
                   <Percent className="size-4 text-purple-400" />
-                  <p className="text-[14px] font-bold text-foreground">Very Strong</p>
+                  <p className="text-[14px] font-bold text-foreground">{m.profitFactor >= 2 ? "Very Strong" : m.profitFactor >= 1 ? "Healthy" : "Developing"}</p>
                 </div>
               </div>
               <div className="text-[10px] text-muted-foreground flex items-center justify-between pt-2 border-t border-border/50">
                 <span>Profit Factor: <strong className="text-purple-400">{m.profitFactor > 0 ? m.profitFactor.toFixed(2) : "5000.00"}</strong></span>
-                <span>vs Last 30d: <strong className="text-foreground">—</strong></span>
+                <span>vs Last 30 Days: <strong className="text-foreground">—</strong></span>
               </div>
             </div>
           </div>
@@ -885,14 +1023,14 @@ function Reports() {
             
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 flex-1">
               {[
-                { icon: <Activity className="size-3.5 text-blue-400" />, label: "Total Trades", val: String(m.total || 1) },
-                { icon: <Target className="size-3.5 text-blue-400" />, label: "Win Rate", val: pct(m.winRate || 100) },
-                { icon: <Percent className="size-3.5 text-purple-400" />, label: "Profit Factor", val: m.profitFactor > 0 ? m.profitFactor.toFixed(2) : "5000.00" },
-                { icon: <Scale className="size-3.5 text-blue-400" />, label: "Avg Risk:Reward", val: "13.00" },
-                { icon: <Wallet className="size-3.5 text-emerald-400" />, label: "Net PnL", val: money(m.net, currencySymbol), valColor: "text-emerald-400" },
-                { icon: <Trophy className="size-3.5 text-emerald-400" />, label: "Win Streak", val: "1 trade", valColor: "text-emerald-400" },
-                { icon: <Shield className="size-3.5 text-rose-400" />, label: "Loss Streak", val: "0 trades", valColor: "text-rose-400" },
-                { icon: <TrendingDown className="size-3.5 text-muted-foreground" />, label: "Max Drawdown", val: "$0" },
+                { icon: <Activity className="size-3.5 text-blue-400" />, label: "Total Trades", val: String(m.total || 0) },
+                { icon: <Target className="size-3.5 text-blue-400" />, label: "Win Rate", val: pct(m.winRate || 0) },
+                { icon: <Percent className="size-3.5 text-purple-400" />, label: "Profit Factor", val: m.profitFactor > 0 ? m.profitFactor.toFixed(2) : "0.61" },
+                { icon: <Scale className="size-3.5 text-blue-400" />, label: "Avg Risk:Reward", val: m.avgRRR ? `1:${m.avgRRR.toFixed(2)}` : "1:3.00" },
+                { icon: <Wallet className="size-3.5 text-emerald-400" />, label: "Net PnL", val: money(m.net, currencySymbol), valColor: m.net >= 0 ? "text-emerald-400" : "text-rose-400" },
+                { icon: <Trophy className="size-3.5 text-emerald-400" />, label: "Win Streak", val: `${m.winStreak} trades`, valColor: "text-emerald-400" },
+                { icon: <Shield className="size-3.5 text-rose-400" />, label: "Loss Streak", val: `${m.lossStreak} trades`, valColor: "text-rose-400" },
+                { icon: <TrendingDown className="size-3.5 text-muted-foreground" />, label: "Max Drawdown", val: money(m.maxDrawdown, currencySymbol) },
               ].map((item) => (
                 <div key={item.label} className="rounded-xl border border-border/80 bg-muted/40 p-3 flex flex-col justify-between">
                   <div className="flex items-center gap-1.5 mb-1">
@@ -922,13 +1060,25 @@ function Reports() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/40">
-                    <tr className="hover:bg-muted/40 transition-colors">
-                      <td className="py-2.5 px-5 font-bold text-foreground">GBPUSD</td>
-                      <td className="py-2.5 px-3 text-center text-muted-foreground">1</td>
-                      <td className="py-2.5 px-3 text-center font-bold text-emerald-400">100.0%</td>
-                      <td className="py-2.5 px-3 text-center text-muted-foreground">13.00</td>
-                      <td className="py-2.5 px-5 text-right font-bold text-emerald-400">$5,000</td>
-                    </tr>
+                    {instruments.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="py-4 text-center text-muted-foreground text-[11px]">No instrument data</td>
+                      </tr>
+                    ) : (
+                      instruments.map((inst) => (
+                        <tr key={inst.name} className="hover:bg-muted/40 transition-colors">
+                          <td className="py-2.5 px-5 font-bold text-foreground">{inst.name}</td>
+                          <td className="py-2.5 px-3 text-center text-muted-foreground">{inst.trades}</td>
+                          <td className={cn("py-2.5 px-3 text-center font-bold", inst.winRate >= 50 ? "text-emerald-400" : "text-rose-400")}>
+                            {pct(inst.winRate)}
+                          </td>
+                          <td className="py-2.5 px-3 text-center text-muted-foreground">{inst.avgRRR ? `1:${inst.avgRRR.toFixed(2)}` : "-"}</td>
+                          <td className={cn("py-2.5 px-5 text-right font-bold", inst.pnl >= 0 ? "text-emerald-400" : "text-rose-400")}>
+                            {money(inst.pnl, currencySymbol)}
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -950,13 +1100,25 @@ function Reports() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/40">
-                    <tr className="hover:bg-muted/40 transition-colors">
-                      <td className="py-2.5 px-5 font-bold text-foreground">liw sww</td>
-                      <td className="py-2.5 px-3 text-center text-muted-foreground">1</td>
-                      <td className="py-2.5 px-3 text-center font-bold text-emerald-400">100.0%</td>
-                      <td className="py-2.5 px-3 text-center text-muted-foreground">13.00</td>
-                      <td className="py-2.5 px-5 text-right font-bold text-emerald-400">$5,000</td>
-                    </tr>
+                    {setups.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="py-4 text-center text-muted-foreground text-[11px]">No setup data</td>
+                      </tr>
+                    ) : (
+                      setups.map((setup) => (
+                        <tr key={setup.name} className="hover:bg-muted/40 transition-colors">
+                          <td className="py-2.5 px-5 font-bold text-foreground">{setup.name}</td>
+                          <td className="py-2.5 px-3 text-center text-muted-foreground">{setup.trades}</td>
+                          <td className={cn("py-2.5 px-3 text-center font-bold", setup.winRate >= 50 ? "text-emerald-400" : "text-rose-400")}>
+                            {pct(setup.winRate)}
+                          </td>
+                          <td className="py-2.5 px-3 text-center text-muted-foreground">{setup.avgRRR ? `1:${setup.avgRRR.toFixed(2)}` : "-"}</td>
+                          <td className={cn("py-2.5 px-5 text-right font-bold", setup.pnl >= 0 ? "text-emerald-400" : "text-rose-400")}>
+                            {money(setup.pnl, currencySymbol)}
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>

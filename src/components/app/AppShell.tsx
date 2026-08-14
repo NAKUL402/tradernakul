@@ -20,6 +20,7 @@ import {
   Activity,
   Zap,
   Command,
+  TrendingUp,
 } from "lucide-react";
 import { useState, useEffect, type ReactNode } from "react";
 import { cn } from "@/lib/utils";

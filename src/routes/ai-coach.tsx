@@ -61,8 +61,9 @@ export const Route = createFileRoute("/ai-coach")({
 /* ─── Recharts config ────────────────────────────────────────────── */
 const axisProps = { stroke: "#3f3f46", fill: "#71717a", fontSize: 10, tickLine: false, axisLine: false } as const;
 const ttStyle = {
-  contentStyle: { background: "#1a1a22", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, fontSize: 12, color: "#e4e4e7", boxShadow: "0 8px 32px rgba(0,0,0,0.5)" },
-  labelStyle: { color: "#71717a" },
+  contentStyle: { background: "#18181b", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 10, fontSize: 12, color: "#ffffff", boxShadow: "0 8px 32px rgba(0,0,0,0.6)" },
+  itemStyle: { color: "#ffffff", fontWeight: 600 },
+  labelStyle: { color: "#a1a1aa", fontWeight: 500, marginBottom: 2 },
 } as const;
 
 /* ─── Sparkline Component ────────────────────────────────────────── */
@@ -249,64 +250,64 @@ function CoachPage() {
       icon: <Target className="size-5" />,
       iconBg: "bg-[#4f2a96]/20 text-[#8b5cf6] border-[#4f2a96]/40",
       label: "Coaching Score",
-      value: "72",
-      sub: "Good",
-      subColor: "text-emerald-500",
-      trend: "↑ 8 vs last 7 days",
-      trendColor: "text-emerald-500",
+      value: ai.overallGrade,
+      sub: ai.riskControlScore > 80 ? "Excellent" : "Needs Work",
+      subColor: ai.riskControlScore > 80 ? "text-emerald-500" : "text-yellow-500",
+      trend: "Overall Profile",
+      trendColor: "text-zinc-400",
       chartColor: "#10b981",
-      chartData: [40, 45, 42, 55, 58, 65, 72],
+      chartData: [40, 45, 42, 55, 58, 65, ai.riskControlScore],
       glow: "neon-glow-purple",
     },
     {
       icon: <Trophy className="size-5" />,
       iconBg: "bg-[#1d4ed8]/20 text-blue-400 border-blue-500/30",
-      label: "Strength",
-      value: "63%",
+      label: "Win Rate",
+      value: `${s.winRate.toFixed(1)}%`,
       sub: "Strategy Execution",
-      subColor: "text-emerald-500",
-      trend: "↑ 12% improvement",
-      trendColor: "text-emerald-500",
+      subColor: "text-blue-500",
+      trend: `${s.total} total trades`,
+      trendColor: "text-blue-500",
       chartColor: "#3b82f6",
-      chartData: [50, 52, 51, 58, 60, 61, 63],
+      chartData: [50, 52, 51, 58, 60, 61, s.winRate],
       glow: "neon-glow-blue",
     },
     {
       icon: <Target className="size-5" />,
       iconBg: "bg-yellow-500/15 text-yellow-500 border-yellow-500/30",
-      label: "Focus Area",
-      value: "Risk Management",
+      label: "Risk Management",
+      value: `${ai.riskControlScore}/100`,
       valueColor: "text-yellow-500 text-[15px]",
-      sub: "Needs more discipline",
+      sub: ai.riskControlScore > 75 ? "Disciplined" : "Needs more discipline",
       subColor: "text-zinc-400",
-      trend: "Focus for next 14 days",
+      trend: "Current Score",
       trendColor: "text-zinc-500",
       chartColor: "#eab308",
-      chartData: [80, 75, 70, 72, 60, 55, 50],
+      chartData: [80, 75, 70, 72, 60, 55, ai.riskControlScore],
       glow: "neon-glow-amber",
     },
     {
       icon: <Shield className="size-5" />,
       iconBg: "bg-[#4f2a96]/20 text-[#8b5cf6] border-[#4f2a96]/40",
-      label: "Consistency",
-      value: "68%",
-      sub: "Improving",
+      label: "Discipline",
+      value: `${ai.disciplineScore}/100`,
+      sub: "Trade Consistency",
       subColor: "text-emerald-500",
-      trend: "↑ 10% vs last 7 days",
+      trend: "Current Score",
       trendColor: "text-emerald-500",
       chartColor: "#10b981",
-      chartData: [55, 58, 54, 62, 65, 64, 68],
+      chartData: [55, 58, 54, 62, 65, 64, ai.disciplineScore],
       glow: "neon-glow-purple",
     },
     {
       icon: <Rocket className="size-5" />,
       iconBg: "bg-[#4f2a96]/20 text-[#8b5cf6] border-[#4f2a96]/40",
-      label: "Potential",
-      value: "High",
+      label: "Profit Factor",
+      value: s.profitFactor.toFixed(2),
       valueColor: "text-[#8b5cf6]",
-      sub: "Keep up the work!",
+      sub: s.profitFactor >= 1.5 ? "Highly Profitable" : "Keep working",
       subColor: "text-zinc-400",
-      trend: "AI Confidence",
+      trend: "Edge Analysis",
       trendColor: "text-zinc-500",
       showBars: true,
       glow: "neon-glow-purple",
@@ -369,10 +370,10 @@ function CoachPage() {
         </div>
 
         {/* ═══════ MAIN 2-COLUMN LAYOUT (Exact 100% Reference Replica) ═══════ */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-stretch w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-stretch w-full">
           
           {/* ────────────────── LEFT COLUMN (Dashboard, Recommendations, Notes) ────────────────── */}
-          <div className="lg:col-span-3 space-y-4 flex flex-col justify-between w-full">
+          <div className="lg:col-span-2 space-y-4 flex flex-col w-full">
             
             {/* 1. Coach Dashboard */}
             <Panel3D
@@ -506,51 +507,51 @@ function CoachPage() {
               }
             >
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {/* Card 1 */}
+                {/* Dynamic Recommendation 1 */}
                 <div 
-                  onClick={() => handleAskQuestion("Give me a detailed action plan for: Improve Risk Management. Context: You are risking more than 2% on some trades. Keep it consistent.")}
+                  onClick={() => handleAskQuestion(`Give me a detailed action plan for: ${ai.topStrengths[0] || "Improving Consistency"}. Context: This is one of my strongest areas.`)}
                   className="neon-card neon-glow-green p-3.5 transition-all flex flex-col h-full cursor-pointer group"
                 >
                   <div className="flex gap-2.5 mb-2.5">
                     <div className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-500">
                       <Shield className="size-3.5" />
                     </div>
-                    <div>
-                      <p className="text-[12px] font-bold text-zinc-100 leading-tight">Improve Risk Management</p>
-                      <p className="text-[9px] font-semibold text-emerald-400 mt-0.5">High Priority</p>
+                    <div className="min-w-0">
+                      <p className="text-[12px] font-bold text-zinc-100 leading-tight truncate">Keep Refining: {ai.topStrengths[0] || "Consistency"}</p>
+                      <p className="text-[9px] font-semibold text-emerald-400 mt-0.5">Strength Identified</p>
                     </div>
                   </div>
-                  <p className="text-[10.5px] text-zinc-400 leading-relaxed mb-3 flex-1">
-                    You are risking more than 2% on some trades. Keep it consistent.
+                  <p className="text-[10.5px] text-zinc-400 leading-relaxed mb-3 flex-1 line-clamp-3">
+                    You're doing well in this area. Focus on scaling your edge while maintaining your current discipline levels.
                   </p>
                   <div className="flex items-center gap-1 text-[11px] font-semibold text-emerald-400 group-hover:text-emerald-300 transition-colors w-max">
                     View Details <ArrowRight className="size-3" />
                   </div>
                 </div>
 
-                {/* Card 2 */}
+                {/* Dynamic Recommendation 2 */}
                 <div 
-                  onClick={() => handleAskQuestion("Give me a detailed action plan for: Focus on Your A+ Setups. Context: You have a 78% win rate on liquidity sweep setups. Trade more of these.")}
+                  onClick={() => handleAskQuestion(`Give me a detailed action plan for: ${ai.topMistakes[0] || "Risk Control"}. Context: This is an area I need to improve.`)}
                   className="neon-card neon-glow-amber p-3.5 transition-all flex flex-col h-full cursor-pointer group"
                 >
                   <div className="flex gap-2.5 mb-2.5">
                     <div className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-yellow-500/30 bg-yellow-500/10 text-yellow-500">
-                      <Target className="size-3.5" />
+                      <AlertTriangle className="size-3.5" />
                     </div>
-                    <div>
-                      <p className="text-[12px] font-bold text-zinc-100 leading-tight">Focus on Your A+ Setups</p>
-                      <p className="text-[9px] font-semibold text-yellow-400 mt-0.5">Medium Priority</p>
+                    <div className="min-w-0">
+                      <p className="text-[12px] font-bold text-zinc-100 leading-tight truncate">Needs Work: {ai.topMistakes[0] || "Risk"}</p>
+                      <p className="text-[9px] font-semibold text-yellow-400 mt-0.5">High Priority</p>
                     </div>
                   </div>
-                  <p className="text-[10.5px] text-zinc-400 leading-relaxed mb-3 flex-1">
-                    You have a 78% win rate on liquidity sweep setups. Trade more of these.
+                  <p className="text-[10.5px] text-zinc-400 leading-relaxed mb-3 flex-1 line-clamp-3">
+                    Your analytics show room for improvement here. Tightening this aspect will significantly boost your profit factor.
                   </p>
                   <div className="flex items-center gap-1 text-[11px] font-semibold text-yellow-400 group-hover:text-yellow-300 transition-colors w-max">
                     View Details <ArrowRight className="size-3" />
                   </div>
                 </div>
 
-                {/* Card 3 */}
+                {/* Dynamic Recommendation 3 */}
                 <div 
                   onClick={() => handleAskQuestion("Give me a detailed action plan for: Mindset Work. Context: Work on patience and avoiding revenge trading.")}
                   className="neon-card neon-glow-blue p-3.5 transition-all flex flex-col h-full cursor-pointer group"
@@ -559,13 +560,13 @@ function CoachPage() {
                     <div className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-blue-500/30 bg-blue-500/10 text-blue-500">
                       <Brain className="size-3.5" />
                     </div>
-                    <div>
-                      <p className="text-[12px] font-bold text-zinc-100 leading-tight">Mindset Work</p>
+                    <div className="min-w-0">
+                      <p className="text-[12px] font-bold text-zinc-100 leading-tight truncate">Mindset & Patience</p>
                       <p className="text-[9px] font-semibold text-blue-400 mt-0.5">Medium Priority</p>
                     </div>
                   </div>
-                  <p className="text-[10.5px] text-zinc-400 leading-relaxed mb-3 flex-1">
-                    Work on patience and avoiding revenge trading.
+                  <p className="text-[10.5px] text-zinc-400 leading-relaxed mb-3 flex-1 line-clamp-3">
+                    Trade execution often relies on patience. Allow setups to come to you instead of forcing them.
                   </p>
                   <div className="flex items-center gap-1 text-[11px] font-semibold text-blue-400 group-hover:text-blue-300 transition-colors w-max">
                     View Details <ArrowRight className="size-3" />
@@ -585,70 +586,32 @@ function CoachPage() {
                 >View all</button>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-                {[
-                  {
-                    title: "Great Improvement!",
-                    time: "Today, 10:30 AM",
-                    desc: "You followed your trading plan well today. Keep it up!",
-                    tag: "Positive",
-                    glow: "neon-glow-green",
-                    tagColor: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",
-                    iconColor: "text-emerald-500 bg-emerald-500/10 border-emerald-500/30",
-                    icon: <Activity className="size-3.5" />
-                  },
-                  {
-                    title: "Risk Alert",
-                    time: "Yesterday, 09:15 AM",
-                    desc: "You risked 3.2% in one trade. Remember your 1-2% rule.",
-                    tag: "Alert",
-                    glow: "neon-glow-amber",
-                    tagColor: "text-yellow-500 bg-yellow-500/10 border-yellow-500/20",
-                    iconColor: "text-yellow-500 bg-yellow-500/10 border-yellow-500/30",
-                    icon: <AlertTriangle className="size-3.5" />
-                  },
-                  {
-                    title: "Strategy Tip",
-                    time: "Aug 12, 08:40 AM",
-                    desc: "Focus on liquidity + market structure alignment.",
-                    tag: "Tip",
-                    glow: "neon-glow-blue",
-                    tagColor: "text-blue-500 bg-blue-500/10 border-blue-500/20",
-                    iconColor: "text-blue-500 bg-blue-500/10 border-blue-500/30",
-                    icon: <FileCheck2 className="size-3.5" />
-                  },
-                  {
-                    title: "Mindset Reminder",
-                    time: "Aug 11, 07:20 AM",
-                    desc: "Stay patient. The right setups will come.",
-                    tag: "Reminder",
-                    glow: "neon-glow-purple",
-                    tagColor: "text-[#a855f7] bg-[#a855f7]/10 border-[#a855f7]/20",
-                    iconColor: "text-[#a855f7] bg-[#a855f7]/10 border-[#a855f7]/30",
-                    icon: <Brain className="size-3.5" />
-                  }
-                ].map((note) => (
-                  <div key={note.title} className={cn("neon-card p-3 flex flex-col h-full", note.glow)}>
+                {ai.improvementPlan.slice(0, 4).map((note, index) => {
+                  const isPositive = index === 0 && ai.overallGrade.startsWith("A");
+                  const glow = isPositive ? "neon-glow-green" : "neon-glow-purple";
+                  const iconColor = isPositive ? "text-emerald-500 bg-emerald-500/10 border-emerald-500/30" : "text-[#a855f7] bg-[#a855f7]/10 border-[#a855f7]/30";
+                  const Icon = isPositive ? Activity : Brain;
+                  return (
+                  <div key={index} className={cn("neon-card p-3 flex flex-col h-full", glow)}>
                     <div className="flex items-center gap-2 mb-2">
-                      <div className={cn("size-5 rounded-full flex items-center justify-center border", note.iconColor)}>
-                        {note.icon}
+                      <div className={cn("size-5 rounded-full flex items-center justify-center border shrink-0", iconColor)}>
+                        <Icon className="size-3.5" />
                       </div>
-                      <p className="text-[9px] text-zinc-500 font-medium">{note.time}</p>
+                      <p className="text-[9px] text-zinc-500 font-medium shrink-0">Automated Insight</p>
                     </div>
-                    <p className="text-[11.5px] font-bold text-zinc-100 mb-1 leading-tight">{note.title}</p>
-                    <p className="text-[10px] text-zinc-400 leading-relaxed mb-2.5 flex-1">{note.desc}</p>
-                    <div className="mt-auto">
-                      <span className={cn("inline-block text-[8.5px] font-bold px-1.5 py-0.5 rounded border", note.tagColor)}>
-                        {note.tag}
-                      </span>
-                    </div>
+                    <p className="text-[11.5px] font-bold text-zinc-100 mb-1 leading-tight line-clamp-2">{note}</p>
+                    <p className="text-[10px] text-zinc-400 leading-relaxed flex-1 line-clamp-3">
+                      This observation is based on your recent trading history and performance metrics.
+                    </p>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
 
           {/* ────────────────── RIGHT COLUMN (Chat + Quick Actions) ────────────────── */}
-          <div className="lg:col-span-2 space-y-4 flex flex-col justify-between w-full">
+          <div className="lg:col-span-1 space-y-4 flex flex-col w-full">
             
             {/* 1. Chat with AI Coach */}
             <div className="neon-card neon-glow-purple flex flex-col flex-1 min-h-[500px] overflow-hidden relative">
@@ -760,7 +723,7 @@ function CoachPage() {
                       <span className="text-[10px] text-zinc-600">{msg.time}</span>
                     </div>
                     <div className={cn(
-                      "rounded-2xl px-4 py-2.5 text-[12.5px] leading-relaxed shadow-sm max-w-[92%]",
+                      "rounded-2xl px-4 py-2.5 text-[12.5px] leading-relaxed shadow-sm max-w-[92%] break-words overflow-hidden",
                       msg.role === "user"
                         ? "bg-[#4f2a96] text-white rounded-tr-sm border border-[#8b5cf6]/30"
                         : "bg-[#18181b] text-zinc-200 border border-zinc-800 rounded-tl-sm"
@@ -853,14 +816,14 @@ function CoachPage() {
                     key={action.label}
                     type="button"
                     onClick={() => handleAskQuestion(action.label)}
-                    className={cn("neon-card p-2.5 flex items-center gap-2.5 text-left transition-all group cursor-pointer", action.glow)}
+                    className={cn("neon-card p-2.5 flex items-center gap-2.5 text-left transition-all group cursor-pointer min-w-0 overflow-hidden", action.glow)}
                   >
                     <div className="flex size-7 shrink-0 items-center justify-center rounded border border-zinc-700/60 bg-zinc-800/50 group-hover:text-zinc-200">
                       {action.icon}
                     </div>
-                    <div>
-                      <p className="text-[11px] font-bold text-zinc-200 leading-tight">{action.label}</p>
-                      <p className="text-[9px] text-zinc-500 mt-0.5">{action.sub}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] font-bold text-zinc-200 leading-tight truncate">{action.label}</p>
+                      <p className="text-[9px] text-zinc-500 mt-0.5 truncate">{action.sub}</p>
                     </div>
                   </button>
                 ))}

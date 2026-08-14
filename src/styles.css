@@ -132,8 +132,8 @@
   /* Semantic Tokens */
   --success: #10B981;
   --success-bg: rgba(16, 185, 129, 0.12);
-  --danger: #F43F5E;
-  --danger-bg: rgba(244, 63, 94, 0.12);
+  --danger: #EF4444;
+  --danger-bg: rgba(239, 68, 68, 0.12);
   --ai: #A855F7;
   --ai-bg: rgba(168, 85, 247, 0.12);
   --info: #3B82F6;
@@ -146,7 +146,7 @@
   --color-chart-2: #A855F7;
   --color-chart-3: #10B981;
   --color-chart-4: #F59E0B;
-  --color-chart-5: #F43F5E;
+  --color-chart-5: #EF4444;
 }
 
 @layer utilities {
@@ -172,100 +172,144 @@
 
   /* 🟢 Emerald Green Glowing Border (Profit, Strength, Wins) */
   .neon-glow-green {
-    border: 1px solid rgba(16, 185, 129, 0.45) !important;
+    border: 1px solid rgba(16, 185, 129, 0.5) !important;
     box-shadow: 
-      0 0 14px -2px rgba(16, 185, 129, 0.32),
-      inset 0 1px 0 0 rgba(16, 185, 129, 0.2),
-      0 8px 20px -4px rgba(0, 0, 0, 0.6) !important;
+      0 0 16px -2px rgba(16, 185, 129, 0.35),
+      inset 0 1.5px 0 0 rgba(16, 185, 129, 0.3),
+      0 8px 22px -4px rgba(0, 0, 0, 0.65) !important;
   }
   .neon-glow-green:hover {
-    border-color: rgba(16, 185, 129, 0.85) !important;
+    border-color: rgba(16, 185, 129, 0.9) !important;
     box-shadow: 
-      0 0 24px -1px rgba(16, 185, 129, 0.55),
-      inset 0 1px 0 0 rgba(16, 185, 129, 0.35),
-      0 14px 28px -6px rgba(0, 0, 0, 0.7) !important;
+      0 0 28px -1px rgba(16, 185, 129, 0.6),
+      inset 0 1.5px 0 0 rgba(16, 185, 129, 0.45),
+      0 14px 30px -6px rgba(0, 0, 0, 0.75) !important;
   }
 
   /* 🔴 Crimson Rose Red Glowing Border (Loss, Alerts, Drawdown) */
   .neon-glow-red {
-    border: 1px solid rgba(244, 63, 94, 0.45) !important;
+    border: 1px solid rgba(239, 68, 68, 0.5) !important;
     box-shadow: 
-      0 0 14px -2px rgba(244, 63, 94, 0.32),
-      inset 0 1px 0 0 rgba(244, 63, 94, 0.2),
-      0 8px 20px -4px rgba(0, 0, 0, 0.6) !important;
+      0 0 16px -2px rgba(239, 68, 68, 0.35),
+      inset 0 1.5px 0 0 rgba(239, 68, 68, 0.3),
+      0 8px 22px -4px rgba(0, 0, 0, 0.65) !important;
   }
   .neon-glow-red:hover {
-    border-color: rgba(244, 63, 94, 0.85) !important;
+    border-color: rgba(239, 68, 68, 0.9) !important;
     box-shadow: 
-      0 0 24px -1px rgba(244, 63, 94, 0.55),
-      inset 0 1px 0 0 rgba(244, 63, 94, 0.35),
-      0 14px 28px -6px rgba(0, 0, 0, 0.7) !important;
+      0 0 28px -1px rgba(239, 68, 68, 0.6),
+      inset 0 1.5px 0 0 rgba(239, 68, 68, 0.45),
+      0 14px 30px -6px rgba(0, 0, 0, 0.75) !important;
   }
 
   /* 🔵 Electric Cobalt Blue Glowing Border (Trades, Direction, Analytics) */
   .neon-glow-blue {
-    border: 1px solid rgba(59, 130, 246, 0.45) !important;
+    border: 1px solid rgba(59, 130, 246, 0.5) !important;
     box-shadow: 
-      0 0 14px -2px rgba(59, 130, 246, 0.32),
-      inset 0 1px 0 0 rgba(59, 130, 246, 0.2),
-      0 8px 20px -4px rgba(0, 0, 0, 0.6) !important;
+      0 0 16px -2px rgba(59, 130, 246, 0.35),
+      inset 0 1.5px 0 0 rgba(59, 130, 246, 0.3),
+      0 8px 22px -4px rgba(0, 0, 0, 0.65) !important;
   }
   .neon-glow-blue:hover {
-    border-color: rgba(59, 130, 246, 0.85) !important;
+    border-color: rgba(59, 130, 246, 0.9) !important;
     box-shadow: 
-      0 0 24px -1px rgba(59, 130, 246, 0.55),
-      inset 0 1px 0 0 rgba(59, 130, 246, 0.35),
-      0 14px 28px -6px rgba(0, 0, 0, 0.7) !important;
+      0 0 28px -1px rgba(59, 130, 246, 0.6),
+      inset 0 1.5px 0 0 rgba(59, 130, 246, 0.45),
+      0 14px 30px -6px rgba(0, 0, 0, 0.75) !important;
   }
 
   /* 🟣 Ultraviolet Purple Glowing Border (AI Coach, Insights, Profit Factor) */
   .neon-glow-purple {
-    border: 1px solid rgba(168, 85, 247, 0.45) !important;
+    border: 1px solid rgba(168, 85, 247, 0.5) !important;
     box-shadow: 
-      0 0 14px -2px rgba(168, 85, 247, 0.32),
-      inset 0 1px 0 0 rgba(168, 85, 247, 0.2),
-      0 8px 20px -4px rgba(0, 0, 0, 0.6) !important;
+      0 0 16px -2px rgba(168, 85, 247, 0.35),
+      inset 0 1.5px 0 0 rgba(168, 85, 247, 0.3),
+      0 8px 22px -4px rgba(0, 0, 0, 0.65) !important;
   }
   .neon-glow-purple:hover {
-    border-color: rgba(168, 85, 247, 0.85) !important;
+    border-color: rgba(168, 85, 247, 0.9) !important;
     box-shadow: 
-      0 0 24px -1px rgba(168, 85, 247, 0.55),
-      inset 0 1px 0 0 rgba(168, 85, 247, 0.35),
-      0 14px 28px -6px rgba(0, 0, 0, 0.7) !important;
+      0 0 28px -1px rgba(168, 85, 247, 0.6),
+      inset 0 1.5px 0 0 rgba(168, 85, 247, 0.45),
+      0 14px 30px -6px rgba(0, 0, 0, 0.75) !important;
   }
 
   /* 🟡 Amber Gold Glowing Border (Risk Discipline, Warnings, Streaks) */
   .neon-glow-amber {
-    border: 1px solid rgba(245, 158, 11, 0.45) !important;
+    border: 1px solid rgba(245, 158, 11, 0.5) !important;
     box-shadow: 
-      0 0 14px -2px rgba(245, 158, 11, 0.32),
-      inset 0 1px 0 0 rgba(245, 158, 11, 0.2),
-      0 8px 20px -4px rgba(0, 0, 0, 0.6) !important;
+      0 0 16px -2px rgba(245, 158, 11, 0.35),
+      inset 0 1.5px 0 0 rgba(245, 158, 11, 0.3),
+      0 8px 22px -4px rgba(0, 0, 0, 0.65) !important;
   }
   .neon-glow-amber:hover {
-    border-color: rgba(245, 158, 11, 0.85) !important;
+    border-color: rgba(245, 158, 11, 0.9) !important;
     box-shadow: 
-      0 0 24px -1px rgba(245, 158, 11, 0.55),
-      inset 0 1px 0 0 rgba(245, 158, 11, 0.35),
-      0 14px 28px -6px rgba(0, 0, 0, 0.7) !important;
+      0 0 28px -1px rgba(245, 158, 11, 0.6),
+      inset 0 1.5px 0 0 rgba(245, 158, 11, 0.45),
+      0 14px 30px -6px rgba(0, 0, 0, 0.75) !important;
   }
 
   /* 🌌 Aurora Glowing Border (Hero, Highlights) */
   .neon-glow-aurora {
-    border: 1px solid rgba(168, 85, 247, 0.5) !important;
+    border: 1px solid rgba(168, 85, 247, 0.55) !important;
     box-shadow: 
-      0 0 16px -2px rgba(168, 85, 247, 0.35),
-      0 0 20px -4px rgba(59, 130, 246, 0.25),
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.15),
-      0 8px 20px -4px rgba(0, 0, 0, 0.6) !important;
+      0 0 18px -2px rgba(168, 85, 247, 0.4),
+      0 0 22px -4px rgba(59, 130, 246, 0.3),
+      inset 0 1.5px 0 0 rgba(255, 255, 255, 0.2),
+      0 8px 22px -4px rgba(0, 0, 0, 0.65) !important;
   }
   .neon-glow-aurora:hover {
-    border-color: rgba(168, 85, 247, 0.85) !important;
+    border-color: rgba(168, 85, 247, 0.9) !important;
     box-shadow: 
-      0 0 26px -1px rgba(168, 85, 247, 0.55),
-      0 0 28px -2px rgba(59, 130, 246, 0.4),
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.25),
-      0 14px 28px -6px rgba(0, 0, 0, 0.7) !important;
+      0 0 28px -1px rgba(168, 85, 247, 0.6),
+      0 0 30px -2px rgba(59, 130, 246, 0.45),
+      inset 0 1.5px 0 0 rgba(255, 255, 255, 0.3),
+      0 14px 30px -6px rgba(0, 0, 0, 0.75) !important;
+  }
+
+  /* 🌟 LUMINOUS BRIGHT CHART GRAPHICS GLOW UTILITIES 🌟 */
+  .chart-glow-green,
+  .recharts-responsive-container path.recharts-curve[stroke="#10b981"],
+  .recharts-responsive-container path.recharts-curve[stroke="#16a34a"] {
+    filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.95)) drop-shadow(0 0 14px rgba(16, 185, 129, 0.55));
+  }
+
+  .chart-glow-red,
+  .recharts-responsive-container path.recharts-curve[stroke="#ef4444"],
+  .recharts-responsive-container path.recharts-curve[stroke="#f43f5e"],
+  .recharts-responsive-container path.recharts-curve[stroke="#dc2626"] {
+    filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.95)) drop-shadow(0 0 14px rgba(239, 68, 68, 0.55));
+  }
+
+  .chart-glow-blue,
+  .recharts-responsive-container path.recharts-curve[stroke="#3b82f6"] {
+    filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.95)) drop-shadow(0 0 14px rgba(59, 130, 246, 0.55));
+  }
+
+  .chart-glow-purple,
+  .recharts-responsive-container path.recharts-curve[stroke="#a855f7"] {
+    filter: drop-shadow(0 0 6px rgba(168, 85, 247, 0.95)) drop-shadow(0 0 14px rgba(168, 85, 247, 0.55));
+  }
+
+  .chart-glow-amber,
+  .recharts-responsive-container path.recharts-curve[stroke="#f59e0b"] {
+    filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.95)) drop-shadow(0 0 14px rgba(245, 158, 11, 0.55));
+  }
+
+  /* Target Recharts SVG Elements for Luminous Glow */
+  .recharts-active-dot circle,
+  .recharts-dot circle {
+    filter: drop-shadow(0 0 6px currentColor) drop-shadow(0 0 12px currentColor);
+  }
+
+  .recharts-bar-rectangle path {
+    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2));
+  }
+
+  .recharts-pie-sector path {
+    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.25));
+    transition: filter 0.2s ease, transform 0.2s ease;
   }
 }
 
