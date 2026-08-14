@@ -30,8 +30,8 @@ const nav = [
   { to: "/journal", label: "Journal", icon: NotebookPen },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/ai-coach", label: "AI Coach", icon: Brain },
-  { to: "/calendar", label: "Calendar", icon: CalendarDays },
   { to: "/reports", label: "Reports", icon: FileText },
+  { to: "/calendar", label: "Calendar", icon: CalendarDays },
   { to: "/settings", label: "Settings", icon: Settings },
   { to: "/profile", label: "Profile", icon: User },
 ] as const;
@@ -41,6 +41,7 @@ const mobileNav = [
   { to: "/journal", label: "Journal", icon: NotebookPen },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/ai-coach", label: "Coach", icon: Brain },
+  { to: "/reports", label: "Reports", icon: FileText },
   { to: "/calendar", label: "Calendar", icon: CalendarDays },
 ];
 
@@ -130,9 +131,9 @@ export function AppShell({
       } else if (e.key === "4") {
         navigate({ to: "/ai-coach", search: {} as any });
       } else if (e.key === "5") {
-        navigate({ to: "/calendar" });
-      } else if (e.key === "6") {
         navigate({ to: "/reports" });
+      } else if (e.key === "6") {
+        navigate({ to: "/calendar" });
       }
     };
 
@@ -236,8 +237,8 @@ export function AppShell({
               className="flex items-center justify-between rounded-xl border border-border/80 bg-surface p-2.5 hover:bg-muted/60 transition group cursor-pointer"
             >
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="relative size-8 shrink-0 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
-                  {initials}
+                <div className="relative size-8 shrink-0 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold shadow-sm overflow-hidden">
+                  <img src={profile?.avatar_url || "/avatar.png"} alt={displayName} className="size-full object-cover rounded-full" />
                   <span className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full bg-emerald-500 ring-2 ring-background"></span>
                 </div>
                 <div className="min-w-0 text-left">
@@ -300,17 +301,13 @@ export function AppShell({
               <Link
                 to="/profile"
                 aria-label="Profile"
-                className="grid size-9 place-items-center rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-sm transition-transform hover:scale-105"
+                className="grid size-9 place-items-center rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-sm transition-transform hover:scale-105 overflow-hidden"
               >
-                {profile?.avatar_url ? (
-                  <img
-                    src={profile.avatar_url}
-                    alt={displayName}
-                    className="size-full rounded-xl object-cover"
-                  />
-                ) : (
-                  initials
-                )}
+                <img
+                  src={profile?.avatar_url || "/avatar.png"}
+                  alt={displayName}
+                  className="size-full rounded-xl object-cover"
+                />
               </Link>
             </div>
           </div>
