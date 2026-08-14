@@ -96,17 +96,17 @@
   --primary: #0F172A;
   --primary-foreground: #FFFFFF;
   
-  /* Semantic Tokens — Vibrant Neon Red & Green System */
-  --success: #00ff9d;
-  --success-bg: rgba(0, 255, 157, 0.12);
-  --danger: #ff2a5f;
-  --danger-bg: rgba(255, 42, 95, 0.12);
-  --ai: #7C3AED;
-  --ai-bg: #F5F3FF;
-  --info: #2563EB;
-  --info-bg: #EFF6FF;
-  --warning: #D97706;
-  --warning-bg: #FFFBEB;
+  /* Semantic Tokens — Dark Neon Color System */
+  --success: #00c874;
+  --success-bg: rgba(0, 200, 116, 0.14);
+  --danger: #e11d48;
+  --danger-bg: rgba(225, 29, 72, 0.14);
+  --ai: #7c3aed;
+  --ai-bg: rgba(124, 58, 237, 0.12);
+  --info: #1d4ed8;
+  --info-bg: rgba(29, 78, 216, 0.12);
+  --warning: #d97706;
+  --warning-bg: rgba(217, 119, 6, 0.12);
 }
 
 .dark {
@@ -129,24 +129,24 @@
   --primary: #FFFFFF;
   --primary-foreground: #06080F;
   
-  /* Semantic Tokens — Neon Red & Neon Green */
-  --success: #00ff9d;
-  --success-bg: rgba(0, 255, 157, 0.14);
-  --danger: #ff2a5f;
-  --danger-bg: rgba(255, 42, 95, 0.14);
-  --ai: #A855F7;
-  --ai-bg: rgba(168, 85, 247, 0.12);
-  --info: #3B82F6;
-  --info-bg: rgba(59, 130, 246, 0.12);
-  --warning: #F59E0B;
-  --warning-bg: rgba(245, 158, 11, 0.12);
+  /* Semantic Tokens — Dark Neon Palette (Deep, Rich, Premium Dark Neon Look) */
+  --success: #00e676;
+  --success-bg: rgba(0, 230, 118, 0.15);
+  --danger: #ff1744;
+  --danger-bg: rgba(255, 23, 68, 0.15);
+  --ai: #9333ea;
+  --ai-bg: rgba(147, 51, 234, 0.15);
+  --info: #2563eb;
+  --info-bg: rgba(37, 99, 235, 0.15);
+  --warning: #d97706;
+  --warning-bg: rgba(217, 119, 6, 0.15);
 
-  /* Chart Colors */
-  --color-chart-1: #3B82F6;
-  --color-chart-2: #A855F7;
-  --color-chart-3: #00ff9d;
-  --color-chart-4: #F59E0B;
-  --color-chart-5: #ff2a5f;
+  /* Chart Colors — Dark Neon System */
+  --color-chart-1: #2563eb;
+  --color-chart-2: #9333ea;
+  --color-chart-3: #00e676;
+  --color-chart-4: #d97706;
+  --color-chart-5: #ff1744;
 }
 
 @layer utilities {
