@@ -51,6 +51,7 @@ import {
   pnlUsd,
   stats,
   aggregateTradePatterns,
+  sortTradesNewestFirst,
   type Trade,
 } from "@/lib/trades";
 import { cn } from "@/lib/utils";
@@ -282,8 +283,11 @@ function Dashboard() {
     return bins;
   }, [userTrades, s.total]);
 
-  // Recent Trade item (last trade)
-  const lastTrade = userTrades.length > 0 ? userTrades[0] : null;
+  // Recent Trade item (last trade - newest first)
+  const lastTrade = useMemo(() => {
+    const sorted = sortTradesNewestFirst(userTrades);
+    return sorted.length > 0 ? sorted[0] : null;
+  }, [userTrades]);
 
   const [dateRangeOpen, setDateRangeOpen] = useState(false);
   const [dateRangeLabel, setDateRangeLabel] = useState("Aug 07, 2025 – Aug 13, 2025");

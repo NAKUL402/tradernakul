@@ -4,6 +4,7 @@ export type Trade = {
   id: string;
   tradeNo?: number | undefined;
   date: string; // ISO yyyy-mm-dd
+  createdAt?: string; // ISO timestamp
   pair: string;
   side: "Buy" | "Sell";
   session: "Asian" | "London" | "New York";
@@ -25,6 +26,29 @@ export type Trade = {
   rating?: number | undefined; // 1-5 Star rating
   reason?: string | undefined; // Reason for taking trade
 };
+
+export function isValidImageUrl(url?: string | null): boolean {
+  if (!url || url === "chart-1") return false;
+  return (
+    url.startsWith("http://") ||
+    url.startsWith("https://") ||
+    url.startsWith("data:image/") ||
+    url.startsWith("blob:")
+  );
+}
+
+export function sortTradesNewestFirst(trades: Trade[]): Trade[] {
+  return [...trades].sort((a, b) => {
+    const timeA = a.createdAt
+      ? new Date(a.createdAt).getTime()
+      : new Date(`${a.date}T${a.entryTime || "00:00"}`).getTime() || 0;
+    const timeB = b.createdAt
+      ? new Date(b.createdAt).getTime()
+      : new Date(`${b.date}T${b.entryTime || "00:00"}`).getTime() || 0;
+    if (timeB !== timeA) return timeB - timeA;
+    return (b.id || "").localeCompare(a.id || "");
+  });
+}
 
 export const PAIRS = ["XAUUSD", "EURUSD", "GBPUSD", "USDJPY", "BTCUSD", "NAS100"];
 export const SETUPS = [
@@ -265,6 +289,7 @@ export async function fetchUserTrades(): Promise<Trade[]> {
       const { data, error } = await supabase
         .from("trades")
         .select("*")
+        .order("created_at", { ascending: false, nullsFirst: false })
         .order("date", { ascending: false });
 
       if (error) {
@@ -297,6 +322,7 @@ export async function fetchUserTrades(): Promise<Trade[]> {
             id: t.id,
             tradeNo: t.trade_no ? parseInt(t.trade_no, 10) : undefined,
             date: t.date,
+            createdAt: t.created_at || (t.date ? `${t.date}T${t.entry_time || "00:00"}:00Z` : undefined),
             pair: t.pair,
             side: t.side,
             session: t.session,
@@ -320,33 +346,45 @@ export async function fetchUserTrades(): Promise<Trade[]> {
           };
         });
 
-        // Batch fetch signed URLs for valid relative paths
+        // Batch fetch signed URLs for valid relative paths (excluding data URLs, blob URLs, and full http URLs)
         const pathsToSign = parsedTrades
           .map((t: Trade) => t.screenshot)
-          .filter((s: string) => s && s !== "chart-1" && !s.startsWith("http"));
+          .filter((s: string) => s && s !== "chart-1" && !s.startsWith("http") && !s.startsWith("data:") && !s.startsWith("blob:"));
 
         if (pathsToSign.length > 0) {
-          const { data: signedUrlsData, error: signError } = await (supabase.storage
-            .from("trade-screenshots") as any)
-            .createSignedUrls(pathsToSign, 31536000); // 1 year expiry for cached viewing
+          const urlMap = new Map<string, string>();
+          try {
+            const { data: signedUrlsData, error: signError } = await (supabase.storage
+              .from("trade-screenshots") as any)
+              .createSignedUrls(pathsToSign, 31536000); // 1 year expiry for cached viewing
 
-          if (!signError && signedUrlsData) {
-            const urlMap = new Map<string, string>();
-            signedUrlsData.forEach((item: any) => {
-              if (item.signedUrl) {
-                urlMap.set(item.path, item.signedUrl);
-              }
-            });
-
-            parsedTrades = parsedTrades.map((t: Trade) => {
-              if (t.screenshot && urlMap.has(t.screenshot)) {
-                return { ...t, screenshot: urlMap.get(t.screenshot)! };
-              }
-              return t;
-            });
-          } else if (signError) {
-            console.error("[Storage] Failed to generate signed URLs:", signError);
+            if (!signError && signedUrlsData) {
+              signedUrlsData.forEach((item: any) => {
+                if (item.signedUrl) {
+                  urlMap.set(item.path, item.signedUrl);
+                }
+              });
+            }
+          } catch (e) {
+            console.warn("[Storage] Signed URL notice:", e);
           }
+
+          // Fallback to getPublicUrl for any path that couldn't generate a signed URL
+          pathsToSign.forEach((path) => {
+            if (!urlMap.has(path)) {
+              const publicUrl = supabase.storage.from("trade-screenshots").getPublicUrl(path).data?.publicUrl;
+              if (publicUrl) {
+                urlMap.set(path, publicUrl);
+              }
+            }
+          });
+
+          parsedTrades = parsedTrades.map((t: Trade) => {
+            if (t.screenshot && urlMap.has(t.screenshot)) {
+              return { ...t, screenshot: urlMap.get(t.screenshot)! };
+            }
+            return t;
+          });
         }
 
         remoteTrades = parsedTrades;
@@ -374,7 +412,7 @@ export async function fetchUserTrades(): Promise<Trade[]> {
     }
   }
 
-  return Array.from(resultMap.values());
+  return sortTradesNewestFirst(Array.from(resultMap.values()));
 }
 
 export async function saveTradeToSupabase(
@@ -391,26 +429,57 @@ export async function saveTradeToSupabase(
       ? tradePayload.id
       : generateUUID();
 
-  if (imageFile && isSupabaseConfigured) {
-    const fileExt = imageFile.name.split(".").pop();
-    const filePath = `${userId}/${tradeId}/${Date.now()}.${fileExt}`;
-    
-    const { error: uploadError } = (await supabase.storage
-      .from("trade-screenshots")
-      .upload(filePath, imageFile)) as any;
+  const createdAt = tradePayload.createdAt || new Date().toISOString();
 
-    if (uploadError) {
-      console.error("[Storage] Image upload failed:", uploadError);
-      throw new Error("Failed to upload screenshot: " + uploadError.message);
+  // Convert File to base64 Data URL so image is instantly previewable & stored locally even offline
+  if (imageFile) {
+    try {
+      screenshotUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(imageFile);
+      });
+    } catch (e) {
+      console.warn("Failed to convert image to data URL:", e);
     }
-    
-    screenshotUrl = filePath;
+  }
+
+  // Upload to Supabase Storage bucket if configured
+  if (imageFile && isSupabaseConfigured) {
+    try {
+      const fileExt = imageFile.name.split(".").pop() || "png";
+      const filePath = `${userId}/${tradeId}/${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError } = (await supabase.storage
+        .from("trade-screenshots")
+        .upload(filePath, imageFile, { upsert: true })) as any;
+
+      if (!uploadError) {
+        const { data: signedData } = await (supabase.storage.from("trade-screenshots") as any).createSignedUrl(filePath, 31536000);
+        if (signedData?.signedUrl) {
+          screenshotUrl = signedData.signedUrl;
+        } else {
+          const publicUrl = supabase.storage.from("trade-screenshots").getPublicUrl(filePath).data?.publicUrl;
+          if (publicUrl) {
+            screenshotUrl = publicUrl;
+          } else {
+            screenshotUrl = filePath;
+          }
+        }
+      } else {
+        console.error("[Storage] Image upload warning:", uploadError.message);
+      }
+    } catch (err) {
+      console.error("[Storage] Upload notice:", err);
+    }
   }
 
   const newTradeObj: Trade = {
     id: tradeId,
     tradeNo: tradePayload.tradeNo,
     date: tradePayload.date || new Date().toISOString().slice(0, 10),
+    createdAt,
     pair: tradePayload.pair || "XAUUSD",
     side: tradePayload.side || "Buy",
     session: tradePayload.session || "London",
@@ -450,6 +519,7 @@ export async function saveTradeToSupabase(
       user_id: userId,
       trade_no: newTradeObj.tradeNo !== undefined && newTradeObj.tradeNo !== null ? newTradeObj.tradeNo : null,
       date: newTradeObj.date,
+      created_at: createdAt,
       pair: newTradeObj.pair,
       side: newTradeObj.side,
       session: newTradeObj.session,

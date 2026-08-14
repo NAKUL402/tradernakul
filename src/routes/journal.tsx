@@ -13,6 +13,8 @@ import {
   fetchUserTrades,
   saveTradeToSupabase,
   deleteTradeFromSupabase,
+  isValidImageUrl,
+  sortTradesNewestFirst,
 } from "@/lib/trades";
 import { Clock, ImageIcon, Plus, Search, SlidersHorizontal, Trash2, Edit3, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -81,7 +83,7 @@ function TradeCard({ t, onOpen }: { t: Trade; onOpen: () => void }) {
           <ImageIcon className="size-3.5" /> Screenshot
         </span>
       </div>
-      {t.screenshot && t.screenshot.startsWith("http") ? (
+      {isValidImageUrl(t.screenshot) ? (
         <img
           src={t.screenshot}
           alt={t.pair}
@@ -479,7 +481,7 @@ function Journal() {
               </div>
             )}
 
-            {open.screenshot && open.screenshot.startsWith("http") ? (
+            {isValidImageUrl(open.screenshot) ? (
               <img
                 src={open.screenshot}
                 alt={open.pair}

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
-import { type Trade } from "@/lib/trades";
+import { isValidImageUrl, type Trade } from "@/lib/trades";
 import { field, primaryBtn } from "./AuthLayout";
 import { Upload, X, Star } from "lucide-react";
 
@@ -117,7 +117,7 @@ export function LogTradeModal({
         setMistakes("");
       }
       setImageFile(null);
-      setImagePreview(initialTrade?.screenshot && initialTrade.screenshot.startsWith("http") ? initialTrade.screenshot : null);
+      setImagePreview(isValidImageUrl(initialTrade?.screenshot) ? initialTrade!.screenshot : null);
     }
   }, [isOpen, initialTrade, nextTradeNo, userSettings]);
 
@@ -154,7 +154,7 @@ export function LogTradeModal({
           .split(",")
           .map((t) => t.trim())
           .filter(Boolean),
-        screenshot: initialTrade?.screenshot || "chart-1",
+        screenshot: imagePreview ? (initialTrade?.screenshot || "chart-1") : "chart-1",
         lots: lots.trim(),
         mistakes: mistakes.trim(),
         rating,
