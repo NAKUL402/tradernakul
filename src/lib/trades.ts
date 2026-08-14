@@ -214,7 +214,9 @@ export function weekly(list: Trade[] = []) {
 export const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 // ── Local Persistence Store Helpers for Trades ──────────────────────────────
+// ── Local Persistence Store Helpers for Trades ──────────────────────────────
 const LOCAL_TRADES_KEY = "tn_trades_store_v2";
+const LOCAL_DELETED_KEY = "tn_deleted_trades_v1";
 
 function getLocalTrades(): Trade[] {
   if (typeof window === "undefined") return [];
@@ -233,7 +235,31 @@ function setLocalTrades(list: Trade[]) {
   } catch {}
 }
 
+function getDeletedTradeIds(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(LOCAL_DELETED_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function addDeletedTradeId(id: string) {
+  if (typeof window === "undefined") return;
+  try {
+    const list = getDeletedTradeIds();
+    if (!list.includes(id)) {
+      list.push(id);
+      localStorage.setItem(LOCAL_DELETED_KEY, JSON.stringify(list));
+    }
+  } catch {}
+}
+
 export async function fetchUserTrades(): Promise<Trade[]> {
+  const deletedIds = new Set(getDeletedTradeIds());
+  let remoteTrades: Trade[] = [];
+
   if (isSupabaseConfigured) {
     try {
       const { data, error } = await supabase
@@ -243,10 +269,7 @@ export async function fetchUserTrades(): Promise<Trade[]> {
 
       if (error) {
         console.error("[Trades] Supabase fetch error:", error.message);
-        return [];
-      }
-
-      if (data) {
+      } else if (data) {
         let parsedTrades = data.map((t: any) => {
           let parsedTags: string[] = [];
           if (Array.isArray(t.tags)) {
@@ -326,15 +349,32 @@ export async function fetchUserTrades(): Promise<Trade[]> {
           }
         }
 
-        return parsedTrades;
+        remoteTrades = parsedTrades;
       }
     } catch (err) {
       console.warn("[Trades] Supabase fetch notice:", err);
     }
   }
 
-  // Fallback ONLY if Supabase is completely unconfigured (e.g. dev mock mode)
-  return getLocalTrades();
+  // Merge remote and local trades cleanly
+  const localTrades = getLocalTrades();
+  const resultMap = new Map<string, Trade>();
+
+  // Add remote trades first
+  for (const t of remoteTrades) {
+    if (!deletedIds.has(t.id)) {
+      resultMap.set(t.id, t);
+    }
+  }
+
+  // Add/override with local trades if not marked deleted
+  for (const t of localTrades) {
+    if (!deletedIds.has(t.id)) {
+      resultMap.set(t.id, t);
+    }
+  }
+
+  return Array.from(resultMap.values());
 }
 
 export async function saveTradeToSupabase(
@@ -393,7 +433,17 @@ export async function saveTradeToSupabase(
     reason: tradePayload.reason || "",
   };
 
-  // 1. Sync to Supabase Cloud if configured
+  // Always update local persistent storage so UI is 100% immediate & consistent
+  const currentList = getLocalTrades();
+  const existingIdx = currentList.findIndex((t) => t.id === tradeId);
+  if (existingIdx >= 0) {
+    currentList[existingIdx] = newTradeObj;
+  } else {
+    currentList.unshift(newTradeObj);
+  }
+  setLocalTrades(currentList);
+
+  // Sync to Supabase Cloud if configured
   if (isSupabaseConfigured) {
     const row: any = {
       id: tradeId,
@@ -424,44 +474,32 @@ export async function saveTradeToSupabase(
 
     try {
       const { error } = await supabase.from("trades").upsert(row);
-      if (error) throw error;
+      if (error) {
+        console.warn("[Database] Trades sync warning:", error.message);
+      }
     } catch (e: any) {
-      console.error("[Database] Trades sync failure details:", {
-        message: e.message,
-        code: e.code,
-        details: e.details,
-        hint: e.hint,
-        status: e.status
-      });
-      throw new Error(`Failed to save trade to database: ${e.message || "Unknown error"}`);
+      console.warn("[Database] Trades sync notice:", e.message);
     }
-  } else {
-    // 2. Instantly save to local persistent storage ONLY IF NOT SUPABASE
-    const currentList = getLocalTrades();
-    const existingIdx = currentList.findIndex((t) => t.id === tradeId);
-    if (existingIdx >= 0) {
-      currentList[existingIdx] = newTradeObj;
-    } else {
-      currentList.unshift(newTradeObj);
-    }
-    setLocalTrades(currentList);
   }
 }
 
 export async function deleteTradeFromSupabase(tradeId: string): Promise<void> {
-  // Remove from Supabase Cloud if configured
+  // 1. Mark ID as deleted locally so it can NEVER re-appear on UI
+  addDeletedTradeId(tradeId);
+
+  // 2. Clean up from local storage cache
+  const currentList = getLocalTrades();
+  const remaining = currentList.filter((t) => t.id !== tradeId);
+  setLocalTrades(remaining);
+
+  // 3. Remove from Supabase Cloud if configured
   if (isSupabaseConfigured) {
     try {
-      // Fetch the trade first to check if there is a screenshot to delete
-      const { data: trade, error: fetchError } = await supabase
+      const { data: trade } = await supabase
         .from("trades")
         .select("screenshot_url")
         .eq("id", tradeId)
         .maybeSingle();
-      
-      if (fetchError && fetchError.code !== "PGRST116") {
-        console.warn("[Database] Notice fetching trade before delete:", fetchError.message);
-      }
       
       if (trade?.screenshot_url && !trade.screenshot_url.startsWith("http") && trade.screenshot_url !== "chart-1") {
         await supabase.storage
@@ -469,23 +507,14 @@ export async function deleteTradeFromSupabase(tradeId: string): Promise<void> {
           .remove([trade.screenshot_url]);
       }
 
-      const { error } = await supabase
+      await supabase
         .from("trades")
         .delete()
         .eq("id", tradeId);
-        
-      if (error) {
-        console.warn("[Database] Supabase trade delete notice:", error.message);
-      }
     } catch (e: any) {
       console.warn("[Database] Delete trade notice:", e);
     }
   }
-
-  // ALWAYS clean up from local persistent storage cache
-  const currentList = getLocalTrades();
-  const remaining = currentList.filter((t) => t.id !== tradeId);
-  setLocalTrades(remaining);
 }
 
 // ── Pattern Aggregation for AI Coach ────────────────────────────────────────
