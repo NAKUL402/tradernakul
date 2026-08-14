@@ -348,6 +348,7 @@ export function AppShell({
               <Link
                 key={item.to}
                 to={item.to}
+                preload="intent"
                 className={cn(
                   "flex flex-1 flex-col items-center gap-1 rounded-xl py-1.5 text-[10px] font-medium transition",
                   active ? "text-primary" : "text-muted-foreground",
