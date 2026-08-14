@@ -776,10 +776,11 @@ function Analytics() {
 
           {/* ═══════ ROW 4: Streak + Monthly Overview ═══════ */}
           <div className="grid gap-5 lg:grid-cols-[1fr_1.5fr]">
-            {/* Streak Analysis */}
+            {/* Streak Analysis — MAIN FIXED BOX */}
             <Panel3D title="Streak Analysis" className="neon-glow-purple flex flex-col justify-between h-full" info>
-              <div className="flex flex-col justify-center items-center h-full my-auto py-1">
-                <div className="grid grid-cols-3 gap-2.5 w-full mb-3.5">
+              <div className="flex flex-col justify-between h-full space-y-3 py-1">
+                {/* 1. Top Row: 3 Separate Metric Boxes */}
+                <div className="grid grid-cols-3 gap-2.5 w-full">
                   <div className="rounded-xl border border-border bg-muted/40 p-2.5 text-center flex flex-col justify-center items-center">
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Longest Win Streak</p>
                     <p className="text-xs sm:text-sm font-bold text-emerald-400 mt-1 flex items-center justify-center gap-1">
@@ -802,22 +803,34 @@ function Analytics() {
                     </p>
                   </div>
                 </div>
-                {/* Trade badges: Rolling 11 recent window (newest at front #1), centered */}
-                <div className="w-full overflow-hidden flex justify-center items-center py-1">
-                  <div className="flex flex-nowrap items-center justify-center gap-1.5 w-full overflow-hidden">
-                    {recentResults.map((r, i) => (
-                      <div
-                        key={i}
-                        className={cn(
-                          "flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold border transition-all",
-                          r === "Win"
-                            ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30 shadow-[0_0_10px_rgba(34,197,94,0.12)]"
-                            : "bg-rose-500/15 text-rose-400 border-rose-500/30 shadow-[0_0_10px_rgba(239,68,68,0.12)]"
-                        )}
-                      >
-                        {r === "Win" ? "W" : "L"}
-                      </div>
-                    ))}
+
+                {/* 2. Second Box Inside Main Box: Recent Streaks (Fixed Size Rolling Window) */}
+                <div className="rounded-xl border border-border/80 bg-muted/30 p-3 flex flex-col justify-center items-center w-full min-h-[72px]">
+                  <div className="flex items-center justify-between w-full mb-2 px-1">
+                    <span className="text-[10.5px] font-bold text-foreground tracking-wide uppercase">Recent Streaks</span>
+                    <span className="text-[9.5px] font-medium text-muted-foreground">Rolling 11 Window</span>
+                  </div>
+
+                  <div className="w-full overflow-hidden flex items-center justify-center">
+                    <div className="flex flex-nowrap items-center justify-center gap-1 sm:gap-1.5 w-full overflow-hidden">
+                      {recentResults.map((r, i) => (
+                        <div key={i} className="flex items-center gap-1 shrink-0">
+                          <span
+                            className={cn(
+                              "px-2 py-0.5 rounded-full text-[10px] font-bold border transition-all shrink-0",
+                              r === "Win"
+                                ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30 shadow-[0_0_8px_rgba(34,197,94,0.15)]"
+                                : "bg-rose-500/15 text-rose-400 border-rose-500/30 shadow-[0_0_8px_rgba(239,68,68,0.15)]"
+                            )}
+                          >
+                            {r === "Win" ? "WIN" : "LOSS"}
+                          </span>
+                          {i < recentResults.length - 1 && (
+                            <span className="text-[10px] text-muted-foreground/60 font-semibold select-none">→</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
