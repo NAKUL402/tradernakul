@@ -250,16 +250,13 @@ function Journal() {
 
   const loadTrades = async () => {
     const data = await fetchUserTrades();
-    // Sort chronologically (oldest date & time first) to assign clean, stable trade numbers (#1, #2, #3...)
-    const chronological = [...data].sort((a, b) => {
-      const timeA = new Date(`${a.date}T${a.entryTime || "00:00"}`).getTime() || 0;
-      const timeB = new Date(`${b.date}T${b.entryTime || "00:00"}`).getTime() || 0;
-      return timeA - timeB;
-    });
+    const newestFirst = sortTradesNewestFirst(data);
+    const totalCount = newestFirst.length;
 
-    const tradesWithNumbers = chronological.map((t, index) => ({
+    // Assign tradeNo so newest trade gets #N, 2nd newest gets #(N-1)... down to oldest which gets #1
+    const tradesWithNumbers = newestFirst.map((t, index) => ({
       ...t,
-      tradeNo: index + 1,
+      tradeNo: totalCount - index,
     }));
     setAllTrades(tradesWithNumbers);
   };
