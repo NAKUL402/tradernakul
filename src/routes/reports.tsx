@@ -578,7 +578,7 @@ function Reports() {
               <h3 className="text-sm font-bold text-foreground">Performance by Instrument</h3>
             </div>
             {/* Scrollable container with fixed max-height for exactly 4 rows */}
-            <div className="flex-1 w-full overflow-x-auto overflow-y-auto max-h-[155px] custom-scrollbar">
+            <div className="flex-1 w-full overflow-x-auto overflow-y-auto max-h-[155px] custom-scrollbar pr-3">
               <table className="w-full text-xs whitespace-nowrap">
                 <thead>
                   <tr className="border-b border-border/60 text-left text-[10px] font-bold text-muted-foreground uppercase tracking-wider sticky top-0 bg-[#0d111c] z-10">
@@ -586,7 +586,7 @@ function Reports() {
                     <th className="pb-2 text-center font-semibold">TRADES</th>
                     <th className="pb-2 text-center font-semibold">WIN RATE</th>
                     <th className="pb-2 text-right font-semibold">NET PNL</th>
-                    <th className="pb-2 text-right font-semibold">AVG R:R</th>
+                    <th className="pb-2 text-right font-semibold pr-3">AVG R:R</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/30">
@@ -603,7 +603,7 @@ function Reports() {
                         <td className={cn("py-2.5 text-right font-bold", inst.pnl >= 0 ? "text-emerald-400" : "text-rose-400")}>
                           {money(inst.pnl, currencySymbol)}
                         </td>
-                        <td className="py-2.5 text-right text-muted-foreground font-medium">{inst.avgRRR.toFixed(2)}</td>
+                        <td className="py-2.5 text-right text-muted-foreground font-medium pr-3">{inst.avgRRR.toFixed(2)}</td>
                       </tr>
                     ))
                   )}
@@ -618,7 +618,7 @@ function Reports() {
               <h3 className="text-sm font-bold text-foreground">Performance by Setup</h3>
             </div>
             {/* Scrollable container with fixed max-height for exactly 4 rows */}
-            <div className="flex-1 w-full overflow-x-auto overflow-y-auto max-h-[155px] custom-scrollbar">
+            <div className="flex-1 w-full overflow-x-auto overflow-y-auto max-h-[155px] custom-scrollbar pr-3">
               <table className="w-full text-xs whitespace-nowrap">
                 <thead>
                   <tr className="border-b border-border/60 text-left text-[10px] font-bold text-muted-foreground uppercase tracking-wider sticky top-0 bg-[#0d111c] z-10">
@@ -626,7 +626,7 @@ function Reports() {
                     <th className="pb-2 text-center font-semibold">TRADES</th>
                     <th className="pb-2 text-center font-semibold">WIN RATE</th>
                     <th className="pb-2 text-right font-semibold">NET PNL</th>
-                    <th className="pb-2 text-right font-semibold">AVG R:R</th>
+                    <th className="pb-2 text-right font-semibold pr-3">AVG R:R</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/30">
@@ -643,7 +643,7 @@ function Reports() {
                         <td className={cn("py-2.5 text-right font-bold", s.pnl >= 0 ? "text-emerald-400" : "text-rose-400")}>
                           {money(s.pnl, currencySymbol)}
                         </td>
-                        <td className="py-2.5 text-right text-muted-foreground font-medium">{s.avgRRR.toFixed(2)}</td>
+                        <td className="py-2.5 text-right text-muted-foreground font-medium pr-3">{s.avgRRR.toFixed(2)}</td>
                       </tr>
                     ))
                   )}

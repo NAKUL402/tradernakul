@@ -183,6 +183,7 @@ export function AppShell({
                 <Link
                   key={item.to}
                   to={item.to}
+                  preload="intent"
                   title={item.label}
                   className={cn(
                     "group relative flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all duration-200",
