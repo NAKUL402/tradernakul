@@ -501,120 +501,124 @@ function CoachPage() {
               </div>
             </Panel3D>
 
-            {/* 2. AI Recommendations */}
-            <Panel3D
-              title="AI Recommendations"
-              className="neon-glow-purple"
-              action={
-                <button
-                  type="button"
-                  onClick={() => setShowAllRecs(true)}
-                  className="text-[11px] text-zinc-400 bg-zinc-800/40 px-3 py-1 rounded-lg border border-zinc-700/40 font-medium hover:text-zinc-200 transition cursor-pointer"
-                >
-                  View all
-                </button>
-              }
-            >
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {/* Dynamic Recommendation 1 */}
-                <div 
-                  onClick={() => handleAskQuestion(`Give me a detailed action plan for: ${ai.topStrengths[0] || "Improving Consistency"}. Context: This is one of my strongest areas.`)}
-                  className="neon-card neon-glow-green p-3.5 transition-all flex flex-col h-full cursor-pointer group"
-                >
-                  <div className="flex gap-2.5 mb-2.5">
-                    <div className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-500">
-                      <Shield className="size-3.5" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[12px] font-bold text-zinc-100 leading-tight truncate">Keep Refining: {ai.topStrengths[0] || "Consistency"}</p>
-                      <p className="text-[9px] font-semibold text-emerald-400 mt-0.5">Strength Identified</p>
-                    </div>
+            {/* Outer Container: AI Recommendations & Recent Coach Notes Enclosed Together */}
+            <div className="neon-card neon-glow-purple p-4 space-y-4 border border-border">
+              {/* 2. AI Recommendations (Caption Box) */}
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between px-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-zinc-100 tracking-wide">AI Recommendations</h3>
+                    <div className="size-3.5 rounded-full border border-zinc-700/60 flex items-center justify-center text-[8px] text-zinc-400 cursor-help">i</div>
                   </div>
-                  <p className="text-[10.5px] text-zinc-400 leading-relaxed mb-3 flex-1 line-clamp-3">
-                    You're doing well in this area. Focus on scaling your edge while maintaining your current discipline levels.
-                  </p>
-                  <div className="flex items-center gap-1 text-[11px] font-semibold text-emerald-400 group-hover:text-emerald-300 transition-colors w-max">
-                    View Details <ArrowRight className="size-3" />
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowAllRecs(true)}
+                    className="text-[11px] text-zinc-400 bg-zinc-800/40 px-3 py-1 rounded-lg border border-zinc-700/40 font-medium hover:text-zinc-200 transition cursor-pointer"
+                  >
+                    View all
+                  </button>
                 </div>
-
-                {/* Dynamic Recommendation 2 */}
-                <div 
-                  onClick={() => handleAskQuestion(`Give me a detailed action plan for: ${ai.topMistakes[0] || "Risk Control"}. Context: This is an area I need to improve.`)}
-                  className="neon-card neon-glow-amber p-3.5 transition-all flex flex-col h-full cursor-pointer group"
-                >
-                  <div className="flex gap-2.5 mb-2.5">
-                    <div className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-yellow-500/30 bg-yellow-500/10 text-yellow-500">
-                      <AlertTriangle className="size-3.5" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[12px] font-bold text-zinc-100 leading-tight truncate">Needs Work: {ai.topMistakes[0] || "Risk"}</p>
-                      <p className="text-[9px] font-semibold text-yellow-400 mt-0.5">High Priority</p>
-                    </div>
-                  </div>
-                  <p className="text-[10.5px] text-zinc-400 leading-relaxed mb-3 flex-1 line-clamp-3">
-                    Your analytics show room for improvement here. Tightening this aspect will significantly boost your profit factor.
-                  </p>
-                  <div className="flex items-center gap-1 text-[11px] font-semibold text-yellow-400 group-hover:text-yellow-300 transition-colors w-max">
-                    View Details <ArrowRight className="size-3" />
-                  </div>
-                </div>
-
-                {/* Dynamic Recommendation 3 */}
-                <div 
-                  onClick={() => handleAskQuestion("Give me a detailed action plan for: Mindset Work. Context: Work on patience and avoiding revenge trading.")}
-                  className="neon-card neon-glow-blue p-3.5 transition-all flex flex-col h-full cursor-pointer group"
-                >
-                  <div className="flex gap-2.5 mb-2.5">
-                    <div className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-blue-500/30 bg-blue-500/10 text-blue-500">
-                      <Brain className="size-3.5" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[12px] font-bold text-zinc-100 leading-tight truncate">Mindset & Patience</p>
-                      <p className="text-[9px] font-semibold text-blue-400 mt-0.5">Medium Priority</p>
-                    </div>
-                  </div>
-                  <p className="text-[10.5px] text-zinc-400 leading-relaxed mb-3 flex-1 line-clamp-3">
-                    Trade execution often relies on patience. Allow setups to come to you instead of forcing them.
-                  </p>
-                  <div className="flex items-center gap-1 text-[11px] font-semibold text-blue-400 group-hover:text-blue-300 transition-colors w-max">
-                    View Details <ArrowRight className="size-3" />
-                  </div>
-                </div>
-              </div>
-            </Panel3D>
-
-            {/* 3. Recent Coach Notes (Compact spacing with Recommendations) */}
-            <div className="space-y-2 mt-1">
-              <div className="flex items-center justify-between px-1">
-                <h2 className="text-[13.5px] font-bold text-zinc-100 tracking-wide">Recent Coach Notes</h2>
-                <button
-                  type="button"
-                  onClick={() => setShowAllNotes(true)}
-                  className="text-[11px] text-zinc-400 bg-zinc-800/40 px-3 py-1 rounded-lg border border-zinc-700/40 font-medium hover:text-zinc-200 transition cursor-pointer"
-                >View all</button>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-                {ai.improvementPlan.slice(0, 4).map((note, index) => {
-                  const isPositive = index === 0 && ai.overallGrade.startsWith("A");
-                  const glow = isPositive ? "neon-glow-green" : "neon-glow-purple";
-                  const iconColor = isPositive ? "text-emerald-500 bg-emerald-500/10 border-emerald-500/30" : "text-[#a855f7] bg-[#a855f7]/10 border-[#a855f7]/30";
-                  const Icon = Brain;
-                  return (
-                  <div key={index} className={cn("neon-card p-3 flex flex-col h-full border border-border/80", glow)}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className={cn("size-5 rounded-full flex items-center justify-center border shrink-0", iconColor)}>
-                        <Icon className="size-3.5" />
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {/* Dynamic Recommendation 1 */}
+                  <div 
+                    onClick={() => handleAskQuestion(`Give me a detailed action plan for: ${ai.topStrengths[0] || "Improving Consistency"}. Context: This is one of my strongest areas.`)}
+                    className="neon-card neon-glow-green p-3.5 transition-all flex flex-col h-full cursor-pointer group"
+                  >
+                    <div className="flex gap-2.5 mb-2.5">
+                      <div className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-500">
+                        <Shield className="size-3.5" />
                       </div>
-                      <p className="text-[9px] text-zinc-500 font-medium shrink-0">Automated Insight</p>
+                      <div className="min-w-0">
+                        <p className="text-[12px] font-bold text-zinc-100 leading-tight truncate">Keep Refining: {ai.topStrengths[0] || "Consistency"}</p>
+                        <p className="text-[9px] font-semibold text-emerald-400 mt-0.5">Strength Identified</p>
+                      </div>
                     </div>
-                    <p className="text-[11.5px] font-bold text-zinc-100 mb-1 leading-tight line-clamp-2">{note}</p>
-                    <p className="text-[10px] text-zinc-400 leading-relaxed flex-1 line-clamp-3">
-                      This observation is based on your recent trading history and performance metrics.
+                    <p className="text-[10.5px] text-zinc-400 leading-relaxed mb-3 flex-1 line-clamp-3">
+                      You're doing well in this area. Focus on scaling your edge while maintaining your current discipline levels.
                     </p>
+                    <div className="flex items-center gap-1 text-[11px] font-semibold text-emerald-400 group-hover:text-emerald-300 transition-colors w-max">
+                      View Details <ArrowRight className="size-3" />
+                    </div>
                   </div>
-                  );
-                })}
+
+                  {/* Dynamic Recommendation 2 */}
+                  <div 
+                    onClick={() => handleAskQuestion(`Give me a detailed action plan for: ${ai.topMistakes[0] || "Risk Control"}. Context: This is an area I need to improve.`)}
+                    className="neon-card neon-glow-amber p-3.5 transition-all flex flex-col h-full cursor-pointer group"
+                  >
+                    <div className="flex gap-2.5 mb-2.5">
+                      <div className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-yellow-500/30 bg-yellow-500/10 text-yellow-500">
+                        <AlertTriangle className="size-3.5" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[12px] font-bold text-zinc-100 leading-tight truncate">Needs Work: {ai.topMistakes[0] || "Risk"}</p>
+                        <p className="text-[9px] font-semibold text-yellow-400 mt-0.5">High Priority</p>
+                      </div>
+                    </div>
+                    <p className="text-[10.5px] text-zinc-400 leading-relaxed mb-3 flex-1 line-clamp-3">
+                      Your analytics show room for improvement here. Tightening this aspect will significantly boost your profit factor.
+                    </p>
+                    <div className="flex items-center gap-1 text-[11px] font-semibold text-yellow-400 group-hover:text-yellow-300 transition-colors w-max">
+                      View Details <ArrowRight className="size-3" />
+                    </div>
+                  </div>
+
+                  {/* Dynamic Recommendation 3 */}
+                  <div 
+                    onClick={() => handleAskQuestion("Give me a detailed action plan for: Mindset Work. Context: Work on patience and avoiding revenge trading.")}
+                    className="neon-card neon-glow-blue p-3.5 transition-all flex flex-col h-full cursor-pointer group"
+                  >
+                    <div className="flex gap-2.5 mb-2.5">
+                      <div className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-blue-500/30 bg-blue-500/10 text-blue-500">
+                        <Brain className="size-3.5" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[12px] font-bold text-zinc-100 leading-tight truncate">Mindset & Patience</p>
+                        <p className="text-[9px] font-semibold text-blue-400 mt-0.5">Medium Priority</p>
+                      </div>
+                    </div>
+                    <p className="text-[10.5px] text-zinc-400 leading-relaxed mb-3 flex-1 line-clamp-3">
+                      Trade execution often relies on patience. Allow setups to come to you instead of forcing them.
+                    </p>
+                    <div className="flex items-center gap-1 text-[11px] font-semibold text-blue-400 group-hover:text-blue-300 transition-colors w-max">
+                      View Details <ArrowRight className="size-3" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Recent Coach Notes (Compact spacing & directly aligned inside main outer border) */}
+              <div className="space-y-2.5 pt-3 border-t border-border/40">
+                <div className="flex items-center justify-between px-1">
+                  <h2 className="text-[13.5px] font-bold text-zinc-100 tracking-wide">Recent Coach Notes</h2>
+                  <button
+                    type="button"
+                    onClick={() => setShowAllNotes(true)}
+                    className="text-[11px] text-zinc-400 bg-zinc-800/40 px-3 py-1 rounded-lg border border-zinc-700/40 font-medium hover:text-zinc-200 transition cursor-pointer"
+                  >View all</button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                  {ai.improvementPlan.slice(0, 4).map((note, index) => {
+                    const isPositive = index === 0 && ai.overallGrade.startsWith("A");
+                    const glow = isPositive ? "neon-glow-green" : "neon-glow-purple";
+                    const iconColor = isPositive ? "text-emerald-500 bg-emerald-500/10 border-emerald-500/30" : "text-[#a855f7] bg-[#a855f7]/10 border-[#a855f7]/30";
+                    const Icon = Brain;
+                    return (
+                    <div key={index} className={cn("neon-card p-3 flex flex-col h-full border border-border/60", glow)}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className={cn("size-5 rounded-full flex items-center justify-center border shrink-0", iconColor)}>
+                          <Icon className="size-3.5" />
+                        </div>
+                        <p className="text-[9px] text-zinc-500 font-medium shrink-0">Automated Insight</p>
+                      </div>
+                      <p className="text-[11.5px] font-bold text-zinc-100 mb-1 leading-tight line-clamp-2">{note}</p>
+                      <p className="text-[10px] text-zinc-400 leading-relaxed flex-1 line-clamp-3">
+                        This observation is based on your recent trading history and performance metrics.
+                      </p>
+                    </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
