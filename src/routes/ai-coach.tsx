@@ -590,7 +590,7 @@ function CoachPage() {
                   const isPositive = index === 0 && ai.overallGrade.startsWith("A");
                   const glow = isPositive ? "neon-glow-green" : "neon-glow-purple";
                   const iconColor = isPositive ? "text-emerald-500 bg-emerald-500/10 border-emerald-500/30" : "text-[#a855f7] bg-[#a855f7]/10 border-[#a855f7]/30";
-                  const Icon = isPositive ? Activity : Brain;
+                  const Icon = Brain;
                   return (
                   <div key={index} className={cn("neon-card p-3 flex flex-col h-full", glow)}>
                     <div className="flex items-center gap-2 mb-2">
