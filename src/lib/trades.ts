@@ -252,7 +252,7 @@ export const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const LOCAL_TRADES_KEY = "tn_trades_store_v2";
 const LOCAL_DELETED_KEY = "tn_deleted_trades_v1";
 
-function getLocalTrades(): Trade[] {
+export function getLocalTrades(): Trade[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(LOCAL_TRADES_KEY);

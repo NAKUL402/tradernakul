@@ -20,6 +20,7 @@ import {
   BarChart3,
   CheckCircle2,
   ChevronDown,
+  Flame,
   Info,
   Percent,
   Scale,
@@ -34,6 +35,8 @@ import {
   DOW,
   equityCurve,
   fetchUserTrades,
+  getLocalTrades,
+  sortTradesNewestFirst,
   groupStats,
   money,
   compactMoney,
@@ -133,7 +136,7 @@ function getRRBin(rrr: string): string {
 
 /* ─── MAIN COMPONENT ─────────────────────────────────────────────── */
 function Analytics() {
-  const [userTrades, setUserTrades] = useState<Trade[]>([]);
+  const [userTrades, setUserTrades] = useState<Trade[]>(() => sortTradesNewestFirst(getLocalTrades()));
 
   // Stateful controls for Daily Performance, Performance Heatmap, Monthly Overview, and Header Date Range
   const [dailyMode, setDailyMode] = useState<"Cumulative PnL" | "Daily PnL" | "Trades Count">("Cumulative PnL");
@@ -149,7 +152,7 @@ function Analytics() {
   const [headerDateLabel, setHeaderDateLabel] = useState("Aug 07, 2025 – Aug 13, 2025");
 
   useEffect(() => {
-    fetchUserTrades().then(setUserTrades);
+    fetchUserTrades().then((trades) => setUserTrades(sortTradesNewestFirst(trades)));
   }, []);
 
   useEffect(() => {
@@ -775,35 +778,46 @@ function Analytics() {
           <div className="grid gap-5 lg:grid-cols-[1fr_1.5fr]">
             {/* Streak Analysis */}
             <Panel3D title="Streak Analysis" className="neon-glow-purple" info>
-              <div className="grid grid-cols-3 gap-3 mb-5">
-                <div className="rounded-xl border border-border bg-muted/50 p-3 text-center">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Longest Win Streak</p>
-                  <p className="text-lg font-bold text-success mt-1">⊕ {longestStreaks.win} trades</p>
+              <div className="grid grid-cols-3 gap-2.5 mb-4">
+                <div className="rounded-xl border border-border bg-muted/40 p-2.5 text-center">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Longest Win Streak</p>
+                  <p className="text-xs sm:text-sm font-bold text-emerald-400 mt-1 flex items-center justify-center gap-1">
+                    <Flame className="size-3.5 fill-emerald-500/20 text-emerald-400 shrink-0" />
+                    <span>{longestStreaks.win} trades</span>
+                  </p>
                 </div>
-                <div className="rounded-xl border border-border bg-muted/50 p-3 text-center">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Longest Loss Streak</p>
-                  <p className="text-lg font-bold text-danger mt-1">⊕ {longestStreaks.loss} trades</p>
+                <div className="rounded-xl border border-border bg-muted/40 p-2.5 text-center">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Longest Loss Streak</p>
+                  <p className="text-xs sm:text-sm font-bold text-rose-400 mt-1 flex items-center justify-center gap-1">
+                    <Flame className="size-3.5 fill-rose-500/20 text-rose-400 shrink-0" />
+                    <span>{longestStreaks.loss} trades</span>
+                  </p>
                 </div>
-                <div className="rounded-xl border border-border bg-muted/50 p-3 text-center">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Current Streak</p>
-                  <p className="text-lg font-bold text-success mt-1">{currentStreak.count} {currentStreak.type}</p>
+                <div className="rounded-xl border border-border bg-muted/40 p-2.5 text-center">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Current Streak</p>
+                  <p className={cn("text-xs sm:text-sm font-bold mt-1 flex items-center justify-center gap-1", currentStreak.type === "wins" ? "text-emerald-400" : "text-rose-400")}>
+                    <Flame className={cn("size-3.5 shrink-0", currentStreak.type === "wins" ? "fill-emerald-500/20 text-emerald-400" : "fill-rose-500/20 text-rose-400")} />
+                    <span>{currentStreak.count} {currentStreak.type}</span>
+                  </p>
                 </div>
               </div>
-              {/* Trade badges */}
-              <div className="flex flex-wrap gap-2 justify-center">
-                {recentResults.map((r, i) => (
-                  <div
-                    key={i}
-                    className={cn(
-                      "flex size-9 items-center justify-center rounded-full text-xs font-bold border transition-all",
-                      r === "Win"
-                        ? "bg-emerald-500/15 text-success border-emerald-500/30 shadow-[0_0_12px_rgba(34,197,94,0.15)]"
-                        : "bg-rose-500/15 text-danger border-rose-500/30 shadow-[0_0_12px_rgba(239,68,68,0.15)]"
-                    )}
-                  >
-                    {r === "Win" ? "W" : "L"}
-                  </div>
-                ))}
+              {/* Trade badges: Strictly horizontal single row, clipped if overflow, no wrap, no box resize */}
+              <div className="w-full overflow-hidden py-1">
+                <div className="flex flex-nowrap items-center justify-center gap-1.5 w-full overflow-hidden">
+                  {recentResults.slice(0, 11).map((r, i) => (
+                    <div
+                      key={i}
+                      className={cn(
+                        "flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold border transition-all",
+                        r === "Win"
+                          ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30 shadow-[0_0_10px_rgba(34,197,94,0.12)]"
+                          : "bg-rose-500/15 text-rose-400 border-rose-500/30 shadow-[0_0_10px_rgba(239,68,68,0.12)]"
+                      )}
+                    >
+                      {r === "Win" ? "W" : "L"}
+                    </div>
+                  ))}
+                </div>
               </div>
             </Panel3D>
 
