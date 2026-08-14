@@ -463,25 +463,25 @@ function CoachPage() {
                   <p className="text-[12.5px] font-semibold text-zinc-300 mb-1">Performance Pillars</p>
                   <div className="flex-1 relative min-h-0">
                     <ResponsiveContainer width="100%" height="100%">
-                      <RadarChart cx="50%" cy="50%" outerRadius="62%" data={radarData}>
+                      <RadarChart cx="50%" cy="50%" outerRadius="52%" data={radarData}>
                         <PolarGrid stroke="rgba(255,255,255,0.1)" />
                         <PolarAngleAxis 
                           dataKey="subject" 
                           tick={(props) => {
-                            const { payload, x, y } = props;
+                            const { payload, x, y, cx, cy } = props;
                             const item = radarData.find(d => d.subject === payload.value);
                             const value = item ? item.you : 0;
                             const isEmerald = payload.value === 'Discipline' || payload.value === 'Execution';
                             
-                            let dyVal = 0;
-                            if (payload.value === "Strategy") dyVal = -10;
-                            if (payload.value === "Mindset") dyVal = 14;
+                            // Dynamic radial displacement away from radar center (cx, cy)
+                            const dx = x > cx ? 12 : x < cx ? -12 : 0;
+                            const dy = y > cy ? 10 : y < cy ? -10 : 0;
 
                             return (
-                              <g transform={`translate(${x},${y})`}>
-                                <text textAnchor="middle" fill="#a1a1aa" fontSize={9.5}>
-                                  <tspan x="0" dy={dyVal}>{payload.value}</tspan>
-                                  <tspan x="0" dy={11} fill={isEmerald ? '#10b981' : '#3b82f6'} fontWeight="bold">{value}%</tspan>
+                              <g transform={`translate(${x + dx},${y + dy})`}>
+                                <text textAnchor="middle" fill="#d4d4d8" fontSize={9.5} fontWeight={600}>
+                                  <tspan x="0" dy="0">{payload.value}</tspan>
+                                  <tspan x="0" dy="12" fill={isEmerald ? '#00ff9d' : '#3b82f6'} fontWeight="bold" fontSize={10}>{value}%</tspan>
                                 </text>
                               </g>
                             );

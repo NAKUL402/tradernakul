@@ -806,17 +806,18 @@ function Analytics() {
                   </div>
                 </div>
 
-                {/* BOX 2: Clean 11-Result Circular Badges Box (Directly Underneath Box 1, Compact) */}
+                {/* BOX 2: Clean 11-Result Circular Badges Box (Directly Underneath Box 1, Compact: Left = Most Recent, Right = Older) */}
                 <div className="rounded-xl border border-border/70 bg-muted/30 p-2.5 flex items-center justify-center w-full">
                   <div className="flex flex-nowrap items-center justify-center gap-1.5 sm:gap-2 w-full overflow-hidden">
                     {recentResults.map((r, i) => (
                       <div
                         key={i}
+                        title={i === 0 ? "Latest Trade (Most Recent)" : `Trade #${i + 1}`}
                         className={cn(
-                          "flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold transition-all shadow-sm",
+                          "flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold transition-all shadow-sm cursor-default",
                           r === "Win"
-                            ? "bg-emerald-500 text-white shadow-[0_0_10px_rgba(16,185,129,0.3)]"
-                            : "bg-rose-500 text-white shadow-[0_0_10px_rgba(239,68,68,0.3)]"
+                            ? "bg-emerald-500 text-white shadow-[0_0_12px_rgba(0,255,157,0.7)] border border-emerald-400/60"
+                            : "bg-rose-500 text-white shadow-[0_0_12px_rgba(255,42,95,0.7)] border border-rose-400/60"
                         )}
                       >
                         {r === "Win" ? "W" : "L"}
