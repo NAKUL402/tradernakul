@@ -96,11 +96,11 @@
   --primary: #0F172A;
   --primary-foreground: #FFFFFF;
   
-  /* Semantic Tokens */
-  --success: #16A34A;
-  --success-bg: #F0FDF4;
-  --danger: #DC2626;
-  --danger-bg: #FEF2F2;
+  /* Semantic Tokens — Vibrant Neon Red & Green System */
+  --success: #00ff9d;
+  --success-bg: rgba(0, 255, 157, 0.12);
+  --danger: #ff2a5f;
+  --danger-bg: rgba(255, 42, 95, 0.12);
   --ai: #7C3AED;
   --ai-bg: #F5F3FF;
   --info: #2563EB;
@@ -129,11 +129,11 @@
   --primary: #FFFFFF;
   --primary-foreground: #06080F;
   
-  /* Semantic Tokens */
-  --success: #10B981;
-  --success-bg: rgba(16, 185, 129, 0.12);
-  --danger: #EF4444;
-  --danger-bg: rgba(239, 68, 68, 0.12);
+  /* Semantic Tokens — Neon Red & Neon Green */
+  --success: #00ff9d;
+  --success-bg: rgba(0, 255, 157, 0.14);
+  --danger: #ff2a5f;
+  --danger-bg: rgba(255, 42, 95, 0.14);
   --ai: #A855F7;
   --ai-bg: rgba(168, 85, 247, 0.12);
   --info: #3B82F6;
@@ -144,9 +144,9 @@
   /* Chart Colors */
   --color-chart-1: #3B82F6;
   --color-chart-2: #A855F7;
-  --color-chart-3: #10B981;
+  --color-chart-3: #00ff9d;
   --color-chart-4: #F59E0B;
-  --color-chart-5: #EF4444;
+  --color-chart-5: #ff2a5f;
 }
 
 @layer utilities {
@@ -170,35 +170,35 @@
       0 16px 32px -8px rgba(0, 0, 0, 0.7);
   }
 
-  /* 🟢 Emerald Green Glowing Border (Profit, Strength, Wins) */
+  /* 🟢 Neon Emerald Green Glowing Border (Profit, Strength, Wins) */
   .neon-glow-green {
-    border: 1px solid rgba(16, 185, 129, 0.5) !important;
+    border: 1px solid rgba(0, 255, 157, 0.55) !important;
     box-shadow: 
-      0 0 16px -2px rgba(16, 185, 129, 0.35),
-      inset 0 1.5px 0 0 rgba(16, 185, 129, 0.3),
+      0 0 18px -1px rgba(0, 255, 157, 0.4),
+      inset 0 1.5px 0 0 rgba(0, 255, 157, 0.35),
       0 8px 22px -4px rgba(0, 0, 0, 0.65) !important;
   }
   .neon-glow-green:hover {
-    border-color: rgba(16, 185, 129, 0.9) !important;
+    border-color: rgba(0, 255, 157, 0.95) !important;
     box-shadow: 
-      0 0 28px -1px rgba(16, 185, 129, 0.6),
-      inset 0 1.5px 0 0 rgba(16, 185, 129, 0.45),
+      0 0 28px 0px rgba(0, 255, 157, 0.65),
+      inset 0 1.5px 0 0 rgba(0, 255, 157, 0.5),
       0 14px 30px -6px rgba(0, 0, 0, 0.75) !important;
   }
 
-  /* 🔴 Crimson Rose Red Glowing Border (Loss, Alerts, Drawdown) */
+  /* 🔴 Neon Crimson Rose Red Glowing Border (Loss, Alerts, Drawdown) */
   .neon-glow-red {
-    border: 1px solid rgba(239, 68, 68, 0.5) !important;
+    border: 1px solid rgba(255, 42, 95, 0.55) !important;
     box-shadow: 
-      0 0 16px -2px rgba(239, 68, 68, 0.35),
-      inset 0 1.5px 0 0 rgba(239, 68, 68, 0.3),
+      0 0 18px -1px rgba(255, 42, 95, 0.4),
+      inset 0 1.5px 0 0 rgba(255, 42, 95, 0.35),
       0 8px 22px -4px rgba(0, 0, 0, 0.65) !important;
   }
   .neon-glow-red:hover {
-    border-color: rgba(239, 68, 68, 0.9) !important;
+    border-color: rgba(255, 42, 95, 0.95) !important;
     box-shadow: 
-      0 0 28px -1px rgba(239, 68, 68, 0.6),
-      inset 0 1.5px 0 0 rgba(239, 68, 68, 0.45),
+      0 0 28px 0px rgba(255, 42, 95, 0.65),
+      inset 0 1.5px 0 0 rgba(255, 42, 95, 0.5),
       0 14px 30px -6px rgba(0, 0, 0, 0.75) !important;
   }
 
@@ -271,15 +271,17 @@
   /* 🌟 LUMINOUS BRIGHT CHART GRAPHICS GLOW UTILITIES 🌟 */
   .chart-glow-green,
   .recharts-responsive-container path.recharts-curve[stroke="#10b981"],
+  .recharts-responsive-container path.recharts-curve[stroke="#00ff9d"],
   .recharts-responsive-container path.recharts-curve[stroke="#16a34a"] {
-    filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.95)) drop-shadow(0 0 14px rgba(16, 185, 129, 0.55));
+    filter: drop-shadow(0 0 8px rgba(0, 255, 157, 0.95)) drop-shadow(0 0 16px rgba(0, 255, 157, 0.6));
   }
 
   .chart-glow-red,
   .recharts-responsive-container path.recharts-curve[stroke="#ef4444"],
   .recharts-responsive-container path.recharts-curve[stroke="#f43f5e"],
+  .recharts-responsive-container path.recharts-curve[stroke="#ff2a5f"],
   .recharts-responsive-container path.recharts-curve[stroke="#dc2626"] {
-    filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.95)) drop-shadow(0 0 14px rgba(239, 68, 68, 0.55));
+    filter: drop-shadow(0 0 8px rgba(255, 42, 95, 0.95)) drop-shadow(0 0 16px rgba(255, 42, 95, 0.6));
   }
 
   .chart-glow-blue,

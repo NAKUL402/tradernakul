@@ -622,16 +622,18 @@ function Analytics() {
                           let bg = "bg-zinc-800/30";
                           if (cell && cell.total > 0) {
                             if (heatmapMode === "Net PnL $") {
-                              bg = cell.pnl >= 0 ? "bg-emerald-500/35" : "bg-rose-500/35";
+                              bg = cell.pnl >= 0 
+                                ? "bg-emerald-500/30 border border-emerald-400/50 shadow-[0_0_10px_rgba(0,255,157,0.25)] text-emerald-300" 
+                                : "bg-rose-500/30 border border-rose-400/50 shadow-[0_0_10px_rgba(255,42,95,0.25)] text-rose-300";
                             } else if (heatmapMode === "Trade Count") {
-                              bg = "bg-indigo-500/35";
+                              bg = "bg-indigo-500/35 border border-indigo-500/40";
                             } else {
-                              if (wr! >= 80) bg = "bg-emerald-500/70";
-                              else if (wr! >= 70) bg = "bg-emerald-500/50";
-                              else if (wr! >= 60) bg = "bg-emerald-500/35";
-                              else if (wr! >= 50) bg = "bg-emerald-600/25";
-                              else if (wr! >= 40) bg = "bg-amber-500/30";
-                              else bg = "bg-rose-500/35";
+                              if (wr! >= 80) bg = "bg-emerald-500/65 border border-emerald-400/70 shadow-[0_0_12px_rgba(0,255,157,0.4)] text-emerald-200";
+                              else if (wr! >= 70) bg = "bg-emerald-500/45 border border-emerald-500/50 shadow-[0_0_8px_rgba(0,255,157,0.3)] text-emerald-300";
+                              else if (wr! >= 60) bg = "bg-emerald-500/30 border border-emerald-500/35 text-emerald-300";
+                              else if (wr! >= 50) bg = "bg-emerald-600/25 border border-emerald-600/25 text-emerald-400";
+                              else if (wr! >= 40) bg = "bg-amber-500/30 border border-amber-500/35 text-amber-300";
+                              else bg = "bg-rose-500/35 border border-rose-400/50 shadow-[0_0_10px_rgba(255,42,95,0.3)] text-rose-300";
                             }
                           }
                           const displayVal = !cell || cell.total === 0 
@@ -662,11 +664,11 @@ function Analytics() {
               <div className="flex items-center justify-between mt-4 pt-3 border-t border-border text-[10px] text-muted-foreground">
                 <span>Lower Win Rate</span>
                 <div className="flex gap-0.5">
-                  <div className="w-6 h-2 rounded-sm bg-rose-500/50"></div>
+                  <div className="w-6 h-2 rounded-sm bg-rose-500/60 shadow-[0_0_6px_rgba(255,42,95,0.4)]"></div>
                   <div className="w-6 h-2 rounded-sm bg-amber-500/40"></div>
                   <div className="w-6 h-2 rounded-sm bg-emerald-600/30"></div>
                   <div className="w-6 h-2 rounded-sm bg-emerald-500/50"></div>
-                  <div className="w-6 h-2 rounded-sm bg-emerald-500/70"></div>
+                  <div className="w-6 h-2 rounded-sm bg-emerald-400/80 shadow-[0_0_8px_rgba(0,255,157,0.5)]"></div>
                 </div>
                 <span>Higher Win Rate</span>
               </div>

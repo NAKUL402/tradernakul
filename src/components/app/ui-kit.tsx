@@ -123,8 +123,8 @@ export function Badge({
   className?: string;
 }) {
   const tones = {
-    win: "bg-success-bg text-success border-success/20",
-    loss: "bg-danger-bg text-danger border-danger/20",
+    win: "bg-[#00ff9d]/15 text-[#00ff9d] border-[#00ff9d]/40 shadow-[0_0_10px_rgba(0,255,157,0.3)]",
+    loss: "bg-[#ff2a5f]/15 text-[#ff2a5f] border-[#ff2a5f]/40 shadow-[0_0_10px_rgba(255,42,95,0.3)]",
     primary: "bg-primary text-primary-foreground border-transparent elevation-1",
     accent: "bg-accent text-accent-foreground border-transparent elevation-1",
     muted: "bg-muted text-muted-foreground border-border",
