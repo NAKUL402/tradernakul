@@ -127,9 +127,18 @@ function CoachPage() {
   const [chatMessages, setChatMessages] = useState<Array<{ role: "user" | "coach"; text: string; time: string }>>([]);
   const [isAnswering, setIsAnswering] = useState(false);
 
+  const search = Route.useSearch();
+
   useEffect(() => {
     fetchUserTrades().then(setUserTrades);
   }, []);
+
+  // Auto-scroll to chat section if ?chat=true is present
+  useEffect(() => {
+    if (search?.chat && chatContainerRef.current) {
+      chatContainerRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [search]);
 
   // Initialize welcome message
   useEffect(() => {
@@ -613,8 +622,8 @@ function CoachPage() {
           {/* ────────────────── RIGHT COLUMN (Chat + Quick Actions) ────────────────── */}
           <div className="lg:col-span-1 space-y-4 flex flex-col w-full">
             
-            {/* 1. Chat with AI Coach */}
-            <div className="neon-card neon-glow-purple flex flex-col flex-1 min-h-[500px] overflow-hidden relative">
+            {/* 1. Chat with AI Coach (Fixed Outer Height, Internal Scroll) */}
+            <div className="neon-card neon-glow-purple flex flex-col h-[500px] min-h-[500px] max-h-[500px] overflow-hidden relative">
               {/* 4K HD Financial Trading Candlestick & Technical Chart Graphic Background Theme */}
               <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-30 select-none z-0">
                 <svg className="w-full h-full text-zinc-500/20" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" viewBox="0 0 800 600">
@@ -690,7 +699,7 @@ function CoachPage() {
               </div>
 
               {/* Chat Header */}
-              <div className="flex items-center justify-between px-5 py-3 border-b border-border/50 bg-card/60 backdrop-blur-md relative z-10">
+              <div className="flex items-center justify-between px-5 py-3 border-b border-border/50 bg-card/60 backdrop-blur-md relative z-10 shrink-0">
                 <div className="flex items-center gap-2">
                   <Brain className="size-4 text-purple-400" />
                   <h3 className="text-[14px] font-bold text-foreground">Chat with AI Coach</h3>
@@ -707,7 +716,7 @@ function CoachPage() {
               {/* Chat Messages */}
               <div 
                 ref={chatContainerRef}
-                className="flex-1 overflow-y-auto px-5 py-4 space-y-4 custom-scrollbar relative z-10"
+                className="flex-1 overflow-y-auto px-5 py-4 space-y-4 custom-scrollbar relative z-10 min-h-0"
               >
                 {chatMessages.map((msg, i) => (
                   <div key={i} className={cn("flex flex-col", msg.role === "user" ? "items-end" : "items-start")}>
@@ -770,7 +779,7 @@ function CoachPage() {
               </div>
 
               {/* Chat Input */}
-              <div className="px-4 py-3 bg-[#0a0a0e] border-t border-zinc-800/60 relative z-10">
+              <div className="px-4 py-3 bg-[#0a0a0e] border-t border-zinc-800/60 relative z-10 shrink-0">
                 <form
                   onSubmit={(e) => { e.preventDefault(); handleAskQuestion(customQuestion); }}
                   className="flex items-center gap-2 rounded-xl border border-zinc-700/60 bg-[#18181b] px-3 py-1.5 focus-within:ring-1 focus-within:ring-[#8b5cf6]/30 transition-all"
