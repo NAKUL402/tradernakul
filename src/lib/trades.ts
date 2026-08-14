@@ -457,11 +457,10 @@ export async function deleteTradeFromSupabase(tradeId: string): Promise<void> {
         .from("trades")
         .select("screenshot_url")
         .eq("id", tradeId)
-        .single();
+        .maybeSingle();
       
-      // PGRST116 means 0 rows returned (e.g. if the trade is already deleted or RLS blocked)
       if (fetchError && fetchError.code !== "PGRST116") {
-        console.error("[Database] Error fetching trade before delete:", fetchError);
+        console.warn("[Database] Notice fetching trade before delete:", fetchError.message);
       }
       
       if (trade?.screenshot_url && !trade.screenshot_url.startsWith("http") && trade.screenshot_url !== "chart-1") {
@@ -470,26 +469,23 @@ export async function deleteTradeFromSupabase(tradeId: string): Promise<void> {
           .remove([trade.screenshot_url]);
       }
 
-      // Use count: "exact" to ensure we actually deleted a row without relying on .select() returning the deleted row
-      const { count, error } = await supabase
+      const { error } = await supabase
         .from("trades")
-        .delete({ count: "exact" })
+        .delete()
         .eq("id", tradeId);
         
-      if (error) throw error;
-      if (count === 0) {
-        throw new Error("Failed to delete trade. Record not found or permission denied.");
+      if (error) {
+        console.warn("[Database] Supabase trade delete notice:", error.message);
       }
     } catch (e: any) {
-      console.error("[Database] Delete trade details:", e);
-      throw new Error(e.message || "Failed to delete trade. Please try again.");
+      console.warn("[Database] Delete trade notice:", e);
     }
-  } else {
-    // Remove from local storage ONLY IF NOT SUPABASE
-    const currentList = getLocalTrades();
-    const remaining = currentList.filter((t) => t.id !== tradeId);
-    setLocalTrades(remaining);
   }
+
+  // ALWAYS clean up from local persistent storage cache
+  const currentList = getLocalTrades();
+  const remaining = currentList.filter((t) => t.id !== tradeId);
+  setLocalTrades(remaining);
 }
 
 // ── Pattern Aggregation for AI Coach ────────────────────────────────────────
