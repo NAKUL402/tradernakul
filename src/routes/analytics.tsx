@@ -268,9 +268,9 @@ function Analytics() {
     ].filter(d => d.value > 0);
   }, [userTrades]);
 
-  // Streak badges (last ~15 trades)
+  // Rolling 11 Recent-Results Window (Newest trade at front/left position #1)
   const recentResults = useMemo(() => {
-    return userTrades.slice(0, 15).reverse().map(t => t.result);
+    return userTrades.slice(0, 11).map(t => t.result);
   }, [userTrades]);
 
   // Current streak calculation
@@ -777,46 +777,48 @@ function Analytics() {
           {/* ═══════ ROW 4: Streak + Monthly Overview ═══════ */}
           <div className="grid gap-5 lg:grid-cols-[1fr_1.5fr]">
             {/* Streak Analysis */}
-            <Panel3D title="Streak Analysis" className="neon-glow-purple" info>
-              <div className="grid grid-cols-3 gap-2.5 mb-4">
-                <div className="rounded-xl border border-border bg-muted/40 p-2.5 text-center">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Longest Win Streak</p>
-                  <p className="text-xs sm:text-sm font-bold text-emerald-400 mt-1 flex items-center justify-center gap-1">
-                    <Flame className="size-3.5 fill-emerald-500/20 text-emerald-400 shrink-0" />
-                    <span>{longestStreaks.win} trades</span>
-                  </p>
+            <Panel3D title="Streak Analysis" className="neon-glow-purple flex flex-col justify-between h-full" info>
+              <div className="flex flex-col justify-center items-center h-full my-auto py-1">
+                <div className="grid grid-cols-3 gap-2.5 w-full mb-3.5">
+                  <div className="rounded-xl border border-border bg-muted/40 p-2.5 text-center flex flex-col justify-center items-center">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Longest Win Streak</p>
+                    <p className="text-xs sm:text-sm font-bold text-emerald-400 mt-1 flex items-center justify-center gap-1">
+                      <Flame className="size-3.5 fill-emerald-500/20 text-emerald-400 shrink-0" />
+                      <span>{longestStreaks.win} trades</span>
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-border bg-muted/40 p-2.5 text-center flex flex-col justify-center items-center">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Longest Loss Streak</p>
+                    <p className="text-xs sm:text-sm font-bold text-rose-400 mt-1 flex items-center justify-center gap-1">
+                      <Flame className="size-3.5 fill-rose-500/20 text-rose-400 shrink-0" />
+                      <span>{longestStreaks.loss} trades</span>
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-border bg-muted/40 p-2.5 text-center flex flex-col justify-center items-center">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Current Streak</p>
+                    <p className={cn("text-xs sm:text-sm font-bold mt-1 flex items-center justify-center gap-1", currentStreak.type === "wins" ? "text-emerald-400" : "text-rose-400")}>
+                      <Flame className={cn("size-3.5 shrink-0", currentStreak.type === "wins" ? "fill-emerald-500/20 text-emerald-400" : "fill-rose-500/20 text-rose-400")} />
+                      <span>{currentStreak.count} {currentStreak.type}</span>
+                    </p>
+                  </div>
                 </div>
-                <div className="rounded-xl border border-border bg-muted/40 p-2.5 text-center">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Longest Loss Streak</p>
-                  <p className="text-xs sm:text-sm font-bold text-rose-400 mt-1 flex items-center justify-center gap-1">
-                    <Flame className="size-3.5 fill-rose-500/20 text-rose-400 shrink-0" />
-                    <span>{longestStreaks.loss} trades</span>
-                  </p>
-                </div>
-                <div className="rounded-xl border border-border bg-muted/40 p-2.5 text-center">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Current Streak</p>
-                  <p className={cn("text-xs sm:text-sm font-bold mt-1 flex items-center justify-center gap-1", currentStreak.type === "wins" ? "text-emerald-400" : "text-rose-400")}>
-                    <Flame className={cn("size-3.5 shrink-0", currentStreak.type === "wins" ? "fill-emerald-500/20 text-emerald-400" : "fill-rose-500/20 text-rose-400")} />
-                    <span>{currentStreak.count} {currentStreak.type}</span>
-                  </p>
-                </div>
-              </div>
-              {/* Trade badges: Strictly horizontal single row, clipped if overflow, no wrap, no box resize */}
-              <div className="w-full overflow-hidden py-1">
-                <div className="flex flex-nowrap items-center justify-center gap-1.5 w-full overflow-hidden">
-                  {recentResults.slice(0, 11).map((r, i) => (
-                    <div
-                      key={i}
-                      className={cn(
-                        "flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold border transition-all",
-                        r === "Win"
-                          ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30 shadow-[0_0_10px_rgba(34,197,94,0.12)]"
-                          : "bg-rose-500/15 text-rose-400 border-rose-500/30 shadow-[0_0_10px_rgba(239,68,68,0.12)]"
-                      )}
-                    >
-                      {r === "Win" ? "W" : "L"}
-                    </div>
-                  ))}
+                {/* Trade badges: Rolling 11 recent window (newest at front #1), centered */}
+                <div className="w-full overflow-hidden flex justify-center items-center py-1">
+                  <div className="flex flex-nowrap items-center justify-center gap-1.5 w-full overflow-hidden">
+                    {recentResults.map((r, i) => (
+                      <div
+                        key={i}
+                        className={cn(
+                          "flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold border transition-all",
+                          r === "Win"
+                            ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30 shadow-[0_0_10px_rgba(34,197,94,0.12)]"
+                            : "bg-rose-500/15 text-rose-400 border-rose-500/30 shadow-[0_0_10px_rgba(239,68,68,0.12)]"
+                        )}
+                      >
+                        {r === "Win" ? "W" : "L"}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </Panel3D>
