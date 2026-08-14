@@ -342,7 +342,7 @@ function Dashboard() {
   return (
     <AppShell 
       title="Welcome back," 
-      subtitle="PLAN. EXECUTE. REVIEW. IMPROVE."
+      subtitle="Track your edge. Build your freedom."
       headerAction={customHeader}
     >
       <div className="space-y-4 pb-12 w-full">
@@ -699,12 +699,9 @@ function Dashboard() {
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-6 text-muted-foreground text-xs space-y-2">
-                  <p className="text-[9.5px] font-bold text-muted-foreground tracking-wider uppercase">
-                    PLAN. EXECUTE. REVIEW. IMPROVE.
-                  </p>
+                <div className="text-center py-6 text-muted-foreground text-xs">
                   <p>No trades logged yet.</p>
-                  <Link to="/journal" search={{ openModal: true }} className="inline-block mt-1 text-primary font-bold hover:underline">
+                  <Link to="/journal" search={{ openModal: true }} className="inline-block mt-2 text-primary font-bold hover:underline">
                     Add Journal
                   </Link>
                 </div>
@@ -792,14 +789,9 @@ function Dashboard() {
             </div>
 
             {/* 4. Quick Actions Card */}
-            <div className="neon-card neon-glow-purple p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-xs font-bold text-foreground">Quick Actions</h3>
-                  <p className="text-[9.5px] font-bold text-muted-foreground tracking-wider uppercase mt-0.5">
-                    PLAN. EXECUTE. REVIEW. IMPROVE.
-                  </p>
-                </div>
+            <div className="neon-card neon-glow-purple p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-xs font-bold text-foreground">Quick Actions</h3>
                 <Zap className="size-3.5 text-muted-foreground" />
               </div>
               <div className="grid grid-cols-2 gap-2.5">
