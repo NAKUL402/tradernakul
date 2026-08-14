@@ -584,8 +584,8 @@ function CoachPage() {
               </div>
             </Panel3D>
 
-            {/* 3. Recent Coach Notes */}
-            <div className="space-y-2.5">
+            {/* 3. Recent Coach Notes (Compact spacing with Recommendations) */}
+            <div className="space-y-2 mt-1">
               <div className="flex items-center justify-between px-1">
                 <h2 className="text-[13.5px] font-bold text-zinc-100 tracking-wide">Recent Coach Notes</h2>
                 <button
@@ -601,7 +601,7 @@ function CoachPage() {
                   const iconColor = isPositive ? "text-emerald-500 bg-emerald-500/10 border-emerald-500/30" : "text-[#a855f7] bg-[#a855f7]/10 border-[#a855f7]/30";
                   const Icon = Brain;
                   return (
-                  <div key={index} className={cn("neon-card p-3 flex flex-col h-full", glow)}>
+                  <div key={index} className={cn("neon-card p-3 flex flex-col h-full border border-border/80", glow)}>
                     <div className="flex items-center gap-2 mb-2">
                       <div className={cn("size-5 rounded-full flex items-center justify-center border shrink-0", iconColor)}>
                         <Icon className="size-3.5" />
@@ -622,8 +622,8 @@ function CoachPage() {
           {/* ────────────────── RIGHT COLUMN (Chat + Quick Actions) ────────────────── */}
           <div className="lg:col-span-1 space-y-4 flex flex-col w-full">
             
-            {/* 1. Chat with AI Coach (Fixed Outer Height, Internal Scroll) */}
-            <div className="neon-card neon-glow-purple flex flex-col h-[500px] min-h-[500px] max-h-[500px] overflow-hidden relative">
+            {/* 1. Chat with AI Coach (Slightly Larger Fixed Height h-[540px], Internal Scroll) */}
+            <div className="neon-card neon-glow-purple flex flex-col h-[540px] min-h-[540px] max-h-[540px] overflow-hidden relative border border-border">
               {/* 4K HD Financial Trading Candlestick & Technical Chart Graphic Background Theme */}
               <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-30 select-none z-0">
                 <svg className="w-full h-full text-zinc-500/20" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" viewBox="0 0 800 600">
