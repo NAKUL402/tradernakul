@@ -50,9 +50,9 @@ function TradeCard({ t, onOpen }: { t: Trade; onOpen: () => void }) {
         glow
       )}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="font-display text-base font-bold text-foreground">
+      <div className="flex items-start justify-between gap-3 min-w-0">
+        <div className="min-w-0">
+          <p className="font-display text-base font-bold text-foreground truncate max-w-full">
             {t.pair} {t.tradeNo ? `#${t.tradeNo}` : ""}
           </p>
           <p className="text-xs font-medium text-muted-foreground mt-0.5">
@@ -91,14 +91,14 @@ function TradeCard({ t, onOpen }: { t: Trade; onOpen: () => void }) {
         <div className="mt-3 h-16 overflow-hidden rounded-xl bg-muted/30 border border-border/50" />
       )}
       <p className="mt-3 line-clamp-2 text-xs font-medium text-muted-foreground leading-relaxed">{t.notes}</p>
-      <div className="mt-4 flex flex-wrap items-center gap-1.5">
+      <div className="mt-4 flex flex-wrap items-center gap-1.5 min-w-0">
         <Badge tone="primary">{t.setup}</Badge>
         {(t.tags || []).map((tag) => (
           <Badge key={tag}>{tag}</Badge>
         ))}
         <span
           className={cn(
-            "ml-auto font-display text-sm font-bold tabular-nums",
+            "ml-auto font-display text-sm font-bold tabular-nums shrink-0 pl-2",
             pnl >= 0 ? "text-success" : "text-danger",
           )}
         >

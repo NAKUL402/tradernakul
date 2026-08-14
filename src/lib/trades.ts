@@ -430,11 +430,16 @@ export async function deleteTradeFromSupabase(tradeId: string): Promise<void> {
   if (isSupabaseConfigured) {
     try {
       // Fetch the trade first to check if there is a screenshot to delete
-      const { data: trade } = await supabase
+      const { data: trade, error: fetchError } = await supabase
         .from("trades")
         .select("screenshot_url")
         .eq("id", tradeId)
         .single();
+      
+      // PGRST116 means 0 rows returned (e.g. if the trade is already deleted or RLS blocked)
+      if (fetchError && fetchError.code !== "PGRST116") {
+        console.error("[Database] Error fetching trade before delete:", fetchError);
+      }
       
       if (trade?.screenshot_url && !trade.screenshot_url.startsWith("http") && trade.screenshot_url !== "chart-1") {
         await supabase.storage
@@ -442,11 +447,20 @@ export async function deleteTradeFromSupabase(tradeId: string): Promise<void> {
           .remove([trade.screenshot_url]);
       }
 
-      const { error } = await supabase.from("trades").delete().eq("id", tradeId);
+      // Use .select() to ensure we actually deleted a row
+      const { data: deletedRows, error } = await supabase
+        .from("trades")
+        .delete()
+        .eq("id", tradeId)
+        .select();
+        
       if (error) throw error;
-    } catch (e) {
+      if (!deletedRows || deletedRows.length === 0) {
+        throw new Error("Failed to delete trade. Record not found or permission denied.");
+      }
+    } catch (e: any) {
       console.error("[Database] Delete trade details:", e);
-      throw new Error("Failed to delete trade. Please try again.");
+      throw new Error(e.message || "Failed to delete trade. Please try again.");
     }
   } else {
     // Remove from local storage ONLY IF NOT SUPABASE

@@ -68,8 +68,8 @@ export function StatCard({
           </div>
         )}
       </div>
-      <div className="flex items-end gap-3">
-        <p className="font-display text-3xl font-bold tabular-nums text-foreground">{value}</p>
+      <div className="flex items-end gap-3 min-w-0">
+        <p className="font-display text-2xl sm:text-3xl font-bold tabular-nums text-foreground truncate max-w-full">{value}</p>
         {typeof delta === "number" && (
           <span
             className={cn(
@@ -94,7 +94,7 @@ export function StatCard({
   }[accent];
 
   const containerClasses = cn(
-    "neon-card p-6 block text-left",
+    "neon-card p-4 sm:p-6 block text-left min-w-0 overflow-hidden",
     glowClass,
   );
 

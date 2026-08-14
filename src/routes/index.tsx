@@ -125,7 +125,7 @@ function Dashboard() {
             <span className="inline-flex items-center gap-2 rounded-lg bg-emerald-500/15 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-emerald-400 border border-emerald-500/30">
               Net Performance
             </span>
-            <p className="mt-6 font-display text-5xl font-extrabold leading-none text-foreground sm:text-6xl lg:text-7xl tabular-nums">
+            <p className="mt-6 font-display text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight text-foreground tabular-nums truncate max-w-full">
               {money(s.net)}
             </p>
             <p className="mt-5 max-w-md text-sm font-medium text-muted-foreground leading-relaxed">
@@ -149,12 +149,12 @@ function Dashboard() {
             ].map((i) => (
               <div
                 key={i.k}
-                className={cn("neon-card p-5 text-center flex flex-col justify-center min-h-[100px]", i.glow)}
+                className={cn("neon-card p-5 text-center flex flex-col justify-center min-h-[100px] min-w-0 overflow-hidden", i.glow)}
               >
-                <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-muted-foreground truncate">
                   {i.k}
                 </p>
-                <p className="mt-2 font-display text-xl sm:text-2xl font-bold tabular-nums text-foreground">{i.v}</p>
+                <p className="mt-2 font-display text-lg sm:text-xl lg:text-2xl font-bold tabular-nums text-foreground truncate">{i.v}</p>
               </div>
             ))}
           </div>
