@@ -131,7 +131,13 @@ function Profile() {
           <div className="flex flex-col items-center py-5 px-5">
             {/* Avatar */}
             <div className="relative mb-3">
-              <img src={profile?.avatar_url || "/avatar.png"} alt={name} className="size-24 rounded-full object-cover ring-4 ring-indigo-500/20" />
+              {profile?.avatar_url ? (
+                <img src={profile.avatar_url} alt={name} className="size-24 rounded-full object-cover ring-4 ring-indigo-500/20" />
+              ) : (
+                <div className="size-24 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center text-foreground text-3xl font-bold">
+                  {initials}
+                </div>
+              )}
               {/* Camera overlay */}
               <button
                 onClick={() => fileInputRef.current?.click()}

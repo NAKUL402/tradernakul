@@ -48,14 +48,14 @@ const mobileNav = [
 function Brand({ compact }: { compact?: boolean }) {
   return (
     <div className={cn("flex items-center gap-3", compact && "justify-center")}>
-      <div className="relative flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-500 shadow-md shadow-purple-500/20">
-        <span className="font-display text-lg font-black tracking-tight text-white">EJ</span>
+      <div className="relative flex size-10 items-center justify-center rounded-xl overflow-hidden shadow-md shadow-blue-500/20 border border-border/80 shrink-0">
+        <img src="/logo.png" alt="Edge Journal" className="size-full object-cover" />
         <span className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full bg-emerald-400 ring-2 ring-background"></span>
       </div>
       {!compact && (
         <div className="min-w-0">
           <p className="font-display text-base font-bold tracking-tight text-foreground">Edge Journal</p>
-          <p className="text-[11px] text-muted-foreground">Pro Trading Journal</p>
+          <p className="text-[9.5px] font-semibold text-muted-foreground tracking-wider uppercase truncate">PLAN. EXECUTE. REVIEW. IMPROVE.</p>
         </div>
       )}
     </div>
@@ -238,7 +238,11 @@ export function AppShell({
             >
               <div className="flex items-center gap-2.5 min-w-0">
                 <div className="relative size-8 shrink-0 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold shadow-sm overflow-hidden">
-                  <img src={profile?.avatar_url || "/avatar.png"} alt={displayName} className="size-full object-cover rounded-full" />
+                  {profile?.avatar_url ? (
+                    <img src={profile.avatar_url} alt={displayName} className="size-full object-cover rounded-full" />
+                  ) : (
+                    initials
+                  )}
                   <span className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full bg-emerald-500 ring-2 ring-background"></span>
                 </div>
                 <div className="min-w-0 text-left">
@@ -303,11 +307,15 @@ export function AppShell({
                 aria-label="Profile"
                 className="grid size-9 place-items-center rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-sm transition-transform hover:scale-105 overflow-hidden"
               >
-                <img
-                  src={profile?.avatar_url || "/avatar.png"}
-                  alt={displayName}
-                  className="size-full rounded-xl object-cover"
-                />
+                {profile?.avatar_url ? (
+                  <img
+                    src={profile.avatar_url}
+                    alt={displayName}
+                    className="size-full rounded-xl object-cover"
+                  />
+                ) : (
+                  initials
+                )}
               </Link>
             </div>
           </div>
