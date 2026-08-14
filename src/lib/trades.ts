@@ -293,18 +293,29 @@ function addDeletedTradeId(id: string) {
 export async function fetchUserTrades(): Promise<Trade[]> {
   const deletedIds = new Set(getDeletedTradeIds());
   let remoteTrades: Trade[] = [];
+  let isRemoteSuccess = false;
 
   if (isSupabaseConfigured) {
     try {
-      const { data, error } = await supabase
+      const { data: sessionData } = await supabase.auth.getSession();
+      const currentUserId = sessionData?.session?.user?.id;
+
+      let query = supabase
         .from("trades")
         .select("*")
         .order("created_at", { ascending: false, nullsFirst: false })
         .order("date", { ascending: false });
 
+      if (currentUserId) {
+        query = query.eq("user_id", currentUserId);
+      }
+
+      const { data, error } = await query;
+
       if (error) {
         console.error("[Trades] Supabase fetch error:", error.message);
       } else if (data) {
+        isRemoteSuccess = true;
         let parsedTrades = data.map((t: any) => {
           let parsedTags: string[] = [];
           if (Array.isArray(t.tags)) {
@@ -397,32 +408,22 @@ export async function fetchUserTrades(): Promise<Trade[]> {
           });
         }
 
-        remoteTrades = parsedTrades;
+        remoteTrades = parsedTrades.filter((t) => !deletedIds.has(t.id));
+        setLocalTrades(remoteTrades);
       }
     } catch (err) {
       console.warn("[Trades] Supabase fetch notice:", err);
     }
   }
 
-  // Merge remote and local trades cleanly
-  const localTrades = getLocalTrades();
-  const resultMap = new Map<string, Trade>();
-
-  // Add remote trades first
-  for (const t of remoteTrades) {
-    if (!deletedIds.has(t.id)) {
-      resultMap.set(t.id, t);
-    }
+  // If remote successfully fetched, return remoteTrades as Single Source of Truth
+  if (isRemoteSuccess) {
+    return sortTradesNewestFirst(remoteTrades);
   }
 
-  // Add/override with local trades if not marked deleted
-  for (const t of localTrades) {
-    if (!deletedIds.has(t.id)) {
-      resultMap.set(t.id, t);
-    }
-  }
-
-  return sortTradesNewestFirst(Array.from(resultMap.values()));
+  // Otherwise fallback to local offline cache
+  const localTrades = getLocalTrades().filter((t) => !deletedIds.has(t.id));
+  return sortTradesNewestFirst(localTrades);
 }
 
 export async function saveTradeToSupabase(
@@ -431,6 +432,16 @@ export async function saveTradeToSupabase(
   imageFile?: File,
 ): Promise<void> {
   let screenshotUrl = tradePayload.screenshot || "chart-1";
+  let effectiveUserId = userId;
+
+  if (isSupabaseConfigured) {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionData?.session?.user?.id) {
+        effectiveUserId = sessionData.session.user.id;
+      }
+    } catch {}
+  }
 
   const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
   
@@ -459,7 +470,7 @@ export async function saveTradeToSupabase(
   if (imageFile && isSupabaseConfigured) {
     try {
       const fileExt = imageFile.name.split(".").pop() || "png";
-      const filePath = `${userId}/${tradeId}/${Date.now()}.${fileExt}`;
+      const filePath = `${effectiveUserId}/${tradeId}/${Date.now()}.${fileExt}`;
       
       const { error: uploadError } = (await supabase.storage
         .from("trade-screenshots")
@@ -526,7 +537,7 @@ export async function saveTradeToSupabase(
   if (isSupabaseConfigured) {
     const row: any = {
       id: tradeId,
-      user_id: userId,
+      user_id: effectiveUserId,
       trade_no: newTradeObj.tradeNo !== undefined && newTradeObj.tradeNo !== null ? newTradeObj.tradeNo : null,
       date: newTradeObj.date,
       created_at: createdAt,
@@ -555,10 +566,12 @@ export async function saveTradeToSupabase(
     try {
       const { error } = await supabase.from("trades").upsert(row);
       if (error) {
-        console.warn("[Database] Trades sync warning:", error.message);
+        console.error("[Database] Trades sync error:", error.message);
+        throw error;
       }
     } catch (e: any) {
-      console.warn("[Database] Trades sync notice:", e.message);
+      console.error("[Database] Trades sync notice:", e.message || e);
+      throw e;
     }
   }
 }
@@ -587,12 +600,18 @@ export async function deleteTradeFromSupabase(tradeId: string): Promise<void> {
           .remove([trade.screenshot_url]);
       }
 
-      await supabase
+      const { error } = await supabase
         .from("trades")
         .delete()
         .eq("id", tradeId);
+
+      if (error) {
+        console.error("[Database] Delete trade error:", error.message);
+        throw error;
+      }
     } catch (e: any) {
-      console.warn("[Database] Delete trade notice:", e);
+      console.error("[Database] Delete trade notice:", e);
+      throw e;
     }
   }
 }
