@@ -418,7 +418,7 @@ export const supabase = {
         select: () => createChain(tableData),
         upsert: (record: any) => {
           const index = tableData.findIndex(
-            (r: any) => r.id === record.id || (r.user_id && r.user_id === record.user_id),
+            (r: any) => r.id === record.id,
           );
           if (index !== -1) {
             tableData[index] = { ...tableData[index], ...record };

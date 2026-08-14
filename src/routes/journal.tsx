@@ -41,37 +41,41 @@ function TradeCard({ t, onOpen }: { t: Trade; onOpen: () => void }) {
   const { userSettings } = useAuth();
   const pnl = pnlUsd(t);
   const currencySymbol = userSettings?.currency?.split(" ")[1]?.replace(/[()]/g, "") || "$";
+  const glow = t.result === "Win" ? "neon-glow-green" : "neon-glow-red";
   return (
     <button
       onClick={onOpen}
-      className="glass-card-3d group animate-rise w-full rounded-2xl p-4 text-left transition-transform duration-300 hover:-translate-y-1"
+      className={cn(
+        "neon-card group w-full p-5 text-left transition-all duration-300 cursor-pointer",
+        glow
+      )}
     >
-      <div className="flex items-start justify-between gap-3 layer-3d">
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="font-display text-base font-semibold">
+          <p className="font-display text-base font-bold text-foreground">
             {t.pair} {t.tradeNo ? `#${t.tradeNo}` : ""}
           </p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs font-medium text-muted-foreground mt-0.5">
             {t.date} · {t.session}
           </p>
         </div>
         <Badge tone={t.result === "Win" ? "win" : "loss"}>{t.result}</Badge>
       </div>
-      <div className="mt-3 grid grid-cols-3 gap-2 text-xs layer-3d">
-        <div className="rounded-xl bg-muted/40 p-2">
-          <p className="text-muted-foreground">Side</p>
-          <p className="font-medium">{t.side}</p>
+      <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
+        <div className="rounded-xl bg-muted/50 p-2.5 text-center transition-colors group-hover:bg-muted">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Side</p>
+          <p className="font-semibold text-foreground mt-0.5">{t.side}</p>
         </div>
-        <div className="rounded-xl bg-muted/40 p-2">
-          <p className="text-muted-foreground">RRR</p>
-          <p className="font-medium">{t.rrr}</p>
+        <div className="rounded-xl bg-muted/50 p-2.5 text-center transition-colors group-hover:bg-muted">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">RRR</p>
+          <p className="font-semibold text-foreground mt-0.5">{t.rrr}</p>
         </div>
-        <div className="rounded-xl bg-muted/40 p-2">
-          <p className="text-muted-foreground">Risk</p>
-          <p className="font-medium">{t.riskPct}%</p>
+        <div className="rounded-xl bg-muted/50 p-2.5 text-center transition-colors group-hover:bg-muted">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Risk</p>
+          <p className="font-semibold text-foreground mt-0.5">{t.riskPct}%</p>
         </div>
       </div>
-      <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground layer-3d">
+      <div className="mt-4 flex items-center gap-2 text-xs font-medium text-muted-foreground">
         <Clock className="size-3.5" /> {t.entryTime} → {t.exitTime}
         <span className="ml-auto flex items-center gap-1 truncate max-w-[120px]">
           <ImageIcon className="size-3.5" /> Screenshot
@@ -81,21 +85,21 @@ function TradeCard({ t, onOpen }: { t: Trade; onOpen: () => void }) {
         <img
           src={t.screenshot}
           alt={t.pair}
-          className="mt-3 h-24 w-full rounded-xl object-cover ring-1 ring-border layer-3d"
+          className="mt-3 h-28 w-full rounded-xl object-cover border border-border"
         />
       ) : (
-        <div className="mt-3 h-16 overflow-hidden rounded-xl bg-gradient-to-br from-primary/25 via-accent/15 to-transparent ring-1 ring-border layer-3d" />
+        <div className="mt-3 h-16 overflow-hidden rounded-xl bg-muted/30 border border-border/50" />
       )}
-      <p className="mt-3 line-clamp-2 text-xs text-muted-foreground layer-3d">{t.notes}</p>
-      <div className="mt-3 flex flex-wrap items-center gap-1.5 layer-3d">
+      <p className="mt-3 line-clamp-2 text-xs font-medium text-muted-foreground leading-relaxed">{t.notes}</p>
+      <div className="mt-4 flex flex-wrap items-center gap-1.5">
         <Badge tone="primary">{t.setup}</Badge>
         {(t.tags || []).map((tag) => (
           <Badge key={tag}>{tag}</Badge>
         ))}
         <span
           className={cn(
-            "ml-auto font-display text-sm font-semibold layer-3d-extreme",
-            pnl >= 0 ? "text-success" : "text-destructive",
+            "ml-auto font-display text-sm font-bold tabular-nums",
+            pnl >= 0 ? "text-success" : "text-danger",
           )}
         >
           {money(pnl, currencySymbol)}
@@ -115,7 +119,7 @@ function FilterInput({
   onChange: (val: string) => void;
 }) {
   return (
-    <div className="flex items-center gap-1.5 rounded-xl border border-border bg-card/60 px-3 py-1.5 text-xs text-foreground transition-colors focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/50">
+    <div className="flex items-center gap-1.5 rounded-xl border-none bg-surface-glass elevation-1 px-3 py-1.5 text-xs text-foreground transition-all focus-within:ring-2 focus-within:ring-primary/20">
       <span className="font-medium text-muted-foreground whitespace-nowrap">{label}:</span>
       <input
         type="text"
@@ -140,7 +144,7 @@ function FilterSelect({
   options: { label: string; value: string }[];
 }) {
   return (
-    <div className="flex items-center gap-1.5 rounded-xl border border-border bg-card/60 pl-3 pr-2 py-1.5 text-xs text-foreground transition-colors focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/50">
+    <div className="flex items-center gap-1.5 rounded-xl border-none bg-surface-glass elevation-1 pl-3 pr-2 py-1.5 text-xs text-foreground transition-all focus-within:ring-2 focus-within:ring-primary/20">
       <span className="font-medium text-muted-foreground whitespace-nowrap">{label}:</span>
       <select
         value={value}
@@ -278,6 +282,7 @@ function Journal() {
   return (
     <AppShell title="Trading Journal" subtitle={`${list.length} trades logged`}>
       <Panel
+        className="neon-glow-blue"
         action={
           siteSettings?.journal_enabled !== false ? (
             <button
@@ -285,7 +290,7 @@ function Journal() {
                 setEditingTrade(null);
                 setIsLogModalOpen(true);
               }}
-              className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-primary to-accent px-4 py-2 text-xs font-semibold text-primary-foreground transition hover:opacity-90 glow-primary"
+              className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground transition-all hover:elevation-2 hover:-translate-y-[1px] shadow-[0_0_16px_rgba(99,102,241,0.4)]"
             >
               <Plus className="size-4" /> Log Trade
             </button>
@@ -305,7 +310,7 @@ function Journal() {
           </div>
         )}
         <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-2 rounded-xl border border-border bg-card/60 px-3 py-2">
+          <div className="flex items-center gap-2 rounded-xl border border-border/80 bg-background/60 px-4 py-3 focus-within:ring-2 focus-within:ring-primary/20 transition-all">
             <Search className="size-4 text-muted-foreground" />
             <input
               value={q}

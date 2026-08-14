@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { ArrowDownRight, ArrowUpRight } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 
 export function Panel({
   title,
@@ -16,23 +17,20 @@ export function Panel({
   return (
     <section
       className={cn(
-        "glass-card-3d transform-3d elevated-surface group relative animate-rise overflow-hidden rounded-3xl p-4 sm:p-5 transition-all duration-500 hover:border-primary/40",
+        "neon-card p-6",
         className,
       )}
     >
-      <div className="pointer-events-none absolute -right-20 -top-20 size-64 rounded-full bg-primary/0 blur-[80px] transition-all duration-700 group-hover:bg-primary/15 parallax-bg" />
       {(title || action) && (
-        <div className="relative z-10 mb-4 flex items-center justify-between gap-3 layer-3d">
-          {title && <h2 className="font-display text-sm font-semibold sm:text-base">{title}</h2>}
+        <div className="relative z-10 mb-5 flex items-center justify-between gap-3">
+          {title && <h2 className="font-display text-base font-extrabold text-foreground">{title}</h2>}
           {action}
         </div>
       )}
-      <div className="layer-3d">{children}</div>
+      <div className="relative z-10">{children}</div>
     </section>
   );
 }
-
-import { Link } from "@tanstack/react-router";
 
 export function StatCard({
   label,
@@ -51,62 +49,53 @@ export function StatCard({
   accent?: "primary" | "accent" | "success" | "destructive";
   to?: string;
 }) {
-  const ring = {
-    primary: "from-primary/25 group-hover:from-primary/40",
-    accent: "from-accent/25 group-hover:from-accent/40",
-    success: "from-success/25 group-hover:from-success/40",
-    destructive: "from-destructive/25 group-hover:from-destructive/40",
+  const iconBgs = {
+    primary: "bg-primary text-primary-foreground elevation-1",
+    accent: "bg-accent text-accent-foreground elevation-1",
+    success: "bg-success text-white elevation-glow-success",
+    destructive: "bg-destructive text-white elevation-glow-danger",
   }[accent];
-  const shadow = {
-    primary: "hover:shadow-[0_8px_25px_-8px_var(--color-primary)] hover:border-primary/40",
-    accent: "hover:shadow-[0_8px_25px_-8px_var(--color-accent)] hover:border-accent/40",
-    success: "hover:shadow-[0_8px_25px_-8px_var(--success)] hover:border-success/40",
-    destructive:
-      "hover:shadow-[0_8px_25px_-8px_var(--color-destructive)] hover:border-destructive/40",
-  }[accent];
+
   const inner = (
-    <div className="transform-3d layer-3d">
-      <div
-        className={cn(
-          "pointer-events-none absolute -right-10 -top-12 size-28 rounded-full bg-gradient-to-br to-transparent blur-2xl transition duration-500 parallax-bg",
-          ring,
-        )}
-      />
-      <div className="relative z-10 flex items-start justify-between gap-2">
-        <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+    <div className="relative z-10 flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[13px] font-medium text-muted-foreground">
           {label}
         </p>
         {icon && (
-          <span className="text-muted-foreground transition group-hover:text-primary layer-3d-extreme">
-            {icon}
-          </span>
+          <div className={cn("flex size-8 items-center justify-center rounded-lg", iconBgs)}>
+            <span className="size-4">{icon}</span>
+          </div>
         )}
       </div>
-      <p className="mt-2 font-display text-2xl font-semibold layer-3d-extreme">{value}</p>
-      <div className="mt-1 flex items-center gap-2 text-xs">
+      <div className="flex items-end gap-3">
+        <p className="font-display text-3xl font-bold tabular-nums text-foreground">{value}</p>
         {typeof delta === "number" && (
           <span
             className={cn(
-              "inline-flex items-center gap-0.5 font-medium",
-              delta >= 0 ? "text-success" : "text-destructive",
+              "mb-1 flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[11px] font-bold",
+              delta >= 0 ? "bg-success-bg text-success" : "bg-danger-bg text-danger",
             )}
           >
-            {delta >= 0 ? (
-              <ArrowUpRight className="size-3" />
-            ) : (
-              <ArrowDownRight className="size-3" />
-            )}
+            {delta >= 0 ? <ArrowUpRight className="size-3" /> : <ArrowDownRight className="size-3" />}
             {Math.abs(delta).toFixed(1)}%
           </span>
         )}
-        {sub && <span className="text-muted-foreground">{sub}</span>}
       </div>
+      {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
     </div>
   );
 
+  const glowClass = {
+    primary: "neon-glow-blue",
+    accent: "neon-glow-purple",
+    success: "neon-glow-green",
+    destructive: "neon-glow-red",
+  }[accent];
+
   const containerClasses = cn(
-    "glass-card-3d perspective-container elevated-surface depth-hover group relative animate-rise overflow-hidden rounded-2xl p-4 transition-all duration-300 block text-left",
-    shadow,
+    "neon-card p-6 block text-left",
+    glowClass,
   );
 
   if (to) {
@@ -129,16 +118,17 @@ export function Badge({
   className?: string;
 }) {
   const tones = {
-    win: "bg-success/15 text-success border-success/30",
-    loss: "bg-destructive/15 text-destructive border-destructive/30",
-    primary: "bg-primary/15 text-primary border-primary/30",
-    accent: "bg-accent/15 text-accent border-accent/30",
-    muted: "bg-muted/60 text-muted-foreground border-border",
+    win: "bg-success-bg text-success border-success/20",
+    loss: "bg-danger-bg text-danger border-danger/20",
+    primary: "bg-primary text-primary-foreground border-transparent elevation-1",
+    accent: "bg-accent text-accent-foreground border-transparent elevation-1",
+    muted: "bg-muted text-muted-foreground border-border",
   }[tone];
+  
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium",
+        "inline-flex items-center rounded-lg border px-2.5 py-0.5 text-[11px] font-semibold",
         tones,
         className,
       )}
@@ -150,9 +140,9 @@ export function Badge({
 
 export function EmptyState({ title, hint }: { title: string; hint: string }) {
   return (
-    <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-border py-14 text-center">
-      <p className="font-display text-sm font-semibold">{title}</p>
-      <p className="max-w-xs text-xs text-muted-foreground">{hint}</p>
+    <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border/50 bg-muted/30 py-16 text-center elevation-1">
+      <p className="font-display text-base font-extrabold text-foreground">{title}</p>
+      <p className="max-w-xs text-sm font-medium text-muted-foreground">{hint}</p>
     </div>
   );
 }

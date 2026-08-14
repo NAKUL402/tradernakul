@@ -69,26 +69,46 @@ export function FloatingAICoach() {
       />
 
       <div
-        className={`fixed bottom-24 right-6 z-[70] w-80 rounded-2xl border border-primary/20 bg-card/95 shadow-2xl glass-card-3d transform-3d transition-all duration-300 ease-out origin-bottom-right ${
+        className={`fixed bottom-24 right-6 z-[70] w-80 rounded-2xl neon-card neon-glow-purple bg-card/95 backdrop-blur-xl shadow-2xl transition-all duration-300 ease-out origin-bottom-right overflow-hidden ${
           isOpen
             ? "scale-100 opacity-100 translate-y-0"
             : "scale-90 opacity-0 translate-y-4 pointer-events-none"
         }`}
       >
-        <div className="flex items-center justify-between border-b border-primary/10 p-4">
-          <div className="flex items-center gap-2 text-primary">
-            <Activity className="size-5" />
-            <span className="font-display font-semibold tracking-wide">TRADE PULSE</span>
+        {/* Subtle Candlestick Background */}
+        <div className="absolute inset-0 pointer-events-none opacity-20 z-0">
+          <svg className="w-full h-full text-zinc-500/20" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" viewBox="0 0 320 200">
+            <line x1="40" y1="30" x2="40" y2="150" stroke="#10b981" strokeWidth="1" opacity="0.4"/>
+            <rect x="36" y="60" width="8" height="60" fill="#10b981" rx="1" opacity="0.3"/>
+
+            <line x1="100" y1="50" x2="100" y2="170" stroke="#f43f5e" strokeWidth="1" opacity="0.4"/>
+            <rect x="96" y="80" width="8" height="70" fill="#f43f5e" rx="1" opacity="0.3"/>
+
+            <line x1="160" y1="20" x2="160" y2="140" stroke="#10b981" strokeWidth="1" opacity="0.4"/>
+            <rect x="156" y="40" width="8" height="60" fill="#10b981" rx="1" opacity="0.3"/>
+
+            <line x1="220" y1="40" x2="220" y2="160" stroke="#10b981" strokeWidth="1" opacity="0.4"/>
+            <rect x="216" y="60" width="8" height="50" fill="#10b981" rx="1" opacity="0.3"/>
+
+            <line x1="280" y1="30" x2="280" y2="130" stroke="#10b981" strokeWidth="1" opacity="0.4"/>
+            <rect x="276" y="45" width="8" height="45" fill="#10b981" rx="1" opacity="0.3"/>
+          </svg>
+        </div>
+
+        <div className="flex items-center justify-between border-b border-border/60 p-4 relative z-10 bg-card/40">
+          <div className="flex items-center gap-2 text-purple-400">
+            <Activity className="size-5 animate-pulse" />
+            <span className="font-display font-bold text-sm tracking-wide text-foreground">TRADE PULSE</span>
           </div>
           <button
             onClick={() => setIsOpen(false)}
-            className="text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground cursor-pointer"
           >
             <X className="size-4" />
           </button>
         </div>
 
-        <div className="p-5">
+        <div className="p-5 relative z-10">
           {pulseInsight ? (
             <div className="flex items-start gap-3">
               {pulseInsight.type === "positive" && (
@@ -100,7 +120,7 @@ export function FloatingAICoach() {
               {pulseInsight.type === "neutral" && (
                 <Bot className="size-5 text-primary shrink-0 mt-0.5" />
               )}
-              <p className="text-sm font-medium leading-relaxed">{pulseInsight.text}</p>
+              <p className="text-sm font-medium leading-relaxed text-foreground">{pulseInsight.text}</p>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center text-center gap-2 py-2">

@@ -1,132 +1,87 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/app/AppShell";
-import { Badge, Panel } from "@/components/app/ui-kit";
-import { money, pct, stats } from "@/lib/trades";
+import { useAuth } from "@/lib/auth-context";
+import { useState, useRef, useEffect } from "react";
+import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
+import { fetchUserTrades, stats as calcStats, money, pct } from "@/lib/trades";
+import {
+  User,
+  Mail,
+  Calendar,
+  Globe,
+  Clock,
+  Camera,
+  Pencil,
+  Activity,
+  Target,
+  Percent,
+  Wallet,
+  X,
+} from "lucide-react";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
     meta: [
       { title: "Profile — Edge Journal" },
-      {
-        name: "description",
-        content: "Your trader profile: plan, trading style, stats snapshot and account details.",
-      },
-      { property: "og:title", content: "Profile — Edge Journal" },
-      {
-        property: "og:description",
-        content: "Trader profile with plan details and lifetime performance snapshot.",
-      },
+      { name: "description", content: "Manage your personal information and account details." },
     ],
   }),
   component: Profile,
 });
 
-import { useAuth } from "@/lib/auth-context";
-import { useState, useRef, useEffect } from "react";
-import { toast } from "sonner";
-import { supabase } from "@/lib/supabase";
-import { fetchUserTrades, stats as calcStats } from "@/lib/trades";
-
 function Profile() {
-  const {
-    user,
-    profile,
-    userSettings,
-    updateUserSettings,
-    isOwner,
-    isAdmin,
-    isApproved,
-    refreshSettings,
-    refreshProfile,
-  } = useAuth();
+  const { user, profile, userSettings, updateUserSettings, isOwner, isAdmin, isApproved, refreshProfile } = useAuth();
 
   const [isUploading, setIsUploading] = useState(false);
   const [isSavingName, setIsSavingName] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [nameInput, setNameInput] = useState(
-    profile?.full_name || user?.user_metadata?.["full_name"] || user?.user_metadata?.["name"] || "",
+    profile?.full_name || user?.user_metadata?.["full_name"] || user?.user_metadata?.["name"] || ""
   );
   const [userStats, setUserStats] = useState<ReturnType<typeof calcStats> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    fetchUserTrades().then((trades) => {
-      setUserStats(calcStats(trades));
-    });
+    fetchUserTrades().then((trades) => setUserStats(calcStats(trades)));
   }, []);
 
-  const name =
-    profile?.full_name ||
-    user?.user_metadata?.["full_name"] ||
-    user?.user_metadata?.["name"] ||
-    "Trader";
+  const name = profile?.full_name || user?.user_metadata?.["full_name"] || user?.user_metadata?.["name"] || "Trader";
   const email = profile?.email || user?.email || "";
-  const roleLabel = isOwner ? "Owner Admin" : isAdmin ? "Admin" : "Trader";
-  const statusLabel =
-    isOwner || isApproved ? "APPROVED" : profile?.status ? profile.status.toUpperCase() : "PENDING";
   const memberSince = profile?.created_at
-    ? new Date(profile.created_at).toLocaleDateString()
-    : "Unknown";
+    ? new Date(profile.created_at).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
+    : "—";
+  const roleLabel = isOwner ? "Owner Admin" : isAdmin ? "Admin" : "Trader";
 
   const initials = name
     .split(" ")
-    .map((part: string) => part[0])
+    .map((p: string) => p[0])
     .join("")
     .slice(0, 2)
     .toUpperCase();
 
+  const currencySymbol = userSettings?.currency?.split(" ")[1]?.replace(/[()]/g, "") || "$";
+
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files?.length || !user) return;
+    setIsUploading(true);
     try {
-      if (!e.target.files || e.target.files.length === 0 || !user) return;
-      setIsUploading(true);
       const file = e.target.files[0];
       if (!file) return;
       const fileExt = file.name.split(".").pop();
       const fileName = `${user.id}/${Math.random()}.${fileExt}`;
-
-      const { error: uploadError } = (await supabase.storage
-        .from("profile-avatars")
-        .upload(fileName, file, { upsert: true })) as any;
-
+      const { error: uploadError } = await supabase.storage.from("profile-avatars").upload(fileName, file as File, { upsert: true }) as any;
       if (uploadError) throw uploadError;
-
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("profile-avatars").getPublicUrl(fileName);
-
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({ avatar_url: publicUrl })
-        .eq("id", user.id);
-
+      const { data: { publicUrl } } = supabase.storage.from("profile-avatars").getPublicUrl(fileName);
+      const { error: updateError } = await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("id", user.id);
       if (updateError) throw updateError;
-      toast.success("Profile photo updated successfully");
-
+      toast.success("Profile photo updated!");
       await refreshProfile();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to upload avatar");
+    } catch (err: any) {
+      toast.error(err.message || "Upload failed");
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  };
-
-  const handleAvatarRemove = async () => {
-    try {
-      if (!user || !profile?.avatar_url) return;
-      setIsUploading(true);
-
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({ avatar_url: null })
-        .eq("id", user.id);
-
-      if (updateError) throw updateError;
-      toast.success("Profile photo removed");
-      await refreshProfile();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to remove avatar");
-    } finally {
-      setIsUploading(false);
     }
   };
 
@@ -134,251 +89,201 @@ function Profile() {
     if (!user || nameInput.trim() === name) return;
     setIsSavingName(true);
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ full_name: nameInput.trim() })
-        .eq("id", user.id);
+      const { error } = await supabase.from("profiles").update({ full_name: nameInput.trim() }).eq("id", user.id);
       if (error) throw error;
-      toast.success("Name updated successfully");
+      toast.success("Name updated!");
       await refreshProfile();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update name");
+      setEditOpen(false);
+    } catch (err: any) {
+      toast.error(err.message || "Update failed");
     } finally {
       setIsSavingName(false);
     }
   };
 
+  const infoRows = [
+    { icon: <User className="size-[18px] text-zinc-500" />, label: "Full Name", value: name },
+    { icon: <Mail className="size-[18px] text-zinc-500" />, label: "Email Address", value: email },
+    { icon: <Calendar className="size-[18px] text-zinc-500" />, label: "Date Joined", value: memberSince },
+    { icon: <Globe className="size-[18px] text-zinc-500" />, label: "Country", value: (userSettings as any)?.country || "Not set" },
+    { icon: <Clock className="size-[18px] text-zinc-500" />, label: "Time Zone", value: Intl.DateTimeFormat().resolvedOptions().timeZone || "—" },
+  ];
+
+  const statCards = userStats
+    ? [
+        { icon: <Activity className="size-[18px] text-blue-400" />, label: "Total Trades", value: String(userStats.total) },
+        { icon: <Target className="size-[18px] text-emerald-400" />, label: "Win Rate", value: `${userStats.winRate.toFixed(1)}%` },
+        { icon: <Percent className="size-[18px] text-violet-400" />, label: "Profit Factor", value: userStats.profitFactor > 0 ? userStats.profitFactor.toFixed(2) : "0.00" },
+        { icon: <Wallet className="size-[18px] text-emerald-400" />, label: "Net PnL", value: money(userStats.net, currencySymbol) },
+        { icon: <Calendar className="size-[18px] text-amber-400" />, label: "Member Since", value: memberSince },
+      ]
+    : null;
+
   return (
-    <AppShell title="Profile" subtitle="Manage your identity and trading profile">
-      <div className="mx-auto max-w-4xl space-y-6">
-        {/* Header Section */}
-        <Panel>
-          <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
-            <div className="flex flex-col items-center gap-3">
+    <AppShell title="Profile" subtitle="Manage your personal information and account details.">
+      <div className="w-full max-w-3xl mx-auto space-y-3 pb-12">
+
+        {/* ── Hero Card ── */}
+        <div className="neon-card neon-glow-purple overflow-hidden">
+          {/* Subtle top gradient strip */}
+          <div className="h-1.5 w-full bg-gradient-to-r from-indigo-500/40 via-violet-500/40 to-fuchsia-500/40" />
+
+          <div className="flex flex-col items-center py-5 px-5">
+            {/* Avatar */}
+            <div className="relative mb-3">
               {profile?.avatar_url ? (
-                <img
-                  src={profile.avatar_url}
-                  alt={name}
-                  className="size-24 rounded-3xl object-cover ring-2 ring-primary/40 glow-primary"
-                />
+                <img src={profile.avatar_url} alt={name} className="size-24 rounded-full object-cover ring-4 ring-indigo-500/20" />
               ) : (
-                <div className="grid size-24 place-items-center rounded-3xl bg-gradient-to-br from-primary to-accent font-display text-3xl font-bold text-primary-foreground glow-primary">
+                <div className="size-24 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center text-foreground text-3xl font-bold">
                   {initials}
                 </div>
               )}
-              <div className="flex gap-2">
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  ref={fileInputRef}
-                  onChange={handleAvatarUpload}
-                />
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isUploading}
-                  className="rounded-lg bg-muted px-3 py-1.5 text-xs font-medium hover:bg-muted/80 disabled:opacity-50"
-                >
-                  {isUploading ? "Uploading..." : "Change"}
-                </button>
-                {profile?.avatar_url && (
-                  <button
-                    onClick={handleAvatarRemove}
-                    disabled={isUploading}
-                    className="rounded-lg bg-destructive/10 px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/20 disabled:opacity-50"
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
+              {/* Camera overlay */}
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                className="absolute bottom-0 right-0 flex size-8 items-center justify-center rounded-full bg-zinc-800 border-2 border-[#0d0d14] text-zinc-300 hover:bg-zinc-700 transition cursor-pointer"
+              >
+                <Camera className="size-3.5" />
+              </button>
+              <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleAvatarUpload} />
             </div>
 
-            <div className="flex-1 text-center sm:text-left">
-              <h2 className="font-display text-2xl font-bold">{name}</h2>
-              <p className="text-muted-foreground">{email}</p>
-              <div className="mt-3 flex flex-wrap justify-center gap-2 sm:justify-start">
-                <Badge tone="primary">{roleLabel}</Badge>
-                <Badge tone={isApproved || isOwner ? "win" : "muted"}>{statusLabel}</Badge>
-              </div>
+            {/* Name & Email */}
+            <h2 className="text-[20px] font-bold text-foreground leading-tight">{name}</h2>
+            <p className="text-[13px] text-muted-foreground mt-0.5">{email}</p>
+
+            {/* Edit Profile Button */}
+            <button
+              onClick={() => setEditOpen(true)}
+              className="mt-3 flex items-center gap-2 rounded-xl border border-border bg-muted/50 px-5 py-2 text-[13px] font-semibold text-foreground hover:bg-muted transition cursor-pointer"
+            >
+              <Pencil className="size-3.5" />
+              Edit Profile
+            </button>
+          </div>
+        </div>
+
+        {/* ── Profile Information ── */}
+        <div className="neon-card neon-glow-blue overflow-hidden">
+          <div className="px-5 py-4">
+            <h3 className="text-[16px] font-bold text-foreground mb-4">Profile Information</h3>
+            <div className="space-y-0">
+              {infoRows.map((row, i) => (
+                <div key={row.label} className={`flex items-center justify-between py-4 ${i < infoRows.length - 1 ? "border-b border-border" : ""}`}>
+                  <div className="flex items-center gap-3">
+                    {row.icon}
+                    <span className="text-[14px] text-muted-foreground">{row.label}</span>
+                  </div>
+                  <span className="text-[14px] text-foreground font-medium text-right">{row.value}</span>
+                </div>
+              ))}
             </div>
           </div>
-        </Panel>
+        </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Personal Information */}
-          <Panel title="Personal Information">
-            <div className="space-y-4">
+        {/* ── Account Summary ── */}
+        <div className="neon-card neon-glow-green overflow-hidden">
+          <div className="px-5 py-4">
+            <h3 className="text-[16px] font-bold text-foreground mb-5">Account Summary</h3>
+            {statCards ? (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                {statCards.map((s) => (
+                  <div key={s.label} className="flex flex-col items-center gap-2 rounded-xl border border-border bg-muted/50 px-3 py-4 text-center transition-all hover:border-emerald-500/50 hover:shadow-[0_0_14px_rgba(16,185,129,0.2)]">
+                    <div className="flex items-center gap-1.5">
+                      {s.icon}
+                      <span className="text-[11px] text-zinc-500 font-medium leading-tight">{s.label}</span>
+                    </div>
+                    <span className="text-[18px] font-bold text-foreground leading-none">{s.value}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="h-20 flex items-center justify-center text-[13px] text-zinc-600">Loading stats…</div>
+            )}
+          </div>
+        </div>
+
+      </div>
+
+      {/* ── Edit Profile Modal ── */}
+      {editOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-2xl border border-border bg-surface shadow-2xl">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-border">
+              <h3 className="text-[16px] font-bold text-foreground">Edit Profile</h3>
+              <button onClick={() => setEditOpen(false)} className="text-zinc-500 hover:text-zinc-300 transition cursor-pointer">
+                <X className="size-5" />
+              </button>
+            </div>
+            <div className="px-6 py-5 space-y-4">
               <div>
-                <label className="mb-1.5 block text-sm font-medium">Email Address</label>
+                <label className="text-[13px] font-semibold text-muted-foreground block mb-2">Full Name</label>
+                <input
+                  type="text"
+                  value={nameInput}
+                  onChange={(e) => setNameInput(e.target.value)}
+                  className="w-full rounded-xl border border-border bg-muted/50 px-4 py-2.5 text-[14px] text-foreground outline-none focus:border-indigo-500/50 transition"
+                />
+              </div>
+              <div>
+                <label className="text-[13px] font-semibold text-muted-foreground block mb-2">Email Address</label>
                 <input
                   type="email"
                   value={email}
                   disabled
-                  className="w-full rounded-xl border border-border bg-muted/50 px-3 py-2.5 text-sm outline-none cursor-not-allowed opacity-70"
+                  className="w-full rounded-xl border border-border bg-muted/50 px-4 py-2.5 text-[14px] text-zinc-500 outline-none cursor-not-allowed"
                 />
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Email is managed via your secure provider.
-                </p>
+                <p className="text-[11px] text-zinc-600 mt-1.5">Email is managed via your secure provider.</p>
               </div>
-
               <div>
-                <label className="mb-1.5 block text-sm font-medium">Full Name</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={nameInput}
-                    onChange={(e) => setNameInput(e.target.value)}
-                    className="w-full rounded-xl border border-border bg-card/60 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
-                  />
-                  <button
-                    onClick={handleSaveName}
-                    disabled={isSavingName || nameInput.trim() === name}
-                    className="whitespace-nowrap rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
-                  >
-                    {isSavingName ? "Saving..." : "Save"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </Panel>
-
-          {/* Account Status */}
-          <Panel title="Account Status">
-            <div className="space-y-4 text-sm">
-              <div className="flex items-center justify-between border-b border-border/50 pb-3">
-                <span className="text-muted-foreground">Member Since</span>
-                <span className="font-medium">{memberSince}</span>
-              </div>
-              <div className="flex items-center justify-between border-b border-border/50 pb-3">
-                <span className="text-muted-foreground">Platform Role</span>
-                <span className="font-medium">{roleLabel}</span>
-              </div>
-              <div className="flex items-center justify-between pb-1">
-                <span className="text-muted-foreground">Access Status</span>
-                <span className="font-medium flex items-center gap-2">
-                  <div
-                    className={`size-2 rounded-full ${isApproved || isOwner ? "bg-emerald-500" : "bg-yellow-500"}`}
-                  ></div>
-                  {statusLabel}
-                </span>
-              </div>
-            </div>
-          </Panel>
-
-          {/* Real Statistics */}
-          <Panel title="Trading Statistics" className="md:col-span-2">
-            {userStats ? (
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                <div className="rounded-xl border border-border/50 bg-card/60 p-4 text-center">
-                  <p className="text-sm text-muted-foreground">Total Trades</p>
-                  <p className="mt-1 font-display text-2xl font-bold">{userStats.total}</p>
-                </div>
-                <div className="rounded-xl border border-border/50 bg-card/60 p-4 text-center">
-                  <p className="text-sm text-muted-foreground">Win Rate</p>
-                  <p className="mt-1 font-display text-2xl font-bold">
-                    {userStats.winRate.toFixed(1)}%
-                  </p>
-                </div>
-                <div className="rounded-xl border border-border/50 bg-card/60 p-4 text-center">
-                  <p className="text-sm text-muted-foreground">Avg RRR</p>
-                  <p className="mt-1 font-display text-2xl font-bold">
-                    {userStats.avgRRR.toFixed(2)}
-                  </p>
-                </div>
-                <div className="rounded-xl border border-border/50 bg-card/60 p-4 text-center">
-                  <p className="text-sm text-muted-foreground">Best Setup</p>
-                  <p className="mt-1 font-display text-lg font-bold line-clamp-1">
-                    {userStats.bestPair?.name || "N/A"}
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="flex h-24 items-center justify-center text-sm text-muted-foreground">
-                Loading stats...
-              </div>
-            )}
-          </Panel>
-
-          {/* Trading Profile */}
-          <Panel title="Trading Profile" className="md:col-span-2">
-            <p className="mb-6 text-sm text-muted-foreground">
-              Configure your primary trading identity. These settings help customize your journal
-              analytics.
-            </p>
-            <div className="grid gap-6 sm:grid-cols-2">
-              <div>
-                <label className="mb-1.5 block text-sm font-medium">Trading Style</label>
+                <label className="text-[13px] font-semibold text-muted-foreground block mb-2">Trading Style</label>
                 <select
                   value={userSettings?.trading_style || ""}
                   onChange={(e) => updateUserSettings({ trading_style: e.target.value || null })}
-                  className="w-full rounded-xl border border-border bg-card/60 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full rounded-xl border border-border bg-muted/50 px-4 py-2.5 text-[14px] text-foreground outline-none focus:border-indigo-500/50 transition cursor-pointer"
                 >
                   <option value="">Not specified</option>
-                  <option value="Day Trader">Day Trader</option>
-                  <option value="Swing Trader">Swing Trader</option>
-                  <option value="Scalper">Scalper</option>
-                  <option value="Position Trader">Position Trader</option>
+                  {["Day Trader", "Swing Trader", "Scalper", "Position Trader"].map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
-
               <div>
-                <label className="mb-1.5 block text-sm font-medium">Preferred Timeframe</label>
+                <label className="text-[13px] font-semibold text-muted-foreground block mb-2">Preferred Timeframe</label>
                 <select
                   value={userSettings?.preferred_timeframe || ""}
-                  onChange={(e) =>
-                    updateUserSettings({ preferred_timeframe: e.target.value || null })
-                  }
-                  className="w-full rounded-xl border border-border bg-card/60 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
+                  onChange={(e) => updateUserSettings({ preferred_timeframe: e.target.value || null })}
+                  className="w-full rounded-xl border border-border bg-muted/50 px-4 py-2.5 text-[14px] text-foreground outline-none focus:border-indigo-500/50 transition cursor-pointer"
                 >
                   <option value="">Not specified</option>
-                  <option value="M1-M5 (Scalp)">M1-M5 (Scalp)</option>
-                  <option value="M15-H1 (Intraday)">M15-H1 (Intraday)</option>
-                  <option value="H4-D1 (Swing)">H4-D1 (Swing)</option>
-                  <option value="W1-MN (Macro)">W1-MN (Macro)</option>
+                  {["M1-M5 (Scalp)", "M15-H1 (Intraday)", "H4-D1 (Swing)", "W1-MN (Macro)"].map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
-
               <div>
-                <label className="mb-1.5 block text-sm font-medium">Primary Markets</label>
+                <label className="text-[13px] font-semibold text-muted-foreground block mb-2">Country</label>
                 <input
                   type="text"
-                  placeholder="e.g. Forex, Crypto, Indices (comma separated)"
-                  value={userSettings?.primary_markets?.join(", ") || ""}
-                  onChange={(e) =>
-                    updateUserSettings({
-                      primary_markets: e.target.value
-                        ? e.target.value
-                            .split(",")
-                            .map((s) => s.trim())
-                            .filter(Boolean)
-                        : null,
-                    })
-                  }
-                  className="w-full rounded-xl border border-border bg-card/60 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
+                  value={(userSettings as any)?.country || ""}
+                  onChange={(e) => updateUserSettings({ country: e.target.value || null } as any)}
+                  placeholder="e.g. India, USA, UK"
+                  className="w-full rounded-xl border border-border bg-muted/50 px-4 py-2.5 text-[14px] text-foreground outline-none focus:border-indigo-500/50 transition"
                 />
               </div>
-
-              <div>
-                <label className="mb-1.5 block text-sm font-medium">Preferred Session</label>
-                <select
-                  value={userSettings?.default_session || ""}
-                  onChange={(e) =>
-                    updateUserSettings({
-                      default_session: e.target.value ? (e.target.value as any) : null,
-                    })
-                  }
-                  className="w-full rounded-xl border border-border bg-card/60 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
-                >
-                  <option value="">No default</option>
-                  <option value="Asian">Asian</option>
-                  <option value="London">London</option>
-                  <option value="New York">New York</option>
-                </select>
-              </div>
             </div>
-          </Panel>
+            <div className="flex gap-3 px-6 py-5 border-t border-border">
+              <button onClick={() => setEditOpen(false)} className="flex-1 rounded-xl border border-border bg-muted/30 px-4 py-2.5 text-[14px] font-medium text-muted-foreground hover:bg-muted transition cursor-pointer">
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveName}
+                disabled={isSavingName || nameInput.trim() === name}
+                className="flex-1 rounded-xl bg-indigo-500 px-4 py-2.5 text-[14px] font-semibold text-foreground hover:bg-indigo-600 disabled:opacity-50 transition cursor-pointer"
+              >
+                {isSavingName ? "Saving…" : "Save Changes"}
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </AppShell>
   );
 }

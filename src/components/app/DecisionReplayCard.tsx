@@ -115,7 +115,7 @@ export function DecisionReplayCard({ trades }: { trades: Trade[] }) {
   return (
     <Panel
       title="Decision Replay"
-      className="flex flex-col h-full shadow-lg"
+      className="neon-glow-purple flex flex-col h-full"
       action={
         <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
           See the trader

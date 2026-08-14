@@ -4,7 +4,7 @@
   "sideEffects": false,
   "type": "module",
   "scripts": {
-    "dev": "vite dev",
+    "dev": "npx concurrently -n \"API,VITE\" -c \"cyan,green\" \"node --experimental-strip-types api/local-server.ts\" \"vite dev\"",
     "dev:api": "node --experimental-strip-types api/local-server.ts",
     "dev:full": "npx concurrently -n \"API,VITE\" -c \"cyan,green\" \"node --experimental-strip-types api/local-server.ts\" \"vite dev\"",
     "build": "vite build",

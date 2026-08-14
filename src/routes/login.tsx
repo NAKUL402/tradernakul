@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect, useRef, KeyboardEvent, ClipboardEvent } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { ArrowRight, Mail, User } from "lucide-react";
+import { ArrowRight, Mail, User, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { sendOwnerApprovalEmail } from "@/lib/email-service";
 import { LoginGuide } from "@/components/app/LoginGuide";
@@ -29,6 +29,7 @@ function LoginPage() {
   const [otpError, setOtpError] = useState("");
   const [resendCooldown, setResendCooldown] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -145,6 +146,43 @@ function LoginPage() {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    if (isGoogleLoading || isLoading) return;
+
+    // Honour the site-wide login toggle (owner always bypassed server-side)
+    if (siteSettings && !siteSettings.login_enabled) {
+      toast.error("Login is temporarily disabled by the administrator.");
+      return;
+    }
+
+    setIsGoogleLoading(true);
+    try {
+      const redirectTo =
+        typeof window !== "undefined"
+          ? window.location.origin
+          : (import.meta.env.VITE_SITE_URL as string) || "https://tradernakul.vercel.app";
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo,
+          queryParams: {
+            access_type: "offline",
+            prompt: "select_account",
+          },
+        },
+      });
+
+      if (error) throw error;
+      // Browser redirects to Google — on return, onAuthStateChange in auth-context.tsx
+      // picks up the session automatically via the URL hash/code exchange.
+    } catch (err: any) {
+      toast.error(err.message || "Google sign-in failed. Please try again.");
+      setIsGoogleLoading(false);
+    }
+    // Do NOT setIsGoogleLoading(false) on success — the page redirects away.
+  };
+
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (otpToken.length < 6) return;
@@ -256,7 +294,7 @@ function LoginPage() {
             </div>
           </div>
 
-          {/* Forms */}
+            {/* Forms */}
           {showOtp ? (
             <form onSubmit={handleVerifyOtp} className="mt-8 space-y-6">
               <div className="animate-in fade-in zoom-in-95 duration-500">
@@ -320,50 +358,81 @@ function LoginPage() {
               </div>
             </form>
           ) : (
-            <form onSubmit={handleSubmit} className="mt-8 space-y-5 text-left">
-              <div className="space-y-1.5 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-100 fill-mode-backwards">
-                <label className="text-[13px] font-semibold text-foreground/80">First Name</label>
-                <div className="relative">
-                  <User className="absolute left-3.5 top-1/2 size-[18px] -translate-y-1/2 text-muted-foreground/70" />
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="E.g. Rahul Sharma"
-                    className="w-full rounded-xl border border-border/50 bg-background/50 py-3 pl-10 pr-4 text-[15px] outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
-                    required
-                  />
-                </div>
+            <div className="mt-8 space-y-5">
+              {/* ── Google Sign-In ─────────────────────────────── */}
+              <button
+                type="button"
+                onClick={handleGoogleSignIn}
+                disabled={isGoogleLoading || isLoading}
+                className="flex w-full items-center justify-center gap-3 rounded-xl border border-border/60 bg-background/50 px-4 py-3 text-[15px] font-semibold text-foreground transition-all hover:bg-muted/60 hover:border-border active:scale-[0.98] disabled:opacity-60 shadow-sm"
+              >
+                {isGoogleLoading ? (
+                  <Loader2 className="size-5 animate-spin text-muted-foreground" />
+                ) : (
+                  <svg className="size-5 shrink-0" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                    <path fill="none" d="M0 0h48v48H0z"/>
+                  </svg>
+                )}
+                {isGoogleLoading ? "Redirecting to Google..." : "Continue with Google"}
+              </button>
+
+              {/* ── Divider ─────────────────────────────────────── */}
+              <div className="relative flex items-center gap-3">
+                <div className="h-px flex-1 bg-border/50" />
+                <span className="text-[12px] font-medium text-muted-foreground">or continue with email</span>
+                <div className="h-px flex-1 bg-border/50" />
               </div>
 
-              <div className="space-y-1.5 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-150 fill-mode-backwards">
-                <label className="text-[13px] font-semibold text-foreground/80">
-                  Email Address
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 size-[18px] -translate-y-1/2 text-muted-foreground/70" />
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="name@example.com"
-                    className="w-full rounded-xl border border-border/50 bg-background/50 py-3 pl-10 pr-4 text-[15px] outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
-                    required
-                  />
+              {/* ── OTP Email Form ───────────────────────────────── */}
+              <form onSubmit={handleSubmit} className="space-y-5 text-left">
+                <div className="space-y-1.5 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-100 fill-mode-backwards">
+                  <label className="text-[13px] font-semibold text-foreground/80">First Name</label>
+                  <div className="relative">
+                    <User className="absolute left-3.5 top-1/2 size-[18px] -translate-y-1/2 text-muted-foreground/70" />
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="E.g. Rahul Sharma"
+                      className="w-full rounded-xl border border-border/50 bg-background/50 py-3 pl-10 pr-4 text-[15px] outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
+                      required
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <div className="pt-2 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-200 fill-mode-backwards">
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-foreground px-4 py-3.5 text-[15px] font-semibold text-background transition-all hover:bg-foreground/90 active:scale-[0.98] disabled:opacity-50 shadow-md shadow-black/5"
-                >
-                  {isLoading ? "Sending secure code..." : "Continue with Email"}
-                  {!isLoading && <ArrowRight className="size-4" />}
-                </button>
-              </div>
-            </form>
+                <div className="space-y-1.5 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-150 fill-mode-backwards">
+                  <label className="text-[13px] font-semibold text-foreground/80">
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3.5 top-1/2 size-[18px] -translate-y-1/2 text-muted-foreground/70" />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="name@example.com"
+                      className="w-full rounded-xl border border-border/50 bg-background/50 py-3 pl-10 pr-4 text-[15px] outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-1 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-200 fill-mode-backwards">
+                  <button
+                    type="submit"
+                    disabled={isLoading || isGoogleLoading}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-foreground px-4 py-3.5 text-[15px] font-semibold text-background transition-all hover:bg-foreground/90 active:scale-[0.98] disabled:opacity-50 shadow-md shadow-black/5"
+                  >
+                    {isLoading ? "Sending secure code..." : "Continue with Email"}
+                    {!isLoading && <ArrowRight className="size-4" />}
+                  </button>
+                </div>
+              </form>
+            </div>
           )}
         </div>
 

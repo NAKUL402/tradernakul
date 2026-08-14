@@ -195,6 +195,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         toast.error("Access blocked: Login is temporarily disabled by administrator.");
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // signOut is intentionally omitted: it's a plain const that recreates each render;
+  // adding it would cause an infinite loop. It calls stable supabase.auth.signOut().
   }, [user, siteSettings, profile]);
 
   async function fetchProfile(userId: string) {
@@ -289,18 +292,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           window.matchMedia("(prefers-color-scheme: dark)").matches);
 
       document.documentElement.classList.toggle("dark", isDark);
-      document.documentElement.classList.toggle(
-        "theme-special",
-        userSettings.accent_color === "special",
-      );
+      document.documentElement.classList.remove("theme-special");
 
-      if (userSettings.accent_color === "special") {
-        document.documentElement.style.removeProperty("--primary");
-        document.documentElement.style.removeProperty("--ring");
-      } else {
-        document.documentElement.style.setProperty("--primary", userSettings.accent_color);
-        document.documentElement.style.setProperty("--ring", userSettings.accent_color);
-      }
+      document.documentElement.style.setProperty("--primary", userSettings.accent_color);
+      document.documentElement.style.setProperty("--ring", userSettings.accent_color);
 
       if (userSettings.compact_ui) {
         document.documentElement.setAttribute("data-compact", "true");

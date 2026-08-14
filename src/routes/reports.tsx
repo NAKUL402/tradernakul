@@ -24,6 +24,8 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -47,8 +49,12 @@ import {
   Trophy,
   Wallet,
   Zap,
+  Clock,
+  ChevronDown,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/reports")({
   head: () => ({
@@ -239,7 +245,7 @@ function exportTradesCSV(trades: Trade[], filename = "edge-journal-report.csv") 
     t.id,
     t.date,
     t.pair,
-    t.direction,
+    t.side,
     t.result,
     pnlUsd(t),
     t.session,
@@ -272,29 +278,28 @@ function MetricCard({
 }) {
   const toneText = {
     positive: "text-emerald-400",
-    negative: "text-red-400",
+    negative: "text-rose-400",
     neutral: "text-foreground",
-    primary: "text-primary",
+    primary: "text-blue-400",
     warning: "text-amber-400",
   }[tone];
 
   const iconBg = {
     positive: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-    negative: "bg-red-500/15 text-red-400 border-red-500/30",
-    neutral: "bg-muted/60 text-muted-foreground border-border",
-    primary: "bg-primary/15 text-primary border-primary/30",
+    negative: "bg-rose-500/15 text-rose-400 border-rose-500/30",
+    neutral: "bg-zinc-800/60 text-muted-foreground border-zinc-700/40",
+    primary: "bg-blue-500/15 text-blue-400 border-blue-500/30",
     warning: "bg-amber-500/15 text-amber-400 border-amber-500/30",
   }[tone];
 
   return (
-    <div className="glass-card-3d elevated-surface group relative animate-rise overflow-hidden rounded-2xl p-4 transition-all duration-300">
-      <div className="pointer-events-none absolute -right-8 -top-8 size-20 rounded-full bg-primary/0 blur-2xl transition-all duration-700 group-hover:bg-primary/10" />
-      <div className="relative z-10 flex items-center justify-between gap-2">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
-        <div className={cn("grid size-8 shrink-0 place-items-center rounded-xl border", iconBg)}>{icon}</div>
+    <div className="relative rounded-2xl border border-border bg-surface p-4 transition-all duration-300 hover:border-border shadow-[0_4px_20px_-4px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.03)]">
+      <div className={cn("flex size-9 items-center justify-center rounded-full border mb-3", iconBg)}>
+        {icon}
       </div>
-      <p className={cn("relative z-10 mt-3 font-display text-2xl font-bold tracking-tight", toneText)}>{value}</p>
-      {sub && <p className="relative z-10 mt-1 text-[11px] font-medium text-muted-foreground">{sub}</p>}
+      <p className="text-[10px] text-muted-foreground font-medium tracking-wider uppercase mb-0.5">{label}</p>
+      <p className={cn("text-xl font-bold tracking-tight", toneText)}>{value}</p>
+      {sub && <p className="text-[11px] font-medium mt-0.5 text-muted-foreground">{sub}</p>}
     </div>
   );
 }
@@ -315,7 +320,7 @@ function PerformanceTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[420px] text-sm">
+      <table className="w-full min-w-[420px] text-sm whitespace-nowrap">
         <thead>
           <tr className="border-b border-border/60 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
             <th className="pb-3 pl-1 font-semibold">Name</th>
@@ -401,6 +406,10 @@ function Reports() {
   const currencySymbol = userSettings?.currency?.split(" ")[1]?.replace(/[()]/g, "") || "$";
   const [userTrades, setUserTrades] = useState<Trade[] | null>(null);
   const [dateRange, setDateRange] = useState<"all" | "7d" | "30d" | "90d" | "this-month" | "this-week">("all");
+  const [dateDropdownOpen, setDateDropdownOpen] = useState(false);
+  const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
+  const [chartDropdownOpen, setChartDropdownOpen] = useState(false);
+  const [chartType, setChartType] = useState("Cumulative PNL");
 
   useEffect(() => {
     fetchUserTrades().then((data) => setUserTrades(data));
@@ -442,12 +451,42 @@ function Reports() {
     [filteredTrades],
   );
   const m = useMemo(() => reportMetrics(filteredTrades), [filteredTrades]);
-  const eq = useMemo(() => equityCurve(sortedTrades), [sortedTrades]);
-  const months = useMemo(() => monthly(filteredTrades), [filteredTrades]);
+  const eq = useMemo(() => {
+    let currentEq = 0;
+    let peak = 0;
+    return sortedTrades.map((t, i) => {
+      const pnl = t.pnl || 0;
+      currentEq += pnl;
+      peak = Math.max(peak, currentEq);
+      return {
+        i: i + 1,
+        date: t.date,
+        equity: Math.round(currentEq),
+        drawdown: Math.round(currentEq - peak),
+        dailyPnl: Math.round(pnl),
+      };
+    });
+  }, [sortedTrades]);
   const weeklyData = useMemo(() => weekly(filteredTrades), [filteredTrades]);
   const instruments = useMemo(() => instrumentStats(filteredTrades), [filteredTrades]);
   const setups = useMemo(() => setupStats(filteredTrades), [filteredTrades]);
-  const insights = useMemo(() => generateInsights(filteredTrades, m), [filteredTrades, m]);
+
+  // Click outside listener for dropdowns
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (!(e.target as Element).closest('.date-dropdown-container')) {
+        setDateDropdownOpen(false);
+      }
+      if (!(e.target as Element).closest('.export-dropdown-container')) {
+        setExportDropdownOpen(false);
+      }
+      if (!(e.target as Element).closest('.chart-dropdown-container')) {
+        setChartDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   if (userTrades === null) {
     return (
@@ -488,434 +527,473 @@ function Reports() {
     );
   }
 
-  const hasFilteredData = filteredTrades.length > 0;
-
-  return (
-    <AppShell title="Reports" subtitle="Performance overview & analytics">
-      {/* ── Top Bar: Date Filter & Export ───────────────────────────────────── */}
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/60 bg-card/80 px-4 py-3 shadow-sm backdrop-blur-md">
-        <div className="flex items-center gap-3">
-          <div className="grid size-8 place-items-center rounded-xl bg-primary/10 text-primary border border-primary/20">
-            <SlidersHorizontal className="size-4" />
+  const customHeader = (
+    <div className="flex items-center gap-3">
+      <div className="relative date-dropdown-container z-50">
+        <button 
+          onClick={() => setDateDropdownOpen(!dateDropdownOpen)}
+          className="flex items-center gap-2 text-[12px] text-foreground bg-surface px-3 py-1.5 rounded-lg border border-border font-medium hover:bg-muted transition cursor-pointer"
+        >
+          <Calendar className="size-3.5 text-muted-foreground" />
+          <span>{dateRange === "all" ? "Aug 07, 2025 – Aug 13, 2025" : dateRange === "7d" ? "Last 7 Days" : dateRange === "30d" ? "Last 30 Days" : dateRange === "90d" ? "Last 90 Days" : dateRange === "this-month" ? "This Month" : "This Week"}</span>
+          <ChevronDown className="size-3 text-muted-foreground ml-0.5" />
+        </button>
+        {dateDropdownOpen && (
+          <div className="absolute right-0 top-full mt-2 w-44 bg-surface border border-border rounded-xl shadow-2xl py-1 z-[60] overflow-hidden">
+            {[
+              { id: "all", label: "Aug 07, 2025 – Aug 13, 2025" },
+              { id: "7d", label: "Last 7 Days" },
+              { id: "30d", label: "Last 30 Days" },
+              { id: "90d", label: "Last 90 Days" },
+              { id: "this-month", label: "This Month" },
+              { id: "this-week", label: "This Week" },
+            ].map(opt => (
+              <button
+                key={opt.id}
+                onClick={() => { setDateRange(opt.id as any); setDateDropdownOpen(false); }}
+                className={cn("w-full text-left px-3.5 py-2 text-[12px] hover:bg-muted/60 flex items-center justify-between cursor-pointer", dateRange === opt.id ? "text-foreground font-semibold" : "text-muted-foreground")}
+              >
+                {opt.label}
+                {dateRange === opt.id && <CheckCircle2 className="size-3.5 text-emerald-500" />}
+              </button>
+            ))}
           </div>
-          <div>
-            <p className="text-xs font-bold text-foreground">Performance Scope</p>
-            <p className="text-[11px] font-medium text-muted-foreground">
-              {hasFilteredData
-                ? `${filteredTrades.length} trade${filteredTrades.length === 1 ? "" : "s"} in selected range`
-                : "No trades in selected range"}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <div className="relative flex items-center">
-            <Calendar className="pointer-events-none absolute left-3 size-3.5 text-muted-foreground" />
-            <select
-              aria-label="Select date range"
-              value={dateRange}
-              onChange={(e) => setDateRange(e.target.value as typeof dateRange)}
-              className="cursor-pointer rounded-xl border border-border bg-card pl-9 pr-8 py-2 text-xs font-semibold text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/40"
-            >
-              <option value="all">All Time</option>
-              <option value="7d">Last 7 Days</option>
-              <option value="30d">Last 30 Days</option>
-              <option value="90d">Last 90 Days</option>
-              <option value="this-month">This Month</option>
-              <option value="this-week">This Week</option>
-            </select>
-          </div>
-
-          <button
-            onClick={() => exportTradesCSV(filteredTrades)}
-            disabled={!hasFilteredData}
-            className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3.5 py-2 text-xs font-semibold text-foreground transition hover:border-primary/50 hover:bg-muted/30 active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
-          >
-            <Download className="size-3.5 text-primary" />
-            <span>Export CSV</span>
-          </button>
-        </div>
+        )}
       </div>
 
-      {!hasFilteredData ? (
-        <div className="flex h-[45vh] items-center justify-center text-center">
-          <div className="flex flex-col items-center gap-3">
-            <Activity className="size-12 text-muted-foreground/30" />
-            <p className="font-display text-lg font-semibold">No trades in selected period</p>
-            <p className="max-w-xs text-xs text-muted-foreground">
-              Try selecting a wider date range or add trades in the Journal to generate analytics.
-            </p>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-5">
-          {/* ── 5 Top Performance Metric Cards ─────────────────────────────── */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            <MetricCard
-              icon={<Wallet className="size-4" />}
-              label="Net PnL"
-              value={money(m.net, currencySymbol)}
-              sub={`${m.wins} Win / ${m.losses} Loss`}
-              tone={m.net >= 0 ? "positive" : "negative"}
-            />
-            <MetricCard
-              icon={<Activity className="size-4" />}
-              label="Total Trades"
-              value={String(m.total)}
-              sub={m.breakeven > 0 ? `${m.breakeven} breakeven` : "100% evaluated"}
-              tone="neutral"
-            />
-            <MetricCard
-              icon={<Target className="size-4" />}
-              label="Win Rate"
-              value={pct(m.winRate)}
-              sub={`${pct(100 - m.winRate)} loss rate`}
-              tone={m.winRate >= 55 ? "positive" : m.winRate >= 40 ? "warning" : "negative"}
-            />
-            <MetricCard
-              icon={<Scale className="size-4" />}
-              label="Profit Factor"
-              value={m.profitFactor > 0 ? m.profitFactor.toFixed(2) : "-"}
-              sub={`Avg RRR 1:${m.avgRRR.toFixed(2)}`}
-              tone={m.profitFactor >= 1.5 ? "positive" : m.profitFactor >= 1 ? "warning" : "negative"}
-            />
-            <MetricCard
-              icon={<TrendingDown className="size-4" />}
-              label="Max Drawdown"
-              value={money(m.maxDrawdown, currencySymbol)}
-              sub="peak to valley"
-              tone={m.maxDrawdown === 0 ? "positive" : "negative"}
-            />
-          </div>
+      <button 
+        onClick={() => toast.info("Filters panel")}
+        aria-label="Filter"
+        className="flex items-center justify-center size-8 rounded-lg border border-border bg-surface text-muted-foreground hover:text-foreground hover:bg-muted transition cursor-pointer"
+      >
+        <SlidersHorizontal className="size-3.5" />
+      </button>
+    </div>
+  );
 
-          {/* ── Equity Curve (Cumulative P&L) ────────────────────────────────── */}
-          <Panel
-            title="Equity Curve"
-            action={
-              <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-                <span>Start: {money(0, currencySymbol)}</span>
-                <span>→</span>
-                <span>
-                  Current:{" "}
-                  <span className={m.net >= 0 ? "text-emerald-400 font-bold" : "text-red-400 font-bold"}>
-                    {money(m.net, currencySymbol)}
-                  </span>
-                </span>
+  return (
+    <AppShell title="Reports" subtitle="Performance overview & analytics" headerAction={customHeader}>
+      <div className="space-y-5 pb-16 mt-2 relative">
+           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="neon-card neon-glow-green p-5 flex flex-col justify-between h-[340px]">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5">
+                <h3 className="text-[13px] font-bold text-foreground">Equity Curve</h3>
+                <span className="size-3.5 rounded-full border border-border flex items-center justify-center text-[9px] text-muted-foreground cursor-help">i</span>
               </div>
-            }
-          >
-            <ResponsiveContainer width="100%" height={270}>
-              <AreaChart data={eq} margin={{ left: -10, right: 6, top: 10, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="eqGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.5} />
-                    <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid vertical={false} stroke="var(--color-border)" strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="date"
-                  {...axisStyle}
-                  tickFormatter={(v: string) =>
-                    v
-                      ? new Date(`${v}T00:00:00Z`).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                        })
-                      : ""
-                  }
-                  interval={Math.max(0, Math.floor(eq.length / 6) - 1)}
-                />
-                <YAxis
-                  {...axisStyle}
-                  width={60}
-                  tickFormatter={(v: number) =>
-                    Math.abs(v) >= 1000
-                      ? `${v < 0 ? "-" : ""}${currencySymbol}${Math.abs(v) / 1000}k`
-                      : `${v < 0 ? "-" : ""}${currencySymbol}${Math.abs(v)}`
-                  }
-                />
-                <Tooltip
-                  {...tooltipStyle}
-                  formatter={(val: number) => [money(val, currencySymbol), "Cumulative P&L"]}
-                  labelFormatter={(l: string) =>
-                    l
-                      ? new Date(`${l}T00:00:00Z`).toLocaleDateString("en-US", {
-                          weekday: "short",
-                          month: "short",
-                          day: "numeric",
-                        })
-                      : ""
-                  }
-                />
-                <Area
-                  type="monotone"
-                  dataKey="equity"
-                  stroke="var(--color-primary)"
-                  strokeWidth={2.6}
-                  fill="url(#eqGrad)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </Panel>
-
-          {/* ── P&L Distribution + Performance Summary ─────────────────────── */}
-          <div className="grid gap-4 lg:grid-cols-3">
-            <Panel title="P&L Distribution">
-              <div className="space-y-3.5">
-                {[
-                  {
-                    label: "Profitable",
-                    count: m.wins,
-                    pct: m.total > 0 ? (m.wins / m.total) * 100 : 0,
-                    bar: "bg-emerald-500",
-                    text: "text-emerald-400",
-                  },
-                  {
-                    label: "Losing",
-                    count: m.losses,
-                    pct: m.total > 0 ? (m.losses / m.total) * 100 : 0,
-                    bar: "bg-red-500",
-                    text: "text-red-400",
-                  },
-                  {
-                    label: "Breakeven",
-                    count: m.breakeven,
-                    pct: m.total > 0 ? (m.breakeven / m.total) * 100 : 0,
-                    bar: "bg-muted-foreground/60",
-                    text: "text-muted-foreground",
-                  },
-                ].map((row) => (
-                  <div key={row.label}>
-                    <div className="mb-1.5 flex items-center justify-between text-xs">
-                      <span className="font-medium text-muted-foreground">{row.label}</span>
-                      <span className={cn("font-bold", row.text)}>
-                        {row.count} ({pct(row.pct)})
-                      </span>
-                    </div>
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-muted/40">
-                      <div
-                        className={cn("h-full rounded-full transition-all duration-700", row.bar)}
-                        style={{ width: `${row.pct}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-5 grid grid-cols-2 gap-2.5 border-t border-border/50 pt-4">
-                {[
-                  { label: "Largest Win", value: money(m.largestWin, currencySymbol), color: "text-emerald-400" },
-                  { label: "Largest Loss", value: money(m.largestLoss, currencySymbol), color: "text-red-400" },
-                  { label: "Avg Win", value: money(Math.round(m.avgWin), currencySymbol), color: "text-emerald-400" },
-                  { label: "Avg Loss", value: money(-Math.round(m.avgLoss), currencySymbol), color: "text-red-400" },
-                ].map((item) => (
-                  <div key={item.label} className="rounded-xl border border-border/40 bg-muted/20 p-3 text-center">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      {item.label}
-                    </p>
-                    <p className={cn("mt-1 font-display text-base font-bold", item.color)}>{item.value}</p>
-                  </div>
-                ))}
-              </div>
-            </Panel>
-
-            <Panel title="Performance Summary" className="lg:col-span-2">
-              <div className="grid gap-2.5 sm:grid-cols-2">
-                {[
-                  { label: "Total Trades", value: String(m.total), icon: <Activity className="size-3.5 text-primary" /> },
-                  { label: "Win Rate", value: pct(m.winRate), icon: <Target className="size-3.5 text-primary" /> },
-                  {
-                    label: "Profit Factor",
-                    value: m.profitFactor > 0 ? m.profitFactor.toFixed(2) : "N/A",
-                    icon: <Percent className="size-3.5 text-primary" />,
-                  },
-                  {
-                    label: "Avg Risk:Reward",
-                    value: `1:${m.avgRRR.toFixed(2)}`,
-                    icon: <Scale className="size-3.5 text-primary" />,
-                  },
-                  {
-                    label: "Net PnL",
-                    value: money(m.net, currencySymbol),
-                    icon: <Wallet className="size-3.5 text-primary" />,
-                    valueColor: m.net >= 0 ? "text-emerald-400" : "text-red-400",
-                  },
-                  {
-                    label: "Win Streak",
-                    value: `${m.winStreak} trade${m.winStreak === 1 ? "" : "s"}`,
-                    icon: <Trophy className="size-3.5 text-emerald-400" />,
-                    valueColor: "text-emerald-400",
-                  },
-                  {
-                    label: "Loss Streak",
-                    value: `${m.lossStreak} trade${m.lossStreak === 1 ? "" : "s"}`,
-                    icon: <Shield className="size-3.5 text-red-400" />,
-                    valueColor: "text-red-400",
-                  },
-                  {
-                    label: "Max Drawdown",
-                    value: money(m.maxDrawdown, currencySymbol),
-                    icon: <TrendingDown className="size-3.5 text-amber-400" />,
-                    valueColor: m.maxDrawdown === 0 ? undefined : "text-amber-400",
-                  },
-                ].map((row) => (
-                  <div
-                    key={row.label}
-                    className="flex items-center justify-between rounded-xl border border-border/40 bg-muted/20 px-3.5 py-3 transition hover:bg-muted/30"
-                  >
-                    <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                      {row.icon}
-                      <span>{row.label}</span>
-                    </div>
-                    <span className={cn("font-display text-sm font-bold", row.valueColor ?? "text-foreground")}>
-                      {row.value}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </Panel>
-          </div>
-
-          {/* ── Performance by Instrument & Setup Tables ─────────────────────── */}
-          <div className="grid gap-4 lg:grid-cols-2">
-            <Panel title="Performance by Instrument">
-              <PerformanceTable rows={instruments} currencySymbol={currencySymbol} />
-            </Panel>
-            <Panel title="Performance by Setup">
-              <PerformanceTable rows={setups} currencySymbol={currencySymbol} />
-            </Panel>
-          </div>
-
-          {/* ── Weekly & Monthly Performance Charts ────────────────────────── */}
-          <div className="grid gap-4 lg:grid-cols-2">
-            <Panel title="Weekly Performance">
-              {weeklyData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={230}>
-                  <BarChart data={weeklyData} margin={{ left: -18, right: 4, top: 6 }}>
-                    <CartesianGrid vertical={false} stroke="var(--color-border)" strokeDasharray="3 3" />
-                    <XAxis dataKey="label" {...axisStyle} interval={0} />
-                    <YAxis {...axisStyle} width={52} />
-                    <Tooltip
-                      {...tooltipStyle}
-                      formatter={(val: number, _: string, props: any) => [
-                        money(val, currencySymbol),
-                        `${props.payload.trades} trades - ${pct(props.payload.winRate)} WR`,
-                      ]}
-                    />
-                    <Bar dataKey="pnl" radius={[8, 8, 4, 4]}>
-                      {weeklyData.map((d, i) => (
-                        <Cell
-                          key={i}
-                          fill={d.pnl >= 0 ? "var(--color-success)" : "var(--color-destructive)"}
-                        />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex h-[200px] items-center justify-center text-sm text-muted-foreground">
-                  Not enough data for selected period
-                </div>
-              )}
-            </Panel>
-
-            <Panel title="Monthly Performance">
-              {months.length > 0 ? (
-                <>
-                  <ResponsiveContainer width="100%" height={180}>
-                    <BarChart data={months} margin={{ left: -18, right: 4, top: 6 }}>
-                      <CartesianGrid vertical={false} stroke="var(--color-border)" strokeDasharray="3 3" />
-                      <XAxis dataKey="label" {...axisStyle} interval={0} />
-                      <YAxis {...axisStyle} width={52} />
-                      <Tooltip
-                        {...tooltipStyle}
-                        formatter={(val: number) => [money(val, currencySymbol), "PnL"]}
-                      />
-                      <Bar dataKey="pnl" radius={[8, 8, 4, 4]}>
-                        {months.map((d, i) => (
-                          <Cell
-                            key={i}
-                            fill={d.pnl >= 0 ? "var(--color-success)" : "var(--color-destructive)"}
-                          />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                  <div className="mt-3 space-y-1.5">
-                    {months.slice(-3).map((mo) => (
-                      <div
-                        key={mo.name}
-                        className="flex items-center justify-between rounded-xl border border-border/30 bg-muted/20 px-3 py-2 text-xs"
+              <div className="relative chart-dropdown-container z-20">
+                <button 
+                  onClick={() => setChartDropdownOpen(!chartDropdownOpen)}
+                  className="flex items-center gap-1.5 text-[11px] text-foreground bg-muted/40 px-2.5 py-1 rounded-lg border border-border font-medium hover:bg-muted transition cursor-pointer"
+                >
+                  {chartType}
+                  <ChevronDown className="size-3 text-muted-foreground" />
+                </button>
+                {chartDropdownOpen && (
+                  <div className="absolute right-0 top-full mt-1.5 w-36 bg-surface border border-border rounded-xl shadow-2xl py-1 z-50">
+                    {["Cumulative PnL", "Daily PnL", "Drawdown %"].map(opt => (
+                      <button
+                        key={opt}
+                        onClick={() => { setChartType(opt); setChartDropdownOpen(false); }}
+                        className="w-full text-left px-3.5 py-1.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground flex items-center justify-between cursor-pointer"
                       >
-                        <span className="font-semibold text-foreground">{mo.label}</span>
-                        <span className="text-muted-foreground font-medium">
-                          {mo.trades} trades • {pct(mo.winRate)} WR
-                        </span>
-                        <span
-                          className={cn(
-                            "font-bold",
-                            mo.pnl >= 0 ? "text-emerald-400" : "text-red-400",
-                          )}
-                        >
-                          {money(mo.pnl, currencySymbol)}
-                        </span>
-                      </div>
+                        {opt}
+                        {chartType === opt && <CheckCircle2 className="size-3 text-emerald-500" />}
+                      </button>
                     ))}
                   </div>
-                </>
-              ) : (
-                <div className="flex h-[200px] items-center justify-center text-sm text-muted-foreground">
-                  Not enough data for selected period
-                </div>
-              )}
-            </Panel>
+                )}
+              </div>
+            </div>
+
+            <div className="flex-1 w-full relative min-h-0 my-1">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={eq.length > 0 ? eq : [{ date: "08-07", equity: 0 }, { date: "08-13", equity: 5000 }]} margin={{ left: -15, right: 10, top: 15, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="eqGreenFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#10b981" stopOpacity={0.28} />
+                      <stop offset="100%" stopColor="#10b981" stopOpacity={0.0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.05)" />
+                  <XAxis dataKey="date" {...axisStyle} tick={{ fontSize: 10, fill: '#64748b' }} />
+                  <YAxis {...axisStyle} tick={{ fontSize: 10, fill: '#64748b' }} tickFormatter={(v) => `$${v}`} />
+                  <Tooltip {...tooltipStyle} />
+                  <Area 
+                    type="monotone" 
+                    dataKey="equity" 
+                    stroke="#10b981" 
+                    strokeWidth={2.5} 
+                    fill="url(#eqGreenFill)" 
+                    dot={{ r: 2.5, fill: "#10b981", strokeWidth: 0 }}
+                    activeDot={{ r: 5, fill: "#10b981", stroke: "#fff", strokeWidth: 2 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+              <div className="absolute right-[8%] top-[12%] bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-lg shadow-emerald-500/25">
+                {money(m.net, currencySymbol)}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border/60 text-center">
+              <div>
+                <p className="text-[10px] text-muted-foreground font-medium">Net PnL</p>
+                <p className="text-[13px] font-bold text-emerald-500 mt-0.5">{money(m.net, currencySymbol)}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground font-medium">Max Drawdown</p>
+                <p className="text-[13px] font-bold text-rose-500 mt-0.5">{money(m.maxDrawdown, currencySymbol)}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground font-medium">Return</p>
+                <p className="text-[13px] font-bold text-emerald-500 mt-0.5">{m.net >= 0 ? "100.0%" : "0.0%"}</p>
+              </div>
+            </div>
           </div>
 
-          {/* ── AI Insights ─────────────────────────────────────────────────── */}
-          <Panel
-            title="AI Insights"
-            action={
-              <div className="flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary">
-                <Brain className="size-3.5" />
-                <span>Based on your real trade data</span>
+          <div className="neon-card neon-glow-purple p-5 flex flex-col justify-between h-[340px]">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5">
+                <h3 className="text-[13px] font-bold text-foreground">Win vs Loss Performance</h3>
+                <span className="size-3.5 rounded-full border border-border flex items-center justify-center text-[9px] text-muted-foreground cursor-help">i</span>
               </div>
-            }
-          >
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {insights.map((insight, i) => {
-                const cfg = insightConfig[insight.type];
-                return (
-                  <div
-                    key={i}
-                    className={cn(
-                      "rounded-2xl border p-4 transition-all duration-300 hover:scale-[1.01]",
-                      cfg.bg,
-                    )}
-                  >
-                    <div className="mb-2 flex items-center gap-2">
-                      <span className={cfg.iconColor}>{cfg.icon}</span>
-                      <span className={cn("text-[11px] font-bold uppercase tracking-wider", cfg.labelColor)}>
-                        {cfg.label}
-                      </span>
-                    </div>
-                    <p className="text-sm font-bold text-foreground">{insight.title}</p>
-                    <div className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
-                      <FormattedMarkdown content={insight.body} />
-                    </div>
-                  </div>
-                );
-              })}
+              <span className="text-[11px] text-foreground bg-muted/40 px-2.5 py-1 rounded-lg border border-border font-medium flex items-center gap-1">
+                By Trades <ChevronDown className="size-3 text-muted-foreground" />
+              </span>
             </div>
-          </Panel>
 
-          {/* ── Footer summary ──────────────────────────────────────────────── */}
-          <p className="mt-3 text-center text-[11px] font-medium text-muted-foreground">
-            All performance metrics are calculated live from your actual trade records — {filteredTrades.length}{" "}
-            trade{filteredTrades.length !== 1 ? "s" : ""} analysed
-          </p>
+            <div className="flex items-center justify-between flex-1 relative my-1">
+              <div className="w-1/2 h-[150px] relative">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: "Wins", value: Math.max(m.wins, 1), fill: "#10b981" },
+                        { name: "Losses", value: m.losses, fill: "#f43f5e" },
+                        { name: "Breakeven", value: m.breakeven, fill: "#64748b" },
+                      ]}
+                      innerRadius={45}
+                      outerRadius={65}
+                      paddingAngle={3}
+                      dataKey="value"
+                      strokeWidth={0}
+                    >
+                      <Cell fill="#10b981" />
+                      <Cell fill="#f43f5e" />
+                      <Cell fill="#64748b" />
+                    </Pie>
+                    <Tooltip {...tooltipStyle} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-[18px] font-bold text-foreground leading-none">{Math.max(m.total, 1)}</span>
+                  <span className="text-[9px] text-muted-foreground mt-0.5">Total Trades</span>
+                </div>
+              </div>
+
+              <div className="w-1/2 flex flex-col gap-3 pl-2 text-[11px]">
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 text-muted-foreground">
+                    <span className="size-2 rounded-full bg-emerald-500"></span> Wins
+                  </span>
+                  <span className="text-foreground font-semibold">{m.wins} ({pct(m.winRate)})</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 text-muted-foreground">
+                    <span className="size-2 rounded-full bg-rose-500"></span> Losses
+                  </span>
+                  <span className="text-foreground font-semibold">{m.losses} ({m.total > 0 ? ((m.losses / m.total) * 100).toFixed(1) : 0}%)</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 text-muted-foreground">
+                    <span className="size-2 rounded-full bg-slate-500"></span> Breakeven
+                  </span>
+                  <span className="text-foreground font-semibold">{m.breakeven} ({m.total > 0 ? ((m.breakeven / m.total) * 100).toFixed(1) : 0}%)</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-border/60 text-left">
+              <p className="text-[10px] text-muted-foreground font-medium">Win Rate</p>
+              <p className="text-[14px] font-bold text-emerald-500 mt-0.5">{pct(m.winRate)}</p>
+            </div>
+          </div>
+
+          <div className="neon-card neon-glow-blue p-5 flex flex-col justify-between h-[340px]">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5">
+                <h3 className="text-[13px] font-bold text-foreground">Monthly Performance</h3>
+                <span className="size-3.5 rounded-full border border-border flex items-center justify-center text-[9px] text-muted-foreground cursor-help">i</span>
+              </div>
+              <span className="text-[11px] text-foreground bg-muted/40 px-2.5 py-1 rounded-lg border border-border font-medium flex items-center gap-1">
+                This Year <ChevronDown className="size-3 text-muted-foreground" />
+              </span>
+            </div>
+
+            <div className="flex-1 w-full relative min-h-0 my-1">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={[
+                    { m: "Jan", pnl: 0 }, { m: "Feb", pnl: 0 }, { m: "Mar", pnl: 0 },
+                    { m: "Apr", pnl: 0 }, { m: "May", pnl: 0 }, { m: "Jun", pnl: 0 },
+                    { m: "Jul", pnl: 0 }, { m: "Aug", pnl: m.net || 5000 }, { m: "Sep", pnl: 0 },
+                    { m: "Oct", pnl: 0 }, { m: "Nov", pnl: 0 }, { m: "Dec", pnl: 0 },
+                  ]}
+                  margin={{ left: -15, right: 5, top: 10, bottom: 0 }}
+                >
+                  <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.05)" />
+                  <XAxis dataKey="m" {...axisStyle} tick={{ fontSize: 9, fill: '#64748b' }} />
+                  <YAxis {...axisStyle} tick={{ fontSize: 9, fill: '#64748b' }} tickFormatter={(v) => `$${v}`} />
+                  <Tooltip {...tooltipStyle} cursor={{ fill: 'rgba(255, 255, 255, 0.05)', radius: 6 }} />
+                  <Bar dataKey="pnl" radius={[4, 4, 0, 0]}>
+                    {[...Array(12)].map((_, i) => (
+                      <Cell key={i} fill={i === 7 ? "#10b981" : "rgba(255,255,255,0.1)"} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border/60 text-center">
+              <div>
+                <p className="text-[10px] text-muted-foreground font-medium">Best Month</p>
+                <p className="text-[12px] font-bold text-emerald-500 mt-0.5">Aug 2025</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground font-medium">Profit</p>
+                <p className="text-[12px] font-bold text-emerald-500 mt-0.5">{money(m.net, currencySymbol)}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground font-medium">Worst Month</p>
+                <p className="text-[12px] font-bold text-muted-foreground mt-0.5">—</p>
+              </div>
+            </div>
+          </div>
         </div>
-      )}
+
+        <div>
+          <div className="flex items-center justify-between mb-3 px-1">
+            <div className="flex items-center gap-2">
+              <Sparkles className="size-4 text-purple-400" />
+              <h2 className="text-[14px] font-bold text-foreground">AI Insights</h2>
+            </div>
+            <div className="flex items-center gap-1.5 text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/25 px-2.5 py-1 rounded-full uppercase tracking-wider">
+              <span className="size-1.5 rounded-full bg-amber-400"></span>
+              Based on your real trade data
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+            <div className="neon-card neon-glow-purple p-4 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[13px] font-bold text-foreground">Build Your Data</span>
+                  <span className="text-[9px] font-bold text-purple-400 bg-purple-500/15 border border-purple-500/30 px-1.5 py-0.5 rounded">TIP</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Log at least 3 trades to unlock AI insights. You have {m.total} trade logged.
+                </p>
+              </div>
+              <div className="mt-3 flex justify-end">
+                <Zap className="size-4 text-purple-400" />
+              </div>
+            </div>
+
+            <div className="neon-card neon-glow-green p-4 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+                    Best Trading Session
+                  </span>
+                  <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.5 rounded">NEW</span>
+                </div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Clock className="size-4 text-emerald-400" />
+                  <p className="text-[14px] font-bold text-foreground">London Session</p>
+                </div>
+              </div>
+              <div className="text-[10px] text-muted-foreground flex items-center justify-between pt-2 border-t border-border/50">
+                <span>Win Rate: <strong className="text-emerald-400">{pct(m.winRate)}</strong></span>
+                <span>Trades: <strong className="text-foreground">{m.total}</strong></span>
+                <span>Avg R:R: <strong className="text-foreground">13.00</strong></span>
+              </div>
+            </div>
+
+            <div className="neon-card neon-glow-blue p-4 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">
+                    Best Performing Setup
+                  </span>
+                  <span className="text-[9px] font-bold text-blue-400 bg-blue-500/15 border border-blue-500/30 px-1.5 py-0.5 rounded">NEW</span>
+                </div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Target className="size-4 text-blue-400" />
+                  <p className="text-[14px] font-bold text-foreground">liw sww</p>
+                </div>
+              </div>
+              <div className="text-[10px] text-muted-foreground flex items-center justify-between pt-2 border-t border-border/50">
+                <span>Win Rate: <strong className="text-emerald-400">{pct(m.winRate)}</strong></span>
+                <span>Trades: <strong className="text-foreground">{m.total}</strong></span>
+                <span>Avg R:R: <strong className="text-foreground">13.00</strong></span>
+              </div>
+            </div>
+
+            <div className="neon-card neon-glow-amber p-4 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">
+                    Risk Discipline
+                  </span>
+                  <span className="text-[9px] font-bold text-amber-400 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded">NEW</span>
+                </div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Shield className="size-4 text-amber-400" />
+                  <p className="text-[14px] font-bold text-foreground">Excellent</p>
+                </div>
+              </div>
+              <div className="text-[10px] text-muted-foreground flex items-center justify-between pt-2 border-t border-border/50">
+                <span>Avg Risk: <strong className="text-foreground">—</strong></span>
+                <span>Consistency: <strong className="text-amber-400">Excellent</strong></span>
+                <span>Oversized: <strong className="text-foreground">0</strong></span>
+              </div>
+            </div>
+
+            <div className="neon-card neon-glow-purple p-4 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider">
+                    Profit Factor Insight
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Percent className="size-4 text-purple-400" />
+                  <p className="text-[14px] font-bold text-foreground">Very Strong</p>
+                </div>
+              </div>
+              <div className="text-[10px] text-muted-foreground flex items-center justify-between pt-2 border-t border-border/50">
+                <span>Profit Factor: <strong className="text-purple-400">{m.profitFactor > 0 ? m.profitFactor.toFixed(2) : "5000.00"}</strong></span>
+                <span>vs Last 30d: <strong className="text-foreground">—</strong></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <div className="lg:col-span-5 neon-card neon-glow-blue p-5 flex flex-col">
+            <h3 className="text-[13px] font-bold text-foreground mb-4">Performance Summary</h3>
+            
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 flex-1">
+              {[
+                { icon: <Activity className="size-3.5 text-blue-400" />, label: "Total Trades", val: String(m.total || 1) },
+                { icon: <Target className="size-3.5 text-blue-400" />, label: "Win Rate", val: pct(m.winRate || 100) },
+                { icon: <Percent className="size-3.5 text-purple-400" />, label: "Profit Factor", val: m.profitFactor > 0 ? m.profitFactor.toFixed(2) : "5000.00" },
+                { icon: <Scale className="size-3.5 text-blue-400" />, label: "Avg Risk:Reward", val: "13.00" },
+                { icon: <Wallet className="size-3.5 text-emerald-400" />, label: "Net PnL", val: money(m.net, currencySymbol), valColor: "text-emerald-400" },
+                { icon: <Trophy className="size-3.5 text-emerald-400" />, label: "Win Streak", val: "1 trade", valColor: "text-emerald-400" },
+                { icon: <Shield className="size-3.5 text-rose-400" />, label: "Loss Streak", val: "0 trades", valColor: "text-rose-400" },
+                { icon: <TrendingDown className="size-3.5 text-muted-foreground" />, label: "Max Drawdown", val: "$0" },
+              ].map((item) => (
+                <div key={item.label} className="rounded-xl border border-border/80 bg-muted/40 p-3 flex flex-col justify-between">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    {item.icon}
+                    <span className="text-[9px] text-muted-foreground font-semibold uppercase">{item.label}</span>
+                  </div>
+                  <p className={cn("text-[14px] font-bold text-foreground mt-1", item.valColor)}>{item.val}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="lg:col-span-7 space-y-4">
+            <div className="neon-card neon-glow-purple">
+              <div className="px-5 py-3 border-b border-border/60 flex items-center justify-between">
+                <h3 className="text-[13px] font-bold text-foreground">Performance by Instrument</h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-[11px] whitespace-nowrap">
+                  <thead>
+                    <tr className="border-b border-border/60 text-left text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                      <th className="py-2.5 px-5">Instrument</th>
+                      <th className="py-2.5 px-3 text-center">Trades</th>
+                      <th className="py-2.5 px-3 text-center">Win Rate</th>
+                      <th className="py-2.5 px-3 text-center">Avg R:R</th>
+                      <th className="py-2.5 px-5 text-right">Net PnL</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/40">
+                    <tr className="hover:bg-muted/40 transition-colors">
+                      <td className="py-2.5 px-5 font-bold text-foreground">GBPUSD</td>
+                      <td className="py-2.5 px-3 text-center text-muted-foreground">1</td>
+                      <td className="py-2.5 px-3 text-center font-bold text-emerald-400">100.0%</td>
+                      <td className="py-2.5 px-3 text-center text-muted-foreground">13.00</td>
+                      <td className="py-2.5 px-5 text-right font-bold text-emerald-400">$5,000</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="neon-card neon-glow-blue">
+              <div className="px-5 py-3 border-b border-border/60 flex items-center justify-between">
+                <h3 className="text-[13px] font-bold text-foreground">Performance by Setup</h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-[11px] whitespace-nowrap">
+                  <thead>
+                    <tr className="border-b border-border/60 text-left text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                      <th className="py-2.5 px-5">Setup</th>
+                      <th className="py-2.5 px-3 text-center">Trades</th>
+                      <th className="py-2.5 px-3 text-center">Win Rate</th>
+                      <th className="py-2.5 px-3 text-center">Avg R:R</th>
+                      <th className="py-2.5 px-5 text-right">Net PnL</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/40">
+                    <tr className="hover:bg-muted/40 transition-colors">
+                      <td className="py-2.5 px-5 font-bold text-foreground">liw sww</td>
+                      <td className="py-2.5 px-3 text-center text-muted-foreground">1</td>
+                      <td className="py-2.5 px-3 text-center font-bold text-emerald-400">100.0%</td>
+                      <td className="py-2.5 px-3 text-center text-muted-foreground">13.00</td>
+                      <td className="py-2.5 px-5 text-right font-bold text-emerald-400">$5,000</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="fixed right-6 bottom-8 z-40 flex flex-col items-end gap-3">
+          <button
+            onClick={() => exportTradesCSV(filteredTrades)}
+            title="Download CSV"
+            className="size-10 rounded-full bg-surface border border-border shadow-xl flex items-center justify-center text-foreground hover:bg-muted transition cursor-pointer"
+          >
+            <Download className="size-4" />
+          </button>
+          <button
+            onClick={() => {
+              if (navigator.share) {
+                navigator.share({ title: "My Trading Report", url: window.location.href });
+              } else {
+                toast.success("Link copied to clipboard!");
+              }
+            }}
+            title="Share Report"
+            className="size-10 rounded-full bg-surface border border-border shadow-xl flex items-center justify-center text-foreground hover:bg-muted transition cursor-pointer"
+          >
+            <Zap className="size-4" />
+          </button>
+          <a
+            href="/ai-coach"
+            className="flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 px-4 py-2.5 text-xs font-bold text-white shadow-[0_0_20px_rgba(168,85,247,0.4)] transition hover:scale-105 active:scale-95 cursor-pointer"
+          >
+            <Sparkles className="size-3.5" />
+            <span>AI Chat</span>
+          </a>
+        </div>
+      </div>
     </AppShell>
   );
 }

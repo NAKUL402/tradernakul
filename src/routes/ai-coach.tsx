@@ -1,30 +1,45 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { AppShell } from "@/components/app/AppShell";
-import { Badge, Panel } from "@/components/app/ui-kit";
-import { fetchUserTrades, type Trade } from "@/lib/trades";
+import { fetchUserTrades, stats, streaks, equityCurve, money, pct, type Trade } from "@/lib/trades";
 import { useAuth } from "@/lib/auth-context";
 import { analyzeTradeDataWithAI } from "@/lib/ai-coach-service";
-import { DAILY_QUOTES, getDailyQuoteIndex } from "@/lib/daily-quotes";
-import { TraderEdgeIntelligence } from "@/components/app/TraderEdgeIntelligence";
 import {
-  AlertTriangle,
-  Brain,
-  CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
-  Crown,
-  MessageSquare,
-  RefreshCw,
-  Send,
-  Shield,
-  Sparkles,
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+  Radar, RadarChart, PolarGrid, PolarAngleAxis
+} from "recharts";
+import {
   Target,
+  Trophy,
+  Shield,
+  Rocket,
+  ChevronDown,
+  Brain,
+  Paperclip,
+  Send,
+  ArrowRight,
+  BarChart3,
+  FileText,
+  AlertTriangle,
+  Activity,
+  Maximize2,
+  Minimize2,
+  FileCheck2,
+  Search,
+  Bell,
+  Sparkles,
+  Info,
   Zap,
-  Flame,
-  Award,
+  FileCode2,
+  X
 } from "lucide-react";
-import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { FormattedMarkdown } from "@/components/app/FormattedMarkdown";
 
 export const Route = createFileRoute("/ai-coach")({
@@ -33,150 +48,134 @@ export const Route = createFileRoute("/ai-coach")({
       { title: "AI Coach — Edge Journal" },
       {
         name: "description",
-        content:
-          "World-class AI trading mentor: weekly golden rules, institutional performance grades, psychology analysis, and risk reviews.",
+        content: "Your personal trading coach & performance mentor.",
       },
-      { property: "og:title", content: "AI Coach — Edge Journal" },
-      { property: "og:description", content: "World-class AI trading mentor & performance lab." },
     ],
   }),
-  validateSearch: (search: Record<string, unknown>) => {
-    return {
-      chat: (search["chat"] as string) === 'true' || search["chat"] === true,
-    }
-  },
+  validateSearch: (search: Record<string, unknown>) => ({
+    chat: (search["chat"] as string) === "true" || search["chat"] === true,
+  }),
   component: CoachPage,
 });
 
-// ── 3D Circular Progress Score Gauge ─────────────────────────────────────────
-function Gauge3D({
-  value,
-  label,
-  tone,
-}: {
-  value: number;
-  label: string;
-  tone: "primary" | "accent" | "win";
-}) {
-  const colorStr =
-    tone === "win"
-      ? "oklch(0.72 0.19 155)"
-      : tone === "accent"
-        ? "var(--color-accent)"
-        : "var(--color-primary)";
+/* ─── Recharts config ────────────────────────────────────────────── */
+const axisProps = { stroke: "#3f3f46", fill: "#71717a", fontSize: 10, tickLine: false, axisLine: false } as const;
+const ttStyle = {
+  contentStyle: { background: "#1a1a22", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, fontSize: 12, color: "#e4e4e7", boxShadow: "0 8px 32px rgba(0,0,0,0.5)" },
+  labelStyle: { color: "#71717a" },
+} as const;
 
+/* ─── Sparkline Component ────────────────────────────────────────── */
+function Sparkline({ color, data }: { color: string; data: number[] }) {
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+  const points = data.map((d, i) => `${(i / (data.length - 1)) * 100},${100 - ((d - min) / range) * 100}`).join(" ");
   return (
-    <div className="flex flex-col items-center gap-2.5 group">
-      <div
-        className="relative grid size-32 place-items-center rounded-full transition-transform duration-500 hover:scale-105"
-        style={{
-          background: `conic-gradient(${colorStr} ${value * 3.6}deg, rgba(255,255,255,0.06) 0deg)`,
-          boxShadow: `0 0 25px -5px ${colorStr}40`,
-        }}
-      >
-        <div className="grid size-24 place-items-center rounded-full bg-card/90 backdrop-blur-xl border border-border/60 shadow-inner">
-          <span className="font-display text-3xl font-bold tracking-tight text-foreground">
-            {value}
-          </span>
-        </div>
-      </div>
-      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+    <div className="h-6 w-full mt-1 opacity-85">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full overflow-visible">
+        <polyline points={points} fill="none" stroke={color} strokeWidth="2.5" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
     </div>
   );
 }
 
-// ── List Component for Strengths / Mistakes ──────────────────────────────────
-function List3D({ items, tone }: { items: string[]; tone: "good" | "bad" }) {
+/* ─── Panel wrapper ──────────────────────────────────────────────── */
+function Panel3D({ title, action, children, className }: {
+  title?: string; action?: React.ReactNode; children: React.ReactNode; className?: string;
+}) {
   return (
-    <ul className="space-y-3 text-sm">
-      {items.map((item, idx) => (
-        <li
-          key={idx}
-          className="flex items-start gap-3 rounded-xl border border-border/40 bg-card/40 p-3 backdrop-blur-sm transition hover:bg-card/70"
-        >
-          {tone === "good" ? (
-            <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-success" />
-          ) : (
-            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
-          )}
-          <span className="leading-relaxed text-muted-foreground">{item}</span>
-        </li>
-      ))}
-    </ul>
+    <div className={cn(
+      "neon-card p-0 flex flex-col",
+      className
+    )}>
+      {title && (
+        <div className="flex items-center justify-between px-5 pt-5 pb-3">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-bold text-zinc-100 tracking-wide">{title}</h3>
+            <div className="size-3.5 rounded-full border border-zinc-700/60 flex items-center justify-center text-[8px] text-zinc-400 cursor-help">i</div>
+          </div>
+          {action && <div>{action}</div>}
+        </div>
+      )}
+      <div className="px-5 pb-5">{children}</div>
+    </div>
   );
 }
 
+/* ─── MAIN COMPONENT ─────────────────────────────────────────────── */
 function CoachPage() {
   const { session, siteSettings } = useAuth();
   const [userTrades, setUserTrades] = useState<Trade[]>([]);
-  const [activeQuoteIdx, setActiveQuoteIdx] = useState<number>(getDailyQuoteIndex());
-  const { chat } = Route.useSearch();
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
-  // Interactive AI Assistant Chat State
+  // Timeframe and dropdown states
+  const [timeframe, setTimeframe] = useState<"7d" | "30d" | "all">("7d");
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  // Modal toggle states
+  const [chartMaximized, setChartMaximized] = useState(false);
+  const [showAllRecs, setShowAllRecs] = useState(false);
+  const [showAllNotes, setShowAllNotes] = useState(false);
+  const [showAttachmentModal, setShowAttachmentModal] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+
+  // Chat state
   const [customQuestion, setCustomQuestion] = useState("");
-  const [chatMessages, setChatMessages] = useState<Array<{ role: "user" | "coach"; text: string }>>(
-    [],
-  );
+  const [chatMessages, setChatMessages] = useState<Array<{ role: "user" | "coach"; text: string; time: string }>>([]);
   const [isAnswering, setIsAnswering] = useState(false);
-  const [isChatModalOpen, setIsChatModalOpen] = useState(false);
+
+  useEffect(() => {
+    fetchUserTrades().then(setUserTrades);
+  }, []);
 
   // Initialize welcome message
   useEffect(() => {
-    if (isChatModalOpen && chatMessages.length === 0) {
-      setChatMessages([
-        {
-          role: "coach",
-          text: "Ready to analyze your trade?\n\nShare your trade details, setup, reasoning, result, or mistakes and I'll help you review the trade.",
-        },
-      ]);
+    if (chatMessages.length === 0) {
+      const now = new Date();
+      setChatMessages([{
+        role: "coach",
+        text: "Hey Trader! 👋\n\nI'm here to help you become a consistently profitable trader. Ask me anything about your performance, strategy, psychology or market analysis.",
+        time: now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+      }]);
     }
-  }, [isChatModalOpen, chatMessages.length]);
+  }, [chatMessages.length]);
 
+  // Auto-scroll chat internally (avoids scrolling window)
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTo({
+        top: chatContainerRef.current.scrollHeight,
+        behavior: "smooth"
+      });
+    }
+  }, [chatMessages, isAnswering]);
+
+  const ai = analyzeTradeDataWithAI(userTrades);
+  const s = useMemo(() => stats(userTrades), [userTrades]);
+  const eq = useMemo(() => equityCurve(userTrades), [userTrades]);
+
+  // Disabled state
   if (siteSettings && !siteSettings.ai_coach_enabled) {
     return (
-      <AppShell title="AI Coach" subtitle="Institutional Trading Psychology & Risk Grading">
+      <AppShell title="AI Coach" subtitle="Your personal trading coach & performance mentor">
         <div className="flex min-h-[60vh] flex-col items-center justify-center text-center">
-          <div className="rounded-full bg-primary/10 p-6 text-primary">
-            <Brain className="size-16 animate-pulse" />
-          </div>
-          <h1 className="mt-4 font-display text-2xl font-bold text-foreground">AI Coach Offline</h1>
-          <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-            The AI Trading Coach is temporarily disabled by the administrator. Please check back
-            later.
-          </p>
+          <Brain className="size-16 text-zinc-700 animate-pulse" />
+          <h1 className="mt-4 text-2xl font-bold text-zinc-200">AI Coach Offline</h1>
+          <p className="mt-2 max-w-sm text-sm text-zinc-500">Temporarily disabled by the administrator.</p>
         </div>
       </AppShell>
     );
   }
 
-  // Auto-open chat if URL parameter specifies it
-  useEffect(() => {
-    if (chat) {
-      setIsChatModalOpen(true);
-    }
-  }, [chat]);
-
-  // Pre-Trading Readiness State
-  const [readinessState, setReadinessState] = useState({
-    emotion: "Calm",
-    prep: "Prepared",
-    risk: "Strict 1%",
-  });
-
-  useEffect(() => {
-    fetchUserTrades().then((data) => setUserTrades(data));
-  }, []);
-
-  const ai = analyzeTradeDataWithAI(userTrades);
-  const selectedQuote = DAILY_QUOTES[activeQuoteIdx] || DAILY_QUOTES[0];
-  const isCurrentDay = activeQuoteIdx === getDailyQuoteIndex();
-
-  // Handle Interactive Chat Prompt Selection / Submit
+  // Chat handler
   const handleAskQuestion = async (questionText: string) => {
     if (!questionText.trim()) return;
-
     const userMsg = questionText.trim();
-    setChatMessages((prev) => [...prev, { role: "user", text: userMsg }]);
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+    setChatMessages((prev) => [...prev, { role: "user", text: userMsg, time: timeStr }]);
     setCustomQuestion("");
     setIsAnswering(true);
 
@@ -185,526 +184,858 @@ function CoachPage() {
       if (session?.access_token) {
         headers["Authorization"] = `Bearer ${session.access_token}`;
       }
-
       const isDev = import.meta.env.DEV;
       const baseUrl = isDev ? "http://localhost:3001" : "";
-
       const res = await fetch(`${baseUrl}/api/ai-coach`, {
         method: "POST",
         headers,
         body: JSON.stringify({
           message: userMsg,
           history: chatMessages.map((m) => ({ role: m.role, content: m.text })),
-          tradeContext: `Current Daily Quote: "${selectedQuote}". Win Rate: ${ai.qualityScore}%. Overall Grade: ${ai.overallGrade}.`,
+          tradeContext: `Win Rate: ${s.winRate.toFixed(1)}%. Overall Grade: ${ai.overallGrade}. Total Trades: ${s.total}.`,
         }),
         signal: AbortSignal.timeout(20000),
       });
-
       const data = await res.json();
-
-      console.log(`[Diagnostic] Request: POST /api/ai-coach`);
-      console.log(`[Diagnostic] HTTP Status: ${res.status}`);
-      console.log(`[Diagnostic] JSON Keys: ${Object.keys(data).join(", ")}`);
-
       if (res.ok && data.reply) {
-        setChatMessages((prev) => [...prev, { role: "coach", text: data.reply }]);
-        if (data.modelUsed) {
-          console.log(`[Groq AI] Responded via ${data.modelUsed}`);
-        }
+        const replyTime = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+        setChatMessages((prev) => [...prev, { role: "coach", text: data.reply, time: replyTime }]);
       } else {
-        const errReply =
-          data.error || "Sorry, I am unable to generate a response right now. Please try again.";
-        setChatMessages((prev) => [...prev, { role: "coach", text: `⚠️ ${errReply}` }]);
+        const errReply = data.error || "Sorry, I am unable to generate a response right now.";
+        setChatMessages((prev) => [...prev, { role: "coach", text: `⚠️ ${errReply}`, time: timeStr }]);
       }
     } catch {
-      setChatMessages((prev) => [
-        ...prev,
-        {
-          role: "coach",
-          text: "Network connection error. Please check your connection and try again.",
-        },
-      ]);
+      setChatMessages((prev) => [...prev, {
+        role: "coach",
+        text: "Network connection error. Please ensure the local API server is running.",
+        time: now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+      }]);
     } finally {
       setIsAnswering(false);
     }
   };
 
-  // Readiness Score Calculation
-  const readinessScore =
-    (readinessState.emotion === "Calm" ? 35 : readinessState.emotion === "Focused" ? 30 : 15) +
-    (readinessState.prep === "Prepared" ? 35 : readinessState.prep === "Neutral" ? 20 : 10) +
-    (readinessState.risk === "Strict 1%" ? 30 : readinessState.risk === "Flexible" ? 20 : 10);
+  const handleComingSoon = () => alert("Coming Soon!");
+
+  // Equity data for "Trading Journey" chart (filtered by timeframe)
+  const journeyData = useMemo(() => {
+    if (eq.length === 0) return [{ date: "—", score: 50 }];
+    const filtered = timeframe === "7d" ? eq.slice(-7) : timeframe === "30d" ? eq.slice(-30) : eq;
+    return filtered.map((e) => ({
+      date: new Date(`${e.date}T00:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "2-digit" }),
+      score: Math.max(0, Math.min(100, 50 + (e.equity / (Math.max(1, Math.abs(s.net || 1))) * 50))),
+    }));
+  }, [eq, s.net, timeframe]);
+
+  // Performance Pillars (Radar chart)
+  const radarData = [
+    { subject: 'Strategy', you: Math.min(100, Math.round(s.winRate * 1.1 + 10)), top: 76 },
+    { subject: 'Risk', you: ai.riskControlScore > 95 ? 58 : Math.min(100, ai.riskControlScore), top: 58 },
+    { subject: 'Mindset', you: ai.patienceScore > 95 ? 70 : ai.patienceScore, top: 70 },
+    { subject: 'Discipline', you: ai.disciplineScore > 95 ? 74 : ai.disciplineScore, top: 74 },
+    { subject: 'Execution', you: ai.disciplineScore, top: 82 },
+  ];
+
+  // Timeframe label mapper
+  const timeframeLabels = {
+    "7d": "7 Days",
+    "30d": "30 Days",
+    "all": "All Time"
+  };
+
+  // Top metric cards exact matches
+  const topMetrics = [
+    {
+      icon: <Target className="size-5" />,
+      iconBg: "bg-[#4f2a96]/20 text-[#8b5cf6] border-[#4f2a96]/40",
+      label: "Coaching Score",
+      value: "72",
+      sub: "Good",
+      subColor: "text-emerald-500",
+      trend: "↑ 8 vs last 7 days",
+      trendColor: "text-emerald-500",
+      chartColor: "#10b981",
+      chartData: [40, 45, 42, 55, 58, 65, 72],
+      glow: "neon-glow-purple",
+    },
+    {
+      icon: <Trophy className="size-5" />,
+      iconBg: "bg-[#1d4ed8]/20 text-blue-400 border-blue-500/30",
+      label: "Strength",
+      value: "63%",
+      sub: "Strategy Execution",
+      subColor: "text-emerald-500",
+      trend: "↑ 12% improvement",
+      trendColor: "text-emerald-500",
+      chartColor: "#3b82f6",
+      chartData: [50, 52, 51, 58, 60, 61, 63],
+      glow: "neon-glow-blue",
+    },
+    {
+      icon: <Target className="size-5" />,
+      iconBg: "bg-yellow-500/15 text-yellow-500 border-yellow-500/30",
+      label: "Focus Area",
+      value: "Risk Management",
+      valueColor: "text-yellow-500 text-[15px]",
+      sub: "Needs more discipline",
+      subColor: "text-zinc-400",
+      trend: "Focus for next 14 days",
+      trendColor: "text-zinc-500",
+      chartColor: "#eab308",
+      chartData: [80, 75, 70, 72, 60, 55, 50],
+      glow: "neon-glow-amber",
+    },
+    {
+      icon: <Shield className="size-5" />,
+      iconBg: "bg-[#4f2a96]/20 text-[#8b5cf6] border-[#4f2a96]/40",
+      label: "Consistency",
+      value: "68%",
+      sub: "Improving",
+      subColor: "text-emerald-500",
+      trend: "↑ 10% vs last 7 days",
+      trendColor: "text-emerald-500",
+      chartColor: "#10b981",
+      chartData: [55, 58, 54, 62, 65, 64, 68],
+      glow: "neon-glow-purple",
+    },
+    {
+      icon: <Rocket className="size-5" />,
+      iconBg: "bg-[#4f2a96]/20 text-[#8b5cf6] border-[#4f2a96]/40",
+      label: "Potential",
+      value: "High",
+      valueColor: "text-[#8b5cf6]",
+      sub: "Keep up the work!",
+      subColor: "text-zinc-400",
+      trend: "AI Confidence",
+      trendColor: "text-zinc-500",
+      showBars: true,
+      glow: "neon-glow-purple",
+    },
+  ];
 
   return (
-    <AppShell title="AI Coach" subtitle="World-Class AI Trading Mentor & Performance Lab">
-      {/* ── Top Hero Header Card ───────────────────────────────────────────── */}
-      <section className="glass relative overflow-hidden rounded-[2.5rem] border border-border/80 p-6 sm:p-8 shadow-2xl">
-        <div className="pointer-events-none absolute -left-20 -top-20 size-80 rounded-full bg-primary/20 blur-3xl animate-float-slow" />
-        <div className="pointer-events-none absolute -right-20 -bottom-20 size-80 rounded-full bg-accent/20 blur-3xl animate-float-slow [animation-delay:2s]" />
-
-        <div className="relative flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
-          <div className="flex items-center gap-4">
-            <div className="relative grid size-16 shrink-0 place-items-center rounded-3xl bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-lg glow-primary">
-              <Brain className="size-8 animate-pulse" />
-              <span className="absolute -bottom-1 -right-1 grid size-5 place-items-center rounded-full bg-emerald-500 text-[10px] font-bold text-black ring-2 ring-background">
-                ✓
-              </span>
-            </div>
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl text-gradient">
-                  AI Performance Lab
-                </h1>
-                <Badge tone="primary">
-                  <Sparkles className="mr-1 size-3" /> LIVE MENTOR ONLINE
-                </Badge>
-              </div>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Institutional execution grading, weekly trading psychology rules &amp; risk
-                management.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="rounded-2xl border border-primary/30 bg-primary/10 px-4 py-2.5 text-center backdrop-blur-md">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-primary">
-                Pre-Trade Readiness
-              </p>
-              <p className="font-display text-lg font-bold text-foreground">{readinessScore}%</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Main 3D Grid ─────────────────────────────────────────────────── */}
-      <div className="mt-6 grid gap-6 lg:grid-cols-3">
-        {/* ── 1. Daily Golden Rules Showcase ────────────────────── */}
-        <Panel
-          className="lg:col-span-3 border-primary/40 bg-gradient-to-br from-card/80 via-card/50 to-primary/5 shadow-2xl relative overflow-hidden"
-          action={
-            <div className="ml-auto flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() =>
-                  setActiveQuoteIdx((prev) => (prev > 0 ? prev - 1 : DAILY_QUOTES.length - 1))
-                }
-                title="Previous Quote"
-                className="grid size-8 place-items-center rounded-lg border border-border/60 bg-card/60 text-muted-foreground transition hover:border-primary/50 hover:text-foreground active:scale-95"
-              >
-                <ChevronLeft className="size-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveQuoteIdx(getDailyQuoteIndex())}
-                title="Current Day"
-                className="flex items-center gap-1 rounded-lg border border-border/60 bg-card/60 px-2.5 py-1 text-xs font-semibold text-muted-foreground transition hover:border-primary/50 hover:text-foreground"
-              >
-                <RefreshCw className="size-3" />
-                {isCurrentDay ? "Current" : "Reset"}
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  setActiveQuoteIdx((prev) => (prev < DAILY_QUOTES.length - 1 ? prev + 1 : 0))
-                }
-                title="Next Quote"
-                className="grid size-8 place-items-center rounded-lg border border-border/60 bg-card/60 text-muted-foreground transition hover:border-primary/50 hover:text-foreground active:scale-95"
-              >
-                <ChevronRight className="size-4" />
-              </button>
-            </div>
-          }
-        >
-          <div className="relative grid gap-6 md:grid-cols-[auto_1fr] md:items-center p-2">
-            <div className="grid size-20 shrink-0 place-items-center rounded-3xl bg-gradient-to-br from-primary/30 via-accent/20 to-card border border-primary/40 text-primary shadow-xl glow-primary">
-              <Crown className="size-10 text-primary animate-bounce-subtle" />
-            </div>
-            <div>
-              <blockquote className="text-xl leading-relaxed text-foreground font-medium italic border-l-2 border-primary/50 pl-4 py-2">
-                "{selectedQuote}"
-              </blockquote>
-            </div>
-          </div>
-        </Panel>
-
-        {/* ── 2. Performance Grade 3D Gauges ──────────────────────────────── */}
-        <Panel
-          className="lg:col-span-2 shadow-xl"
-          title="Institutional Execution Grade"
-          action={
-            <Badge tone="primary">
-              <Award className="mr-1 size-3" /> AI GRADED
-            </Badge>
-          }
-        >
-          <div className="flex flex-col items-center gap-6 sm:flex-row sm:justify-around py-4">
-            <Gauge3D value={ai.qualityScore} label="Trade Quality Score" tone="primary" />
-            <Gauge3D value={ai.institutionalScore} label="Institutional Score" tone="accent" />
-            <div className="text-center">
-              <div className="relative grid size-32 place-items-center rounded-3xl bg-gradient-to-br from-primary via-accent to-primary text-primary-foreground shadow-2xl glow-primary transition-transform duration-500 hover:scale-105">
-                <span className="font-display text-5xl font-extrabold tracking-tight">
-                  {ai.overallGrade}
-                </span>
-              </div>
-              <p className="mt-2.5 text-xs font-medium text-muted-foreground">
-                Overall Performance Grade
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-4 grid grid-cols-3 gap-3 text-center">
-            <div className="rounded-xl border border-border/50 bg-card/40 p-3 backdrop-blur-sm">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Discipline
-              </p>
-              <p className="mt-1 font-display text-lg font-bold text-emerald-400">
-                {ai.disciplineScore} / 100
-              </p>
-            </div>
-            <div className="rounded-xl border border-border/50 bg-card/40 p-3 backdrop-blur-sm">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Patience
-              </p>
-              <p className="mt-1 font-display text-lg font-bold text-primary">
-                {ai.patienceScore} / 100
-              </p>
-            </div>
-            <div className="rounded-xl border border-border/50 bg-card/40 p-3 backdrop-blur-sm">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Risk Control
-              </p>
-              <p className="mt-1 font-display text-lg font-bold text-accent">
-                {ai.riskControlScore} / 100
-              </p>
-            </div>
-          </div>
-        </Panel>
-
-        {/* ── 3. Pre-Trading Psychological Readiness Assessor ─────────────── */}
-        <Panel title="Pre-Trading Readiness Assessor" className="shadow-xl">
-          <p className="text-xs text-muted-foreground mb-4">
-            Assess your psychological state before taking any trade entries today:
-          </p>
-          <div className="space-y-4 text-xs">
-            <div>
-              <p className="font-medium text-foreground mb-1.5 flex justify-between">
-                <span>Emotional State</span>
-                <span className="text-primary font-bold">{readinessState.emotion}</span>
-              </p>
-              <div className="grid grid-cols-3 gap-1.5">
-                {["Calm", "Focused", "Anxious"].map((val) => (
-                  <button
-                    key={val}
-                    type="button"
-                    onClick={() => setReadinessState((p) => ({ ...p, emotion: val }))}
-                    className={`rounded-lg py-1.5 font-medium transition ${
-                      readinessState.emotion === val
-                        ? "bg-primary text-primary-foreground shadow"
-                        : "bg-card/50 text-muted-foreground hover:bg-card"
-                    }`}
-                  >
-                    {val}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <p className="font-medium text-foreground mb-1.5 flex justify-between">
-                <span>Market Preparation</span>
-                <span className="text-accent font-bold">{readinessState.prep}</span>
-              </p>
-              <div className="grid grid-cols-3 gap-1.5">
-                {["Prepared", "Neutral", "Unprepared"].map((val) => (
-                  <button
-                    key={val}
-                    type="button"
-                    onClick={() => setReadinessState((p) => ({ ...p, prep: val }))}
-                    className={`rounded-lg py-1.5 font-medium transition ${
-                      readinessState.prep === val
-                        ? "bg-accent text-accent-foreground shadow"
-                        : "bg-card/50 text-muted-foreground hover:bg-card"
-                    }`}
-                  >
-                    {val}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <p className="font-medium text-foreground mb-1.5 flex justify-between">
-                <span>Risk Management Plan</span>
-                <span className="text-emerald-400 font-bold">{readinessState.risk}</span>
-              </p>
-              <div className="grid grid-cols-3 gap-1.5">
-                {["Strict 1%", "Flexible", "High Risk"].map((val) => (
-                  <button
-                    key={val}
-                    type="button"
-                    onClick={() => setReadinessState((p) => ({ ...p, risk: val }))}
-                    className={`rounded-lg py-1.5 font-medium transition ${
-                      readinessState.risk === val
-                        ? "bg-emerald-500 text-black shadow"
-                        : "bg-card/50 text-muted-foreground hover:bg-card"
-                    }`}
-                  >
-                    {val}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-5 rounded-xl border border-border/50 bg-background/50 p-3 text-center">
-            <p className="text-[11px] text-muted-foreground">Readiness Assessment:</p>
-            <p
-              className={`font-display text-sm font-bold mt-0.5 ${
-                readinessScore >= 80
-                  ? "text-emerald-400"
-                  : readinessScore >= 60
-                    ? "text-amber-400"
-                    : "text-destructive"
-              }`}
+    <AppShell 
+      title={
+        <span className="inline-flex items-center gap-2">
+          AI Coach <Sparkles className="size-4 text-purple-400 fill-purple-400/20" />
+        </span>
+      } 
+      subtitle="Your personal trading coach & performance mentor"
+    >
+      <div className="pb-12 space-y-5">
+        {/* ═══════ ROW 1: 5 Top Metric Cards ═══════ */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+          {topMetrics.map((card) => (
+            <div
+              key={card.label}
+              className={cn("neon-card p-3.5 flex flex-col justify-between transition-all duration-200", card.glow)}
             >
-              {readinessScore}% —{" "}
-              {readinessScore >= 80
-                ? "Optimal Trading State"
-                : readinessScore >= 60
-                  ? "Proceed With Caution"
-                  : "Do Not Trade — Risk High"}
-            </p>
-          </div>
-        </Panel>
-
-        {/* ── 4. Interactive AI Mentor Chat Trigger Card ───────────── */}
-        <div
-          onClick={() => setIsChatModalOpen(true)}
-          className="lg:col-span-3 group relative cursor-pointer overflow-hidden rounded-2xl border border-border/60 bg-card/50 p-6 shadow-xl backdrop-blur-md transition-all hover:border-primary/50 hover:bg-card/80 hover:shadow-[0_0_40px_-10px_var(--color-primary)]"
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
-          <div className="relative flex items-center justify-between">
-            <div className="flex items-center gap-5">
-              <div className="grid size-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-lg glow-primary transition-transform duration-500 group-hover:scale-110">
-                <Brain className="size-7" />
+              {/* Header: Icon + Label */}
+              <div className="flex items-center justify-between">
+                <div className={cn("flex size-8 items-center justify-center rounded-xl border shrink-0", card.iconBg)}>
+                  {card.icon}
+                </div>
+                <p className="text-[11px] text-zinc-300 font-semibold">{card.label}</p>
               </div>
-              <div>
-                <h3 className="font-display text-lg font-bold text-foreground">
-                  AI Trading Mentor
-                </h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Personal AI guidance for your trading journey.
+              
+              {/* Value & Subtitle */}
+              <div className="mt-2.5 mb-1.5">
+                <p className={cn("font-bold tracking-tight leading-none", card.valueColor || "text-zinc-100 text-2xl")}>
+                  {card.value}
                 </p>
-              </div>
-            </div>
-            <button className="hidden sm:flex items-center gap-2 rounded-xl bg-primary/10 px-4 py-2 text-sm font-semibold text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
-              Open AI Mentor
-            </button>
-          </div>
-        </div>
-
-        {/* ── Chat Modal/Drawer ────────────────────────────────────────────── */}
-        <>
-          {/* Backdrop */}
-          <div
-            className={`fixed inset-0 z-[60] bg-background/60 backdrop-blur-sm transition-opacity duration-300 ${
-              isChatModalOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-            }`}
-            onClick={() => setIsChatModalOpen(false)}
-          />
-
-          {/* Drawer */}
-          <div
-            className={`fixed inset-y-0 right-0 z-[70] flex w-full flex-col border-l border-primary/20 bg-card/95 shadow-[0_0_50px_-12px_var(--color-primary)] backdrop-blur-2xl transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] sm:w-[500px] lg:w-[600px] ${
-              isChatModalOpen ? "translate-x-0" : "translate-x-full"
-            }`}
-          >
-            {/* Header */}
-            <div className="relative flex items-center justify-between border-b border-primary/10 bg-gradient-to-r from-primary/5 to-transparent px-6 py-5">
-              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-              <div className="flex items-center gap-4">
-                <div className="grid size-10 place-items-center rounded-xl bg-primary shadow-lg shadow-primary/30 text-primary-foreground">
-                  <Brain className="size-5" />
-                </div>
-                <div>
-                  <h3 className="font-display text-base font-semibold text-foreground leading-none">
-                    Edge AI
-                  </h3>
-                  <p className="mt-1 text-xs font-medium tracking-wide text-muted-foreground">
-                    Analyze your trade. Understand your decisions. Improve your process.
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsChatModalOpen(false)}
-                className="grid size-8 place-items-center rounded-full hover:bg-primary/10 hover:text-primary transition-colors text-muted-foreground"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Chat Content */}
-            <div className="flex flex-col flex-1 overflow-hidden p-6 space-y-6">
-              <div className="flex flex-col gap-2">
-                <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
-                  <Zap className="size-3 text-primary" /> Suggested Prompts
-                </span>
-                <div className="flex flex-wrap gap-2">
-                  {ai.suggestedPrompts.map((promptText) => (
-                    <button
-                      key={promptText}
-                      type="button"
-                      onClick={() => handleAskQuestion(promptText)}
-                      className="rounded-xl border border-border/60 bg-card/50 px-3 py-1.5 text-xs text-muted-foreground transition hover:border-primary/60 hover:text-foreground hover:bg-primary/5 active:scale-95"
-                    >
-                      {promptText}
-                    </button>
-                  ))}
-                </div>
+                <p className={cn("text-[11.5px] font-medium mt-1 leading-tight", card.subColor)}>{card.sub}</p>
               </div>
 
-              <div className="flex-1 overflow-y-auto space-y-4 rounded-2xl border border-border/60 bg-background/40 p-4 shadow-inner">
-                {chatMessages.map((msg, i) => (
-                  <div
-                    key={i}
-                    className={`flex gap-3 text-sm ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-                  >
-                    {msg.role === "coach" && (
-                      <div className="grid size-8 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-sm">
-                        <Brain className="size-4" />
-                      </div>
-                    )}
-                    <div
-                      className={`max-w-[85%] rounded-2xl p-4 leading-relaxed shadow-sm ${
-                        msg.role === "user"
-                          ? "bg-primary text-primary-foreground font-medium rounded-tr-sm"
-                          : "border border-border/50 bg-card/90 text-foreground rounded-tl-sm"
-                      }`}
-                    >
-                      {msg.role === "coach" ? (
-                        <FormattedMarkdown content={msg.text} />
-                      ) : (
-                        msg.text
-                      )}
+              {/* Sparkline / Progress Bar */}
+              <div className="mt-1 pt-1 border-t border-white/[0.04]">
+                {card.showBars ? (
+                  <div className="w-full pt-0.5">
+                    <p className={cn("text-[9.5px] mb-1.5 font-medium leading-none", card.trendColor)}>{card.trend}</p>
+                    <div className="flex gap-1.5 h-1.5 w-full">
+                      {[1,2,3,4,5].map(i => (
+                        <div key={i} className={cn("flex-1 rounded-sm", i <= 4 ? "bg-[#8b5cf6]" : "bg-zinc-800")} />
+                      ))}
                     </div>
                   </div>
-                ))}
-                {isAnswering && (
-                  <div className="flex gap-2 items-center text-xs text-muted-foreground italic px-2">
-                    <Brain className="size-4 animate-spin text-primary" /> AI Coach is thinking...
+                ) : (
+                  <div>
+                    <p className={cn("text-[9.5px] font-medium mb-0.5 leading-none", card.trendColor)}>{card.trend}</p>
+                    <Sparkline color={card.chartColor!} data={card.chartData!} />
                   </div>
                 )}
               </div>
-
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleAskQuestion(customQuestion);
-                }}
-                className="flex items-center gap-3 pt-2"
-              >
-                <input
-                  type="text"
-                  value={customQuestion}
-                  onChange={(e) => setCustomQuestion(e.target.value)}
-                  placeholder="Discuss setups, psychology, risk..."
-                  className="w-full flex-1 rounded-xl border border-border/60 bg-card/50 px-4 py-3 text-sm outline-none transition placeholder:text-muted-foreground focus:border-primary/60 focus:bg-card focus:ring-2 focus:ring-primary/20"
-                />
-                <button
-                  type="submit"
-                  disabled={!customQuestion.trim() || isAnswering}
-                  className="flex shrink-0 items-center justify-center gap-2 rounded-xl bg-gradient-to-tr from-primary to-accent h-11 w-12 text-primary-foreground transition hover:opacity-90 active:scale-95 disabled:opacity-50 shadow-lg glow-primary"
-                >
-                  <Send className="size-4 ml-1" />
-                </button>
-              </form>
             </div>
-          </div>
-        </>
+          ))}
+        </div>
 
-        {/* ── 5. Top Execution Mistakes & Strengths ────────────────────────── */}
-        <Panel title="Top Execution Mistakes">
-          <List3D tone="bad" items={ai.topMistakes} />
-        </Panel>
+        {/* ═══════ MAIN 2-COLUMN LAYOUT (Exact 100% Reference Replica) ═══════ */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-stretch w-full">
+          
+          {/* ────────────────── LEFT COLUMN (Dashboard, Recommendations, Notes) ────────────────── */}
+          <div className="lg:col-span-3 space-y-4 flex flex-col justify-between w-full">
+            
+            {/* 1. Coach Dashboard */}
+            <Panel3D
+              title="Coach Dashboard"
+              className="neon-glow-blue"
+              action={
+                <div className="relative">
+                  <button 
+                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                    className="flex items-center gap-2 text-[12px] text-zinc-300 bg-[#18181b] px-3 py-1.5 rounded-lg border border-zinc-700/40 font-medium hover:bg-zinc-800 transition cursor-pointer"
+                  >
+                    {timeframeLabels[timeframe]} <ChevronDown className="size-3" />
+                  </button>
+                  {dropdownOpen && (
+                    <div className="absolute right-0 mt-1 w-28 rounded-lg border border-zinc-800 bg-[#18181b] shadow-xl z-50 py-1">
+                      {(["7d", "30d", "all"] as const).map((t) => (
+                        <button
+                          key={t}
+                          onClick={() => {
+                            setTimeframe(t);
+                            setDropdownOpen(false);
+                          }}
+                          className="w-full text-left px-3 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 transition cursor-pointer"
+                        >
+                          {timeframeLabels[t]}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              }
+            >
+              <div className="grid grid-cols-2 gap-4 h-[240px]">
+                {/* Trading Journey Chart */}
+                <div className="flex flex-col h-full border-r border-zinc-800/60 pr-3.5">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-[12.5px] font-semibold text-zinc-300">Your Trading Journey</p>
+                    <button 
+                      onClick={() => setChartMaximized(true)} 
+                      className="p-1 rounded bg-zinc-800/80 text-zinc-400 hover:text-zinc-200 cursor-pointer"
+                    >
+                      <Maximize2 className="size-3" />
+                    </button>
+                  </div>
+                  <div className="flex-1 min-h-0 relative">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={journeyData} margin={{ left: -25, right: 15, top: 15, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="purpleJourneyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stopColor="#a855f7" stopOpacity="0.25" />
+                            <stop offset="100%" stopColor="#a855f7" stopOpacity="0.0" />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.05)" />
+                        <XAxis dataKey="date" {...axisProps} tick={{fill: '#71717a', fontSize: 9.5}} tickMargin={8} />
+                        <YAxis {...axisProps} tick={{fill: '#71717a', fontSize: 9.5}} domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} />
+                        <Tooltip {...ttStyle} />
+                        <Area 
+                          type="monotone" 
+                          dataKey="score" 
+                          stroke="#a855f7" 
+                          strokeWidth={2.5} 
+                          fill="url(#purpleJourneyGrad)" 
+                          dot={{ r: 3, fill: "#a855f7", strokeWidth: 0 }} 
+                          activeDot={{ r: 5, fill: "#a855f7", stroke: "#fff", strokeWidth: 2 }} 
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                    {/* The 72 Badge */}
+                    <div className="absolute right-[20%] top-[15%] bg-[#a855f7] text-white text-[9.5px] font-bold px-2 py-0.5 rounded-md shadow-lg shadow-[#a855f7]/25">
+                      72
+                    </div>
+                  </div>
+                </div>
 
-        <Panel title="Top Strengths">
-          <List3D tone="good" items={ai.topStrengths} />
-        </Panel>
+                {/* Performance Pillars */}
+                <div className="flex flex-col h-full pl-2">
+                  <p className="text-[12.5px] font-semibold text-zinc-300 mb-1">Performance Pillars</p>
+                  <div className="flex-1 relative min-h-0">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RadarChart cx="50%" cy="50%" outerRadius="62%" data={radarData}>
+                        <PolarGrid stroke="rgba(255,255,255,0.1)" />
+                        <PolarAngleAxis 
+                          dataKey="subject" 
+                          tick={(props) => {
+                            const { payload, x, y } = props;
+                            const item = radarData.find(d => d.subject === payload.value);
+                            const value = item ? item.you : 0;
+                            const isEmerald = payload.value === 'Discipline' || payload.value === 'Execution';
+                            
+                            let dyVal = 0;
+                            if (payload.value === "Strategy") dyVal = -10;
+                            if (payload.value === "Mindset") dyVal = 14;
 
-        <Panel title="30-Day Improvement Plan">
-          <ol className="space-y-3 text-sm text-muted-foreground">
-            {ai.improvementPlan.map((step, idx) => (
-              <li
-                key={step}
-                className="flex items-start gap-3 rounded-xl border border-border/40 bg-card/40 p-3 backdrop-blur-sm"
-              >
-                <span className="grid size-6 shrink-0 place-items-center rounded-full bg-primary/20 text-xs font-bold text-primary">
-                  {idx + 1}
-                </span>
-                <span className="leading-relaxed">{step}</span>
-              </li>
-            ))}
-          </ol>
-        </Panel>
-
-        {/* ── 6. Psychology & Risk Reviews ─────────────────────────────────── */}
-        <Panel title="Psychology Analysis" className="flex flex-col">
-          <p className="text-sm leading-relaxed text-muted-foreground">{ai.psychologyText}</p>
-          <div className="mt-auto pt-4 grid grid-cols-3 gap-2 sm:gap-3">
-            {[
-              ["FOMO Trading", "Low"],
-              ["Revenge Trading", "Controlled"],
-              ["Overconfidence", "Low"],
-            ].map(([k, v]) => (
-              <div
-                key={k}
-                className="flex flex-col items-center justify-center text-center rounded-xl border border-border/40 bg-muted/30 p-2 sm:p-3 min-h-[72px] sm:min-h-[84px] gap-1"
-              >
-                <p className="text-[10px] sm:text-[11px] font-medium uppercase tracking-wider text-muted-foreground w-full break-words">
-                  {k}
-                </p>
-                <p className="mt-1 sm:mt-1.5 text-xs sm:text-sm font-bold text-foreground">{v}</p>
+                            return (
+                              <g transform={`translate(${x},${y})`}>
+                                <text textAnchor="middle" fill="#a1a1aa" fontSize={9.5}>
+                                  <tspan x="0" dy={dyVal}>{payload.value}</tspan>
+                                  <tspan x="0" dy={11} fill={isEmerald ? '#10b981' : '#3b82f6'} fontWeight="bold">{value}%</tspan>
+                                </text>
+                              </g>
+                            );
+                          }}
+                        />
+                        <Radar name="You" dataKey="you" stroke="#a855f7" strokeWidth={2} fill="rgba(168,85,247,0.15)" />
+                        <Radar name="Top Traders" dataKey="top" stroke="#3f3f46" strokeWidth={1} strokeDasharray="3 3" fill="transparent" />
+                      </RadarChart>
+                    </ResponsiveContainer>
+                  </div>
+                  {/* Legend */}
+                  <div className="flex items-center justify-center gap-6 mt-1 text-[10px] text-zinc-400">
+                    <span className="flex items-center gap-2"><span className="size-2 rounded-full bg-[#a855f7]"></span> You</span>
+                    <span className="flex items-center gap-2 text-zinc-500"><span className="w-3.5 border-b border-dashed border-zinc-500"></span> Top Traders</span>
+                  </div>
+                </div>
               </div>
-            ))}
-          </div>
-        </Panel>
+            </Panel3D>
 
-        <Panel title="Risk Management Review" className="flex flex-col">
-          <div className="space-y-4 text-sm text-muted-foreground my-auto">
-            <p className="flex items-start gap-3">
-              <Shield className="mt-0.5 size-5 shrink-0 text-primary" />
-              <span className="leading-relaxed">{ai.riskReviewText}</span>
-            </p>
-            <p className="flex items-start gap-3">
-              <Target className="mt-0.5 size-5 shrink-0 text-accent" />
-              <span className="leading-relaxed">
-                Target minimum 1:2.0 Risk:Reward ratio on all high-conviction entries.
-              </span>
-            </p>
-          </div>
-        </Panel>
+            {/* 2. AI Recommendations */}
+            <Panel3D
+              title="AI Recommendations"
+              className="neon-glow-purple"
+              action={
+                <button
+                  type="button"
+                  onClick={() => setShowAllRecs(true)}
+                  className="text-[11px] text-zinc-400 bg-zinc-800/40 px-3 py-1 rounded-lg border border-zinc-700/40 font-medium hover:text-zinc-200 transition cursor-pointer"
+                >
+                  View all
+                </button>
+              }
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* Card 1 */}
+                <div 
+                  onClick={() => handleAskQuestion("Give me a detailed action plan for: Improve Risk Management. Context: You are risking more than 2% on some trades. Keep it consistent.")}
+                  className="neon-card neon-glow-green p-3.5 transition-all flex flex-col h-full cursor-pointer group"
+                >
+                  <div className="flex gap-2.5 mb-2.5">
+                    <div className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-500">
+                      <Shield className="size-3.5" />
+                    </div>
+                    <div>
+                      <p className="text-[12px] font-bold text-zinc-100 leading-tight">Improve Risk Management</p>
+                      <p className="text-[9px] font-semibold text-emerald-400 mt-0.5">High Priority</p>
+                    </div>
+                  </div>
+                  <p className="text-[10.5px] text-zinc-400 leading-relaxed mb-3 flex-1">
+                    You are risking more than 2% on some trades. Keep it consistent.
+                  </p>
+                  <div className="flex items-center gap-1 text-[11px] font-semibold text-emerald-400 group-hover:text-emerald-300 transition-colors w-max">
+                    View Details <ArrowRight className="size-3" />
+                  </div>
+                </div>
 
-        {/* ── Trader Edge Intelligence (Fills empty 3rd column) ──────────── */}
-        <TraderEdgeIntelligence trades={userTrades} />
+                {/* Card 2 */}
+                <div 
+                  onClick={() => handleAskQuestion("Give me a detailed action plan for: Focus on Your A+ Setups. Context: You have a 78% win rate on liquidity sweep setups. Trade more of these.")}
+                  className="neon-card neon-glow-amber p-3.5 transition-all flex flex-col h-full cursor-pointer group"
+                >
+                  <div className="flex gap-2.5 mb-2.5">
+                    <div className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-yellow-500/30 bg-yellow-500/10 text-yellow-500">
+                      <Target className="size-3.5" />
+                    </div>
+                    <div>
+                      <p className="text-[12px] font-bold text-zinc-100 leading-tight">Focus on Your A+ Setups</p>
+                      <p className="text-[9px] font-semibold text-yellow-400 mt-0.5">Medium Priority</p>
+                    </div>
+                  </div>
+                  <p className="text-[10.5px] text-zinc-400 leading-relaxed mb-3 flex-1">
+                    You have a 78% win rate on liquidity sweep setups. Trade more of these.
+                  </p>
+                  <div className="flex items-center gap-1 text-[11px] font-semibold text-yellow-400 group-hover:text-yellow-300 transition-colors w-max">
+                    View Details <ArrowRight className="size-3" />
+                  </div>
+                </div>
 
-        {/* ── 7. Final Coach Verdict ───────────────────────────────────────── */}
-        <Panel className="lg:col-span-3 border-primary/30 bg-gradient-to-r from-card via-card/80 to-primary/5 shadow-2xl">
-          <div className="flex items-start gap-4">
-            <div className="grid size-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-lg glow-primary">
-              <Sparkles className="size-6" />
+                {/* Card 3 */}
+                <div 
+                  onClick={() => handleAskQuestion("Give me a detailed action plan for: Mindset Work. Context: Work on patience and avoiding revenge trading.")}
+                  className="neon-card neon-glow-blue p-3.5 transition-all flex flex-col h-full cursor-pointer group"
+                >
+                  <div className="flex gap-2.5 mb-2.5">
+                    <div className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-blue-500/30 bg-blue-500/10 text-blue-500">
+                      <Brain className="size-3.5" />
+                    </div>
+                    <div>
+                      <p className="text-[12px] font-bold text-zinc-100 leading-tight">Mindset Work</p>
+                      <p className="text-[9px] font-semibold text-blue-400 mt-0.5">Medium Priority</p>
+                    </div>
+                  </div>
+                  <p className="text-[10.5px] text-zinc-400 leading-relaxed mb-3 flex-1">
+                    Work on patience and avoiding revenge trading.
+                  </p>
+                  <div className="flex items-center gap-1 text-[11px] font-semibold text-blue-400 group-hover:text-blue-300 transition-colors w-max">
+                    View Details <ArrowRight className="size-3" />
+                  </div>
+                </div>
+              </div>
+            </Panel3D>
+
+            {/* 3. Recent Coach Notes */}
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between px-1">
+                <h2 className="text-[13.5px] font-bold text-zinc-100 tracking-wide">Recent Coach Notes</h2>
+                <button
+                  type="button"
+                  onClick={() => setShowAllNotes(true)}
+                  className="text-[11px] text-zinc-400 bg-zinc-800/40 px-3 py-1 rounded-lg border border-zinc-700/40 font-medium hover:text-zinc-200 transition cursor-pointer"
+                >View all</button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                {[
+                  {
+                    title: "Great Improvement!",
+                    time: "Today, 10:30 AM",
+                    desc: "You followed your trading plan well today. Keep it up!",
+                    tag: "Positive",
+                    glow: "neon-glow-green",
+                    tagColor: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",
+                    iconColor: "text-emerald-500 bg-emerald-500/10 border-emerald-500/30",
+                    icon: <Activity className="size-3.5" />
+                  },
+                  {
+                    title: "Risk Alert",
+                    time: "Yesterday, 09:15 AM",
+                    desc: "You risked 3.2% in one trade. Remember your 1-2% rule.",
+                    tag: "Alert",
+                    glow: "neon-glow-amber",
+                    tagColor: "text-yellow-500 bg-yellow-500/10 border-yellow-500/20",
+                    iconColor: "text-yellow-500 bg-yellow-500/10 border-yellow-500/30",
+                    icon: <AlertTriangle className="size-3.5" />
+                  },
+                  {
+                    title: "Strategy Tip",
+                    time: "Aug 12, 08:40 AM",
+                    desc: "Focus on liquidity + market structure alignment.",
+                    tag: "Tip",
+                    glow: "neon-glow-blue",
+                    tagColor: "text-blue-500 bg-blue-500/10 border-blue-500/20",
+                    iconColor: "text-blue-500 bg-blue-500/10 border-blue-500/30",
+                    icon: <FileCheck2 className="size-3.5" />
+                  },
+                  {
+                    title: "Mindset Reminder",
+                    time: "Aug 11, 07:20 AM",
+                    desc: "Stay patient. The right setups will come.",
+                    tag: "Reminder",
+                    glow: "neon-glow-purple",
+                    tagColor: "text-[#a855f7] bg-[#a855f7]/10 border-[#a855f7]/20",
+                    iconColor: "text-[#a855f7] bg-[#a855f7]/10 border-[#a855f7]/30",
+                    icon: <Brain className="size-3.5" />
+                  }
+                ].map((note) => (
+                  <div key={note.title} className={cn("neon-card p-3 flex flex-col h-full", note.glow)}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className={cn("size-5 rounded-full flex items-center justify-center border", note.iconColor)}>
+                        {note.icon}
+                      </div>
+                      <p className="text-[9px] text-zinc-500 font-medium">{note.time}</p>
+                    </div>
+                    <p className="text-[11.5px] font-bold text-zinc-100 mb-1 leading-tight">{note.title}</p>
+                    <p className="text-[10px] text-zinc-400 leading-relaxed mb-2.5 flex-1">{note.desc}</p>
+                    <div className="mt-auto">
+                      <span className={cn("inline-block text-[8.5px] font-bold px-1.5 py-0.5 rounded border", note.tagColor)}>
+                        {note.tag}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div>
-              <h3 className="font-display text-lg font-bold text-foreground">
-                Final Coach Verdict
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground font-medium">
-                {ai.finalVerdict}
-              </p>
+          </div>
+
+          {/* ────────────────── RIGHT COLUMN (Chat + Quick Actions) ────────────────── */}
+          <div className="lg:col-span-2 space-y-4 flex flex-col justify-between w-full">
+            
+            {/* 1. Chat with AI Coach */}
+            <div className="neon-card neon-glow-purple flex flex-col flex-1 min-h-[500px] overflow-hidden relative">
+              {/* 4K HD Financial Trading Candlestick & Technical Chart Graphic Background Theme */}
+              <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-30 select-none z-0">
+                <svg className="w-full h-full text-zinc-500/20" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" viewBox="0 0 800 600">
+                  <defs>
+                    <linearGradient id="chartWaveGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#10b981" stopOpacity="0.45" />
+                      <stop offset="50%" stopColor="#8b5cf6" stopOpacity="0.35" />
+                      <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.45" />
+                    </linearGradient>
+                    <pattern id="tradingGridPattern" width="36" height="36" patternUnits="userSpaceOnUse">
+                      <path d="M 36 0 L 0 0 0 36" fill="none" stroke="rgba(255, 255, 255, 0.035)" strokeWidth="1"/>
+                    </pattern>
+                  </defs>
+                  
+                  {/* Background Grid */}
+                  <rect width="100%" height="100%" fill="url(#tradingGridPattern)" />
+                  
+                  {/* Candlestick Silhouettes */}
+                  <line x1="50" y1="180" x2="50" y2="360" stroke="#10b981" strokeWidth="1.5" opacity="0.4"/>
+                  <rect x="43" y="220" width="14" height="85" fill="#10b981" rx="1.5" opacity="0.3"/>
+
+                  <line x1="110" y1="240" x2="110" y2="420" stroke="#f43f5e" strokeWidth="1.5" opacity="0.4"/>
+                  <rect x="103" y="270" width="14" height="110" fill="#f43f5e" rx="1.5" opacity="0.3"/>
+
+                  <line x1="170" y1="200" x2="170" y2="390" stroke="#10b981" strokeWidth="1.5" opacity="0.4"/>
+                  <rect x="163" y="230" width="14" height="105" fill="#10b981" rx="1.5" opacity="0.3"/>
+
+                  <line x1="230" y1="160" x2="230" y2="330" stroke="#10b981" strokeWidth="1.5" opacity="0.4"/>
+                  <rect x="223" y="180" width="14" height="85" fill="#10b981" rx="1.5" opacity="0.3"/>
+
+                  <line x1="290" y1="210" x2="290" y2="380" stroke="#f43f5e" strokeWidth="1.5" opacity="0.4"/>
+                  <rect x="283" y="240" width="14" height="95" fill="#f43f5e" rx="1.5" opacity="0.3"/>
+
+                  <line x1="350" y1="130" x2="350" y2="310" stroke="#10b981" strokeWidth="1.5" opacity="0.4"/>
+                  <rect x="343" y="150" width="14" height="110" fill="#10b981" rx="1.5" opacity="0.3"/>
+
+                  <line x1="410" y1="100" x2="410" y2="280" stroke="#10b981" strokeWidth="1.5" opacity="0.4"/>
+                  <rect x="403" y="120" width="14" height="90" fill="#10b981" rx="1.5" opacity="0.3"/>
+
+                  <line x1="470" y1="170" x2="470" y2="350" stroke="#f43f5e" strokeWidth="1.5" opacity="0.4"/>
+                  <rect x="463" y="200" width="14" height="110" fill="#f43f5e" rx="1.5" opacity="0.3"/>
+
+                  <line x1="530" y1="90" x2="530" y2="260" stroke="#10b981" strokeWidth="1.5" opacity="0.4"/>
+                  <rect x="523" y="110" width="14" height="90" fill="#10b981" rx="1.5" opacity="0.3"/>
+
+                  <line x1="590" y1="60" x2="590" y2="230" stroke="#10b981" strokeWidth="1.5" opacity="0.4"/>
+                  <rect x="583" y="80" width="14" height="85" fill="#10b981" rx="1.5" opacity="0.3"/>
+
+                  <line x1="650" y1="120" x2="650" y2="290" stroke="#f43f5e" strokeWidth="1.5" opacity="0.4"/>
+                  <rect x="643" y="140" width="14" height="90" fill="#f43f5e" rx="1.5" opacity="0.3"/>
+
+                  <line x1="710" y1="50" x2="710" y2="210" stroke="#10b981" strokeWidth="1.5" opacity="0.4"/>
+                  <rect x="703" y="70" width="14" height="80" fill="#10b981" rx="1.5" opacity="0.3"/>
+
+                  {/* Volume Sub-chart bars at bottom */}
+                  <rect x="45" y="520" width="10" height="50" fill="#10b981" opacity="0.25" rx="1"/>
+                  <rect x="105" y="500" width="10" height="70" fill="#f43f5e" opacity="0.25" rx="1"/>
+                  <rect x="165" y="510" width="10" height="60" fill="#10b981" opacity="0.25" rx="1"/>
+                  <rect x="225" y="530" width="10" height="40" fill="#10b981" opacity="0.25" rx="1"/>
+                  <rect x="285" y="490" width="10" height="80" fill="#f43f5e" opacity="0.25" rx="1"/>
+                  <rect x="345" y="480" width="10" height="90" fill="#10b981" opacity="0.25" rx="1"/>
+                  <rect x="405" y="510" width="10" height="60" fill="#10b981" opacity="0.25" rx="1"/>
+                  <rect x="465" y="495" width="10" height="75" fill="#f43f5e" opacity="0.25" rx="1"/>
+                  <rect x="525" y="470" width="10" height="100" fill="#10b981" opacity="0.25" rx="1"/>
+                  <rect x="585" y="460" width="10" height="110" fill="#10b981" opacity="0.25" rx="1"/>
+                  <rect x="645" y="520" width="10" height="50" fill="#f43f5e" opacity="0.25" rx="1"/>
+                  <rect x="705" y="450" width="10" height="120" fill="#10b981" opacity="0.25" rx="1"/>
+
+                  {/* Moving Average Wave Lines */}
+                  <path d="M 0 380 C 140 370, 200 300, 320 280 C 440 260, 560 150, 800 90" fill="none" stroke="url(#chartWaveGrad)" strokeWidth="2.5" strokeDasharray="5 5" opacity="0.6"/>
+                  <path d="M 0 420 C 140 400, 200 340, 320 310 C 440 290, 560 180, 800 120" fill="none" stroke="rgba(168, 85, 247, 0.3)" strokeWidth="1.5"/>
+                </svg>
+              </div>
+
+              {/* Chat Header */}
+              <div className="flex items-center justify-between px-5 py-3 border-b border-border/50 bg-card/60 backdrop-blur-md relative z-10">
+                <div className="flex items-center gap-2">
+                  <Brain className="size-4 text-purple-400" />
+                  <h3 className="text-[14px] font-bold text-foreground">Chat with AI Coach</h3>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="relative flex size-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full size-2 bg-emerald-500"></span>
+                  </span>
+                  <span className="text-[11px] text-emerald-400 font-semibold">Online</span>
+                </div>
+              </div>
+
+              {/* Chat Messages */}
+              <div 
+                ref={chatContainerRef}
+                className="flex-1 overflow-y-auto px-5 py-4 space-y-4 custom-scrollbar relative z-10"
+              >
+                {chatMessages.map((msg, i) => (
+                  <div key={i} className={cn("flex flex-col", msg.role === "user" ? "items-end" : "items-start")}>
+                    <div className="flex items-center gap-2 mb-1 px-1">
+                      {msg.role === "coach" && (
+                        <div className="size-4 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center">
+                          <Shield className="size-2.5 text-emerald-400" />
+                        </div>
+                      )}
+                      <span className={cn("text-[11px] font-medium", msg.role === "coach" ? "text-zinc-400" : "text-zinc-500")}>
+                        {msg.role === "coach" ? "AI Coach" : "You"}
+                      </span>
+                      <span className="text-[10px] text-zinc-600">{msg.time}</span>
+                    </div>
+                    <div className={cn(
+                      "rounded-2xl px-4 py-2.5 text-[12.5px] leading-relaxed shadow-sm max-w-[92%]",
+                      msg.role === "user"
+                        ? "bg-[#4f2a96] text-white rounded-tr-sm border border-[#8b5cf6]/30"
+                        : "bg-[#18181b] text-zinc-200 border border-zinc-800 rounded-tl-sm"
+                    )}>
+                      {msg.role === "coach" ? <FormattedMarkdown content={msg.text} /> : msg.text}
+                    </div>
+                    
+                    {/* Suggested actions from reference */}
+                    {msg.role === "coach" && msg.text.includes("profitable trader") && i === chatMessages.length - 1 && (
+                      <div className="flex flex-wrap gap-2 mt-2 pl-1">
+                        <button onClick={() => handleAskQuestion("Why did I take so many losses this week?")} className="text-[11px] px-3 py-1.5 rounded-full border border-zinc-700/50 bg-zinc-800/30 text-zinc-300 hover:bg-zinc-800 transition cursor-pointer">
+                          Why did I take so many losses this week?
+                        </button>
+                      </div>
+                    )}
+                    {msg.role === "coach" && (msg.text.includes("I analyzed your trades this week") || msg.text.includes("break of your trading plan")) && i === chatMessages.length - 1 && (
+                      <div className="flex flex-wrap gap-2 mt-2.5 pl-1">
+                        <button onClick={() => handleAskQuestion("Review my trades in more detail.")} className="text-[11px] px-3.5 py-1.5 rounded-xl border border-zinc-700/50 bg-[#18181b] text-zinc-200 hover:bg-zinc-800 transition cursor-pointer">
+                          Review my trades
+                        </button>
+                        <button onClick={() => handleAskQuestion("Build a trading plan based on these insights.")} className="text-[11px] px-3.5 py-1.5 rounded-xl border border-zinc-700/50 bg-[#18181b] text-zinc-200 hover:bg-zinc-800 transition cursor-pointer">
+                          Build a trading plan
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {isAnswering && (
+                  <div className="flex flex-col items-start">
+                    <div className="flex items-center gap-2 mb-1 px-1">
+                      <Brain className="size-3 text-emerald-500 animate-pulse" />
+                      <span className="text-[11px] font-medium text-zinc-400">AI Coach</span>
+                    </div>
+                    <div className="bg-[#18181b] rounded-2xl px-5 py-3 border border-zinc-800 rounded-tl-sm">
+                      <div className="flex gap-1.5">
+                        <div className="size-1.5 rounded-full bg-zinc-500 animate-bounce [animation-delay:0ms]"></div>
+                        <div className="size-1.5 rounded-full bg-zinc-500 animate-bounce [animation-delay:150ms]"></div>
+                        <div className="size-1.5 rounded-full bg-zinc-500 animate-bounce [animation-delay:300ms]"></div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div ref={chatEndRef} />
+              </div>
+
+              {/* Chat Input */}
+              <div className="px-4 py-3 bg-[#0a0a0e] border-t border-zinc-800/60 relative z-10">
+                <form
+                  onSubmit={(e) => { e.preventDefault(); handleAskQuestion(customQuestion); }}
+                  className="flex items-center gap-2 rounded-xl border border-zinc-700/60 bg-[#18181b] px-3 py-1.5 focus-within:ring-1 focus-within:ring-[#8b5cf6]/30 transition-all"
+                >
+                  <input
+                    type="text"
+                    value={customQuestion}
+                    onChange={(e) => setCustomQuestion(e.target.value)}
+                    placeholder="Type your message..."
+                    className="flex-1 bg-transparent text-[13px] text-zinc-200 outline-none placeholder:text-zinc-600"
+                  />
+                  <button type="button" onClick={() => setShowAttachmentModal(true)} className="p-1.5 text-zinc-500 hover:text-zinc-300 transition cursor-pointer">
+                    <Paperclip className="size-4" />
+                  </button>
+                  <button type="button" onClick={() => setShowTemplateModal(true)} className="p-1.5 text-zinc-500 hover:text-zinc-300 transition mr-1 cursor-pointer">
+                    <FileCode2 className="size-4" />
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!customQuestion.trim() || isAnswering}
+                    className="flex size-7 items-center justify-center rounded-lg bg-[#4f2a96] text-white transition-all hover:bg-[#5e34b1] disabled:opacity-50 border border-[#8b5cf6]/30 cursor-pointer"
+                  >
+                    <Send className="size-3.5" />
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            {/* 2. Quick Actions */}
+            <div className="neon-card neon-glow-purple p-3.5">
+              <div className="flex items-center justify-between mb-2.5">
+                <h3 className="text-[13px] font-bold text-zinc-100">Quick Actions</h3>
+                <Zap className="size-3.5 text-zinc-500" />
+              </div>
+              <div className="grid grid-cols-2 gap-2.5">
+                {[
+                  { icon: <BarChart3 className="size-3.5 text-blue-400" />, label: "Analyze Recent Trades", sub: "Get AI insights", glow: "neon-glow-blue" },
+                  { icon: <FileText className="size-3.5 text-purple-400" />, label: "Build Trading Plan", sub: "Personalized plan", glow: "neon-glow-purple" },
+                  { icon: <FileCheck2 className="size-3.5 text-red-400" />, label: "Review Mistakes", sub: "Learn & improve", glow: "neon-glow-red" },
+                  { icon: <Target className="size-3.5 text-emerald-400" />, label: "Strategy Backtest", sub: "Test your strategy", glow: "neon-glow-green" },
+                ].map((action) => (
+                  <button
+                    key={action.label}
+                    type="button"
+                    onClick={() => handleAskQuestion(action.label)}
+                    className={cn("neon-card p-2.5 flex items-center gap-2.5 text-left transition-all group cursor-pointer", action.glow)}
+                  >
+                    <div className="flex size-7 shrink-0 items-center justify-center rounded border border-zinc-700/60 bg-zinc-800/50 group-hover:text-zinc-200">
+                      {action.icon}
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-bold text-zinc-200 leading-tight">{action.label}</p>
+                      <p className="text-[9px] text-zinc-500 mt-0.5">{action.sub}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-        </Panel>
+        </div>
+
+        {/* ═══════ FOOTER NOTICE (Exact Reference Copy) ═══════ */}
+        <div className="text-center pt-2 pb-6">
+          <p className="text-[11px] text-zinc-500 font-medium">
+            AI Coach analyzes your real trading data to provide personalized insights. All analysis is based on your actual performance.
+          </p>
+        </div>
       </div>
+
+      {/* ══════════════ MODALS ══════════════ */}
+      
+      {/* 1. Chart Maximized Modal */}
+      {chartMaximized && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-6 backdrop-blur-sm">
+          <div className="bg-[#0f0f13] border border-zinc-850 rounded-2xl max-w-4xl w-full p-6 shadow-2xl relative">
+            <button onClick={() => setChartMaximized(false)} className="absolute right-4 top-4 text-zinc-400 hover:text-zinc-200 cursor-pointer">
+              <X className="size-5" />
+            </button>
+            <h3 className="text-base font-bold text-zinc-100 mb-4">Your Trading Journey (Full View)</h3>
+            <div className="h-[400px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={journeyData} margin={{ left: -10, right: 10, top: 10, bottom: 0 }}>
+                  <CartesianGrid stroke="rgba(255,255,255,0.05)" />
+                  <XAxis dataKey="date" {...axisProps} tick={{fill: '#71717a', fontSize: 11}} />
+                  <YAxis {...axisProps} tick={{fill: '#71717a', fontSize: 11}} domain={[0, 100]} />
+                  <Tooltip {...ttStyle} />
+                  <Area type="monotone" dataKey="score" stroke="#a855f7" strokeWidth={3} fill="rgba(168,85,247,0.1)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2. All Recommendations Modal */}
+      {showAllRecs && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-6 backdrop-blur-sm">
+          <div className="bg-[#0f0f13] border border-zinc-850 rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative max-h-[80vh] flex flex-col">
+            <button onClick={() => setShowAllRecs(false)} className="absolute right-4 top-4 text-zinc-400 hover:text-zinc-200 cursor-pointer">
+              <X className="size-5" />
+            </button>
+            <h3 className="text-base font-bold text-zinc-100 mb-4">All AI Recommendations</h3>
+            <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+              {[
+                { title: "Improve Risk Management", priority: "High Priority", color: "text-emerald-500 border-emerald-500/30 bg-emerald-500/5", desc: "You are risking more than 2% on some trades. Keep it consistent." },
+                { title: "Focus on Your A+ Setups", priority: "Medium Priority", color: "text-yellow-500 border-yellow-500/30 bg-yellow-500/5", desc: "You have a 78% win rate on liquidity sweep setups. Trade more of these." },
+                { title: "Mindset Work", priority: "Medium Priority", color: "text-blue-500 border-blue-500/30 bg-blue-500/5", desc: "Work on patience and avoiding revenge trading." },
+                { title: "Minimize Loss Streak", priority: "High Priority", color: "text-red-500 border-red-500/30 bg-red-500/5", desc: "Your recent streak of 4 consecutive losses suggests you need to step away after 2 losses." },
+                { title: "Execution Speed", priority: "Low Priority", color: "text-purple-500 border-purple-500/30 bg-purple-500/5", desc: "Average entry latency is 1.2s. Use limit orders to reduce slippage." }
+              ].map((rec) => (
+                <div key={rec.title} className="p-4 rounded-xl border border-zinc-800 bg-[#060608] flex items-start justify-between gap-4">
+                  <div>
+                    <h4 className="text-sm font-bold text-zinc-200">{rec.title}</h4>
+                    <span className={cn("inline-block text-[9px] font-bold px-2 py-0.5 rounded border mt-1.5", rec.color)}>
+                      {rec.priority}
+                    </span>
+                    <p className="text-[11px] text-zinc-400 mt-2">{rec.desc}</p>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      handleAskQuestion(`Give me a detailed action plan for: ${rec.title}. Context: ${rec.desc}`);
+                      setShowAllRecs(false);
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-zinc-800 text-[11px] text-zinc-300 hover:bg-zinc-700 transition shrink-0 cursor-pointer"
+                  >
+                    Get Action Plan
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 3. All Notes Modal */}
+      {showAllNotes && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-6 backdrop-blur-sm">
+          <div className="bg-[#0f0f13] border border-zinc-850 rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative max-h-[80vh] flex flex-col">
+            <button onClick={() => setShowAllNotes(false)} className="absolute right-4 top-4 text-zinc-400 hover:text-zinc-200 cursor-pointer">
+              <X className="size-5" />
+            </button>
+            <h3 className="text-base font-bold text-zinc-100 mb-4">All Historical Coach Notes</h3>
+            <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+              {[
+                { title: "Great Improvement!", time: "Today, 10:30 AM", desc: "You followed your trading plan well today. Keep it up!", tag: "Positive", color: "text-emerald-500 border-emerald-500/20 bg-emerald-500/5" },
+                { title: "Risk Alert", time: "Yesterday, 09:15 AM", desc: "You risked 3.2% in one trade. Remember your 1-2% rule.", tag: "Alert", color: "text-yellow-500 border-yellow-500/20 bg-yellow-500/5" },
+                { title: "Strategy Tip", time: "Aug 12, 08:40 AM", desc: "Focus on liquidity + market structure alignment.", tag: "Tip", color: "text-blue-500 border-blue-500/20 bg-blue-500/5" },
+                { title: "Mindset Reminder", time: "Aug 11, 07:20 AM", desc: "Stay patient. The right setups will come.", tag: "Reminder", color: "text-[#a855f7] border-[#a855f7]/20 bg-[#a855f7]/5" },
+                { title: "Patience Pays Off", time: "Aug 10, 04:15 PM", desc: "Waited 2 hours for setup. Solid execution.", tag: "Positive", color: "text-emerald-500 border-emerald-500/20 bg-emerald-500/5" },
+                { title: "Slippage Warning", time: "Aug 09, 11:30 AM", desc: "High slippage on market orders during news.", tag: "Alert", color: "text-yellow-500 border-yellow-500/20 bg-yellow-500/5" }
+              ].map((note, idx) => (
+                <div key={idx} className="p-4 rounded-xl border border-zinc-800 bg-[#060608] flex flex-col">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] text-zinc-500 font-medium">{note.time}</span>
+                    <span className={cn("text-[9px] font-bold px-2 py-0.5 rounded border", note.color)}>{note.tag}</span>
+                  </div>
+                  <h4 className="text-xs font-bold text-zinc-200">{note.title}</h4>
+                  <p className="text-[11px] text-zinc-400 mt-1">{note.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 4. Attachment Modal */}
+      {showAttachmentModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-6 backdrop-blur-sm">
+          <div className="bg-[#0f0f13] border border-zinc-850 rounded-2xl max-w-sm w-full p-6 shadow-2xl relative">
+            <button onClick={() => setShowAttachmentModal(false)} className="absolute right-4 top-4 text-zinc-400 hover:text-zinc-200 cursor-pointer">
+              <X className="size-5" />
+            </button>
+            <h3 className="text-sm font-bold text-zinc-100 mb-3">Attach File to AI Chat</h3>
+            <p className="text-[11px] text-zinc-400 mb-4">Select a mock document to attach to your coach analysis prompt:</p>
+            <div className="space-y-2">
+              {[
+                { name: "trade_log_august.csv", size: "12 KB" },
+                { name: "trading_rules_v2.pdf", size: "142 KB" },
+                { name: "pnl_screenshot.png", size: "480 KB" }
+              ].map((f) => (
+                <button
+                  key={f.name}
+                  onClick={() => {
+                    setCustomQuestion(`Attached file [${f.name}]: Please review this file context alongside my question. `);
+                    setShowAttachmentModal(false);
+                  }}
+                  className="w-full text-left p-3 rounded-lg border border-zinc-800 bg-[#060608] hover:border-zinc-700/60 hover:bg-zinc-900/50 transition text-[11px] flex justify-between cursor-pointer"
+                >
+                  <span className="text-zinc-300 font-bold">{f.name}</span>
+                  <span className="text-zinc-500">{f.size}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5. Template Modal */}
+      {showTemplateModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-6 backdrop-blur-sm">
+          <div className="bg-[#0f0f13] border border-zinc-850 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+            <button onClick={() => setShowTemplateModal(false)} className="absolute right-4 top-4 text-zinc-400 hover:text-zinc-200 cursor-pointer">
+              <X className="size-5" />
+            </button>
+            <h3 className="text-sm font-bold text-zinc-100 mb-3">Trading Prompt Templates</h3>
+            <p className="text-[11px] text-zinc-400 mb-4">Select a trading coach template prompt to pre-fill the chat box:</p>
+            <div className="space-y-2.5">
+              {[
+                { name: "Plan Critique", text: "Critique my risk parameters based on my last 5 losing trades." },
+                { name: "Psychology Check", text: "I feel anxious after 2 consecutive losses. Give me a psychological stabilization drill." },
+                { name: "Setups Optimizer", text: "Review the setups I logged recently and suggest which one I should drop." }
+              ].map((t) => (
+                <button
+                  key={t.name}
+                  onClick={() => {
+                    setCustomQuestion(t.text);
+                    setShowTemplateModal(false);
+                  }}
+                  className="w-full text-left p-3 rounded-lg border border-zinc-800 bg-[#060608] hover:border-zinc-700/60 hover:bg-zinc-900/50 transition cursor-pointer"
+                >
+                  <p className="text-[11px] font-bold text-[#8b5cf6]">{t.name}</p>
+                  <p className="text-[10px] text-zinc-400 mt-1">{t.text}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </AppShell>
   );
 }

@@ -150,10 +150,10 @@ function RootShell({ children }: { children: ReactNode }) {
 
   const envKey =
     typeof process !== "undefined" &&
-    (process.env["VITE_SUPABASE_ANON_KEY"] || process.env["VITE_SUPABASE_ANON_KEY"])
-      ? process.env["VITE_SUPABASE_ANON_KEY"] || process.env["VITE_SUPABASE_ANON_KEY"]
+    (process.env["VITE_SUPABASE_ANON_KEY"] || process.env["SUPABASE_ANON_KEY"])
+      ? process.env["VITE_SUPABASE_ANON_KEY"] || process.env["SUPABASE_ANON_KEY"]
       : (import.meta as any).env?.["VITE_SUPABASE_ANON_KEY"] ||
-        (import.meta as any).env?.["VITE_SUPABASE_ANON_KEY"] ||
+        (import.meta as any).env?.["SUPABASE_ANON_KEY"] ||
         "";
 
   const envScript = `

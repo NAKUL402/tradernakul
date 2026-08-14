@@ -34,6 +34,8 @@ import {
 import { goldenRules } from "@/lib/golden-rules";
 import { DecisionReplayCard } from "@/components/app/DecisionReplayCard";
 
+import { cn } from "@/lib/utils";
+
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
@@ -70,7 +72,7 @@ function Dashboard() {
     .map((m, i) => ({ label: `W${i + 1}`, pnl: Math.round(m.pnl / 4) }));
 
   const dayIndex = Math.floor(Date.now() / 86400000);
-  const todaysRule = "The goal of a successful trader is to make good trades. Money is secondary.";
+  const todaysRule = goldenRules[dayIndex % goldenRules.length] ?? goldenRules[0];
 
   const patternSummary = aggregateTradePatterns(userTrades);
   let dynamicInsight = "";
@@ -91,22 +93,22 @@ function Dashboard() {
   if (!hasTrades) {
     return (
       <AppShell title="Dashboard" subtitle="Track. Analyze. Improve.">
-        <section className="glass-card-3d elevated-surface relative animate-rise overflow-hidden rounded-[2rem] p-8 text-center flex flex-col items-center justify-center min-h-[50vh] perspective-container">
-          <div className="parallax-bg pointer-events-none absolute -left-24 -top-32 size-80 rounded-full bg-primary/25 blur-[80px]" />
-          <div className="parallax-bg pointer-events-none absolute -right-20 -bottom-32 size-72 rounded-full bg-accent/20 blur-[80px]" />
-          <div className="relative z-10 grid shrink-0 size-16 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-[0_0_20px_-5px_var(--color-primary)] mb-6 layer-3d-extreme">
+        <section className="surface-glass elevation-1 relative overflow-hidden rounded-[2rem] p-10 text-center flex flex-col items-center justify-center min-h-[50vh]">
+          <div className="absolute -left-24 -top-32 size-80 rounded-full bg-primary/5 blur-[80px]" />
+          <div className="absolute -right-20 -bottom-32 size-72 rounded-full bg-accent/20 blur-[80px]" />
+          <div className="relative z-10 grid shrink-0 size-16 place-items-center rounded-2xl bg-primary text-primary-foreground elevation-1 mb-6">
             <Target className="size-8" />
           </div>
-          <h2 className="relative z-10 font-display text-2xl font-bold mb-2 text-foreground layer-3d">
+          <h2 className="relative z-10 font-display text-2xl font-extrabold mb-2 text-foreground">
             Your trading journey starts here.
           </h2>
-          <p className="relative z-10 max-w-sm text-sm text-muted-foreground mb-8 layer-3d">
+          <p className="relative z-10 max-w-sm text-sm font-medium text-muted-foreground mb-8">
             Log your first trade to unlock AI insights, performance analytics, and your personalized
             equity curve.
           </p>
           <Link
             to="/journal"
-            className="relative z-10 rounded-xl bg-gradient-to-r from-primary to-accent px-6 py-3 text-sm font-semibold text-primary-foreground transition hover:-translate-y-0.5 shadow-[0_8px_25px_-8px_var(--color-primary)] layer-3d"
+            className="relative z-10 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground transition-all duration-200 hover:-translate-y-[2px] elevation-1 hover:elevation-2"
           >
             Log your first trade
           </Link>
@@ -117,44 +119,42 @@ function Dashboard() {
 
   return (
     <AppShell title="Dashboard" subtitle="Track. Analyze. Improve.">
-      <section className="glass-card-3d elevated-surface relative animate-rise overflow-hidden rounded-[2rem] p-6 sm:p-8 perspective-container">
-        <div className="parallax-bg pointer-events-none absolute -left-24 -top-32 size-80 rounded-full bg-primary/25 blur-3xl" />
-        <div className="parallax-bg pointer-events-none absolute -right-20 -bottom-32 size-72 rounded-full bg-accent/20 blur-3xl" />
-        <div className="relative grid gap-8 lg:grid-cols-[1.1fr_1fr] lg:items-center transform-3d layer-3d">
-          <div className="transform-3d">
-            <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-primary layer-3d">
+      <section className="neon-card neon-glow-aurora relative p-8 sm:p-10">
+        <div className="relative z-10 grid gap-8 lg:grid-cols-[1.1fr_1fr] lg:items-center">
+          <div>
+            <span className="inline-flex items-center gap-2 rounded-lg bg-emerald-500/15 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-emerald-400 border border-emerald-500/30">
               Net Performance
             </span>
-            <p className="mt-5 font-display text-5xl leading-none text-gradient sm:text-6xl lg:text-7xl layer-3d-extreme">
+            <p className="mt-6 font-display text-5xl font-extrabold leading-none text-foreground sm:text-6xl lg:text-7xl tabular-nums">
               {money(s.net)}
             </p>
-            <p className="mt-4 max-w-md text-sm text-muted-foreground layer-3d">
+            <p className="mt-5 max-w-md text-sm font-medium text-muted-foreground leading-relaxed">
               {s.total} trades logged · {pct(s.winRate)} win rate · profit factor{" "}
               {s.profitFactor.toFixed(2)}. Aapka edge data mein clearly visible hai.
             </p>
-            <div className="mt-6 flex flex-wrap gap-3 layer-3d">
+            <div className="mt-6 flex flex-wrap gap-3">
               <Link
                 to="/journal"
-                className="rounded-xl bg-gradient-to-r from-primary to-accent px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 glow-primary"
+                className="rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground transition-all duration-200 hover:-translate-y-[2px] shadow-[0_0_16px_rgba(99,102,241,0.4)]"
               >
                 Log a trade
               </Link>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-3 sm:gap-4 transform-3d">
+          <div className="grid grid-cols-3 gap-3 sm:gap-4">
             {[
-              { k: "Win Rate", v: pct(s.winRate) },
-              { k: "Avg RRR", v: `1:${s.avgRRR.toFixed(2)}` },
-              { k: "Monthly", v: money(s.monthlyPnl) },
+              { k: "Win Rate", v: pct(s.winRate), glow: "neon-glow-green" },
+              { k: "Avg RRR", v: `1:${s.avgRRR.toFixed(2)}`, glow: "neon-glow-purple" },
+              { k: "Monthly", v: money(s.monthlyPnl), glow: s.monthlyPnl >= 0 ? "neon-glow-green" : "neon-glow-red" },
             ].map((i) => (
               <div
                 key={i.k}
-                className="hairline rounded-2xl bg-card/60 border border-border/50 p-4 text-center glass-card-3d"
+                className={cn("neon-card p-5 text-center flex flex-col justify-center min-h-[100px]", i.glow)}
               >
-                <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground layer-3d">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
                   {i.k}
                 </p>
-                <p className="mt-2 font-display text-xl sm:text-2xl layer-3d-extreme">{i.v}</p>
+                <p className="mt-2 font-display text-xl sm:text-2xl font-bold tabular-nums text-foreground">{i.v}</p>
               </div>
             ))}
           </div>
@@ -164,21 +164,21 @@ function Dashboard() {
       {/* Interactive AI & Psychology Section */}
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         {/* Premium AI Mentor Card */}
-        <Panel title="AI Trading Mentor" className="flex flex-col h-full">
+        <Panel title="AI Trading Mentor" className="neon-glow-purple flex flex-col h-full">
           <div className="flex flex-col justify-between flex-1 gap-4 p-1 sm:p-2 mt-2">
             <div className="flex items-start gap-4">
-              <div className="grid shrink-0 size-12 place-items-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/30">
+              <div className="grid shrink-0 size-12 place-items-center rounded-xl bg-purple-500/15 text-purple-400 border border-purple-500/30">
                 <Brain className="size-6" />
               </div>
               <div className="min-w-0">
-                <p className="font-display text-lg font-semibold text-foreground">
+                <p className="font-display text-lg font-bold text-foreground">
                   Consult AI Mentor
                 </p>
-                <p className="mt-1 text-sm text-muted-foreground break-words">
+                <p className="mt-1 text-sm font-medium text-muted-foreground break-words">
                   Ask questions, analyze your trading, and improve your performance instantly.
                 </p>
                 {dynamicInsight && (
-                  <div className="mt-3 inline-block rounded-lg bg-primary/10 px-3 py-1.5 text-[13px] font-medium text-primary">
+                  <div className="mt-3 inline-block rounded-lg bg-purple-500/15 border border-purple-500/30 px-3 py-1.5 text-[13px] font-bold text-purple-300">
                     <Sparkles className="mr-1.5 inline size-3.5" />
                     {dynamicInsight}
                   </div>
@@ -190,7 +190,7 @@ function Dashboard() {
               <Link
                 to="/ai-coach"
                 search={{ chat: false }}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-muted/50 px-4 py-3 text-sm font-medium transition hover:bg-primary hover:text-primary-foreground"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-purple-600 px-4 py-3 text-sm font-bold text-white transition-all duration-200 hover:-translate-y-[1px] shadow-[0_0_16px_rgba(168,85,247,0.4)]"
               >
                 Open Mentor Session
                 <ChevronRight className="size-4" />
@@ -200,9 +200,9 @@ function Dashboard() {
         </Panel>
 
         {/* Dynamic Golden Rule Section */}
-        <Panel title="Golden Rule" className="flex flex-col h-full">
+        <Panel title="Golden Rule" className="neon-glow-amber flex flex-col h-full">
           <div className="group relative flex flex-col justify-center flex-1 gap-4 p-5 sm:p-6 sm:items-center sm:flex-row sm:justify-start overflow-hidden transition">
-            <div className="relative z-10 grid shrink-0 size-12 place-items-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/30">
+            <div className="relative z-10 grid shrink-0 size-12 place-items-center rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/30">
               <Crown className="size-6" />
             </div>
 
@@ -226,7 +226,6 @@ function Dashboard() {
         <StatCard
           label="Win Rate"
           value={pct(s.winRate)}
-          delta={4.2}
           icon={<Target className="size-4" />}
           accent="success"
           to="/analytics"
@@ -242,14 +241,12 @@ function Dashboard() {
         <StatCard
           label="Profit Factor"
           value={s.profitFactor.toFixed(2)}
-          delta={1.8}
           icon={<Percent className="size-4" />}
           to="/analytics"
         />
         <StatCard
           label="Monthly PnL"
           value={money(s.monthlyPnl)}
-          delta={s.monthlyPnl >= 0 ? 8.4 : -6.1}
           icon={<Wallet className="size-4" />}
           accent={s.monthlyPnl >= 0 ? "success" : "destructive"}
           to="/analytics"
@@ -289,7 +286,6 @@ function Dashboard() {
         <StatCard
           label="Weekly PnL"
           value={money(s.weeklyPnl)}
-          delta={2.6}
           icon={<TrendingUp className="size-4" />}
           accent="accent"
           to="/analytics"
@@ -299,12 +295,12 @@ function Dashboard() {
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
         <Panel
           title="Equity Curve"
-          className="lg:col-span-2"
+          className="neon-glow-green lg:col-span-2"
           action={<Badge tone={s.net >= 0 ? "win" : "loss"}>{money(s.net)} net</Badge>}
         >
           <EquityChart data={eq} />
         </Panel>
-        <Panel title="Win / Loss Split">
+        <Panel title="Win / Loss Split" className="neon-glow-purple">
           <WinLossPie wins={s.wins} losses={s.losses} />
           <div className="mt-2 flex justify-center gap-5 text-xs">
             <span className="flex items-center gap-2">
@@ -320,10 +316,10 @@ function Dashboard() {
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        <Panel title="Monthly Performance">
+        <Panel title="Monthly Performance" className="neon-glow-blue">
           <BarsChart data={months} />
         </Panel>
-        <Panel title="Weekly Performance">
+        <Panel title="Weekly Performance" className="neon-glow-green">
           <BarsChart data={weekly} />
         </Panel>
       </div>
@@ -331,7 +327,7 @@ function Dashboard() {
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
         <Panel
           title="Recent Trades"
-          className="lg:col-span-2"
+          className="neon-glow-blue lg:col-span-2"
           action={
             <Link to="/journal" className="text-xs font-medium text-primary hover:underline">
               View all
@@ -350,20 +346,23 @@ function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {recent.map((t) => (
-                  <tr key={t.id} className="border-t border-border/60 transition hover:bg-muted/30">
-                    <td className="px-2 py-3 text-muted-foreground">{t.date}</td>
-                    <td className="px-2 py-3 font-medium">{t.pair}</td>
+                {recent.map((t, index) => (
+                  <tr key={t.id} className={cn(
+                    "border-t border-border transition-all duration-200 hover:-translate-y-[1px] hover:elevation-1 relative bg-surface",
+                    index % 2 !== 0 && "bg-muted/30"
+                  )}>
+                    <td className="px-2 py-3 text-muted-foreground text-sm font-medium">{t.date}</td>
+                    <td className="px-2 py-3 font-semibold text-foreground">{t.pair}</td>
                     <td className="px-2 py-3">
                       <Badge tone={t.side === "Buy" ? "primary" : "muted"}>{t.side}</Badge>
                     </td>
-                    <td className="px-2 py-3 text-muted-foreground">{t.session}</td>
-                    <td className="px-2 py-3">{t.rrr}</td>
+                    <td className="px-2 py-3 text-muted-foreground text-sm font-medium">{t.session}</td>
+                    <td className="px-2 py-3 font-medium text-foreground">{t.rrr}</td>
                     <td className="px-2 py-3">
                       <Badge tone={t.result === "Win" ? "win" : "loss"}>{t.result}</Badge>
                     </td>
                     <td
-                      className={`px-2 py-3 font-semibold ${pnlUsd(t) >= 0 ? "text-success" : "text-destructive"}`}
+                      className={`px-2 py-3 font-bold tabular-nums ${pnlUsd(t) >= 0 ? "text-success" : "text-danger"}`}
                     >
                       {money(pnlUsd(t))}
                     </td>
