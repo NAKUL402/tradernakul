@@ -776,10 +776,10 @@ function Analytics() {
 
           {/* ═══════ ROW 4: Streak + Monthly Overview ═══════ */}
           <div className="grid gap-5 lg:grid-cols-[1fr_1.5fr]">
-            {/* Streak Analysis — MAIN FIXED BOX */}
-            <Panel3D title="Streak Analysis" className="neon-glow-purple flex flex-col justify-between h-full" info>
-              <div className="flex flex-col justify-between h-full space-y-3 py-1">
-                {/* BOX 1: 3 Metric Boxes */}
+            {/* Streak Analysis — PIXEL-EXACT MATCH TO REFERENCE PHOTO */}
+            <Panel3D title="Streak Analysis" className="neon-glow-purple" info>
+              <div className="flex flex-col space-y-3.5 py-0.5">
+                {/* BOX 1: 3 Metric Cards */}
                 <div className="grid grid-cols-3 gap-2.5 w-full">
                   <div className="rounded-xl border border-border bg-muted/40 p-2.5 text-center flex flex-col justify-center items-center">
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Longest Win Streak</p>
@@ -804,8 +804,8 @@ function Analytics() {
                   </div>
                 </div>
 
-                {/* BOX 2: Clean 11-Result Circular Badges Box (No Title, No Text, Exactly 11 W/L Badges) */}
-                <div className="rounded-xl border border-border/70 bg-muted/30 p-2.5 flex items-center justify-center w-full min-h-[52px]">
+                {/* BOX 2: Clean 11-Result Circular Badges Box (Directly Underneath Box 1, Compact) */}
+                <div className="rounded-xl border border-border/70 bg-muted/30 p-2.5 flex items-center justify-center w-full">
                   <div className="flex flex-nowrap items-center justify-center gap-1.5 sm:gap-2 w-full overflow-hidden">
                     {recentResults.map((r, i) => (
                       <div
