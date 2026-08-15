@@ -837,18 +837,48 @@ function AdminPage() {
       title="Admin Control Center"
       subtitle={`Logged in as ${isOwner ? "Owner Administrator" : "Administrator"}`}
     >
-      {/* Sleek Layout */}
-      <div className="mt-4 flex flex-col gap-6 lg:flex-row">
-        {/* Left Hand tab selector */}
-        <aside className="w-full shrink-0 lg:w-64">
-          <div className="neon-card neon-glow-purple flex flex-col gap-1.5 p-3.5 sticky top-20 border border-border/70 backdrop-blur-xl">
-            <div className="flex items-center justify-between px-2 pb-2 border-b border-border/40 mb-1">
-              <p className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
+      <div className="mt-2 space-y-6 pb-12">
+        {/* ══════════ TOP SECTION: 4 Stat Boxes + System Navigation ══════════ */}
+        <div className="space-y-4">
+          {/* Top 4 Stat Cards */}
+          <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4">
+            <StatCard
+              label="Total Registered Users"
+              value={stats ? String(stats.total_users) : String(usersList.length)}
+              icon={<Users className="size-4" />}
+            />
+            <StatCard
+              label="Awaiting Approval"
+              value={
+                stats
+                  ? String(stats.pending_users)
+                  : String(usersList.filter((u) => u.status === "pending").length)
+              }
+              icon={<Clock className="size-4" />}
+              accent="accent"
+            />
+            <StatCard
+              label="Total Logged Trades"
+              value={stats ? String(stats.total_trades) : String(totalDbTrades)}
+              icon={<Activity className="size-4" />}
+              accent="success"
+            />
+            <StatCard
+              label="AI Chat Queries"
+              value={stats ? String(stats.total_ai_chats) : "Active"}
+              icon={<Brain className="size-4" />}
+            />
+          </div>
+
+          {/* System Navigation (Horizontal Bar in Top Section) */}
+          <div className="neon-card neon-glow-purple p-2.5 border border-border/70 backdrop-blur-xl">
+            <div className="flex items-center justify-between px-2 pb-1.5 border-b border-border/40 mb-1.5">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
                 System Navigation
-              </p>
+              </span>
               <ShieldCheck className="size-3.5 text-primary" />
             </div>
-            <nav className="flex flex-row lg:flex-col overflow-x-auto lg:overflow-x-visible gap-1 pb-2 lg:pb-0 scrollbar-none">
+            <nav className="flex flex-wrap gap-1.5 overflow-x-auto pb-0.5 custom-scrollbar">
               {sidebarItems.map((item) => {
                 const IconComponent = item.icon;
                 const isSelected = activeTab === item.id;
@@ -856,19 +886,19 @@ function AdminPage() {
                   <button
                     key={item.id}
                     onClick={() => setActiveTab(item.id)}
-                    className={`flex items-center gap-3 w-full rounded-xl px-3.5 py-2.5 text-left text-xs font-bold transition-all border whitespace-nowrap lg:whitespace-normal cursor-pointer ${
+                    className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition-all border whitespace-nowrap cursor-pointer ${
                       isSelected
-                        ? "bg-primary/15 text-primary border-primary/40 shadow-sm shadow-primary/20"
+                        ? "bg-primary/20 text-primary border-primary/50 shadow-sm shadow-primary/20"
                         : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30"
                     }`}
                   >
                     <IconComponent
-                      className={`size-4 shrink-0 ${isSelected ? "text-primary scale-105" : "text-muted-foreground"}`}
+                      className={`size-3.5 shrink-0 ${isSelected ? "text-primary scale-105" : "text-muted-foreground"}`}
                     />
-                    <span className="flex-1 text-left">{item.label}</span>
+                    <span>{item.label}</span>
                     {item.badge !== undefined && Number(item.badge) > 0 && (
                       <span
-                        className={`rounded-full px-2 py-0.5 text-[10px] font-bold border ${item.badgeColor || "bg-muted text-foreground border-border"}`}
+                        className={`rounded-full px-1.5 py-0.2 text-[9.5px] font-bold border ${item.badgeColor || "bg-muted text-foreground border-border"}`}
                       >
                         {item.badge}
                       </span>
@@ -878,42 +908,13 @@ function AdminPage() {
               })}
             </nav>
           </div>
-        </aside>
+        </div>
 
-        {/* Right Hand component content */}
-        <main className="flex-1 overflow-hidden min-h-[60vh] flex flex-col">
+        {/* ══════════ MAIN CONTENT (Active Tab Content) ══════════ */}
+        <main className="flex-1 overflow-hidden min-h-[50vh] flex flex-col">
           {/* TAB 1: OVERVIEW */}
           {activeTab === "overview" && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-3 duration-250">
-              {/* StatCards */}
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                <StatCard
-                  label="Total Registered Users"
-                  value={stats ? String(stats.total_users) : String(usersList.length)}
-                  icon={<Users className="size-4" />}
-                />
-                <StatCard
-                  label="Awaiting Approval"
-                  value={
-                    stats
-                      ? String(stats.pending_users)
-                      : String(usersList.filter((u) => u.status === "pending").length)
-                  }
-                  icon={<Clock className="size-4" />}
-                  accent="accent"
-                />
-                <StatCard
-                  label="Total Logged Trades"
-                  value={stats ? String(stats.total_trades) : String(totalDbTrades)}
-                  icon={<Activity className="size-4" />}
-                  accent="success"
-                />
-                <StatCard
-                  label="AI Chat Queries"
-                  value={stats ? String(stats.total_ai_chats) : "Data unavailable"}
-                  icon={<Brain className="size-4" />}
-                />
-              </div>
 
               {siteSettings?.maintenance_mode && (
                 <div className="rounded-2xl border border-red-500/40 bg-red-500/10 p-5 text-red-200 flex gap-4 items-start relative overflow-hidden">
