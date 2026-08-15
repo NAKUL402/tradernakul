@@ -841,10 +841,13 @@ function AdminPage() {
       <div className="mt-4 flex flex-col gap-6 lg:flex-row">
         {/* Left Hand tab selector */}
         <aside className="w-full shrink-0 lg:w-64">
-          <div className="glass flex flex-col gap-1 rounded-2xl border border-border p-3.5 sticky top-20">
-            <p className="px-2 pb-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              System Navigation
-            </p>
+          <div className="neon-card neon-glow-purple flex flex-col gap-1.5 p-3.5 sticky top-20 border border-border/70 backdrop-blur-xl">
+            <div className="flex items-center justify-between px-2 pb-2 border-b border-border/40 mb-1">
+              <p className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
+                System Navigation
+              </p>
+              <ShieldCheck className="size-3.5 text-primary" />
+            </div>
             <nav className="flex flex-row lg:flex-col overflow-x-auto lg:overflow-x-visible gap-1 pb-2 lg:pb-0 scrollbar-none">
               {sidebarItems.map((item) => {
                 const IconComponent = item.icon;
@@ -853,19 +856,19 @@ function AdminPage() {
                   <button
                     key={item.id}
                     onClick={() => setActiveTab(item.id)}
-                    className={`flex items-center gap-3 w-full rounded-xl px-3.5 py-2.5 text-left text-xs font-semibold transition border border-transparent whitespace-nowrap lg:whitespace-normal ${
+                    className={`flex items-center gap-3 w-full rounded-xl px-3.5 py-2.5 text-left text-xs font-bold transition-all border whitespace-nowrap lg:whitespace-normal cursor-pointer ${
                       isSelected
-                        ? "bg-primary/10 text-primary border-primary/20 glow-primary"
-                        : "text-muted-foreground hover:text-foreground hover:bg-card/40"
+                        ? "bg-primary/15 text-primary border-primary/40 shadow-sm shadow-primary/20"
+                        : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30"
                     }`}
                   >
                     <IconComponent
-                      className={`size-4 ${isSelected ? "text-primary" : "text-muted-foreground"}`}
+                      className={`size-4 shrink-0 ${isSelected ? "text-primary scale-105" : "text-muted-foreground"}`}
                     />
                     <span className="flex-1 text-left">{item.label}</span>
                     {item.badge !== undefined && Number(item.badge) > 0 && (
                       <span
-                        className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${item.badgeColor || "bg-muted text-foreground"}`}
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-bold border ${item.badgeColor || "bg-muted text-foreground border-border"}`}
                       >
                         {item.badge}
                       </span>

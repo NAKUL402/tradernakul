@@ -942,33 +942,35 @@ function CoachPage() {
         </div>
       )}
 
-      {/* 4. Attachment Modal */}
+      {/* 4. Real File & Image Upload Modal */}
       {showAttachmentModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-6 backdrop-blur-sm">
-          <div className="bg-[#0f0f13] border border-zinc-850 rounded-2xl max-w-sm w-full p-6 shadow-2xl relative">
+          <div className="bg-[#0f0f13] border border-zinc-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
             <button onClick={() => setShowAttachmentModal(false)} className="absolute right-4 top-4 text-zinc-400 hover:text-zinc-200 cursor-pointer">
               <X className="size-5" />
             </button>
-            <h3 className="text-sm font-bold text-zinc-100 mb-3">Attach File to AI Chat</h3>
-            <p className="text-[11px] text-zinc-400 mb-4">Select a mock document to attach to your coach analysis prompt:</p>
-            <div className="space-y-2">
-              {[
-                { name: "trade_log_august.csv", size: "12 KB" },
-                { name: "trading_rules_v2.pdf", size: "142 KB" },
-                { name: "pnl_screenshot.png", size: "480 KB" }
-              ].map((f) => (
-                <button
-                  key={f.name}
-                  onClick={() => {
-                    setCustomQuestion(`Attached file [${f.name}]: Please review this file context alongside my question. `);
-                    setShowAttachmentModal(false);
+            <h3 className="text-sm font-bold text-zinc-100 mb-2">Upload Chart Screenshot or Trade File</h3>
+            <p className="text-[11px] text-zinc-400 mb-4">
+              Select an actual chart screenshot, trade image, or CSV/log file from your device for AI review:
+            </p>
+            <div className="space-y-3">
+              <label className="flex flex-col items-center justify-center border-2 border-dashed border-zinc-700 hover:border-purple-500/50 rounded-xl p-5 cursor-pointer bg-zinc-900/40 transition group">
+                <Paperclip className="size-6 text-zinc-500 group-hover:text-purple-400 transition-colors mb-2" />
+                <span className="text-xs font-semibold text-zinc-200">Browse Image or File</span>
+                <span className="text-[10px] text-zinc-500 mt-0.5">PNG, JPG, WEBP, CSV, PDF (Max 10MB)</span>
+                <input
+                  type="file"
+                  accept="image/*,.csv,.pdf,.txt"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setCustomQuestion(`[Uploaded File: ${file.name} (${(file.size / 1024).toFixed(1)} KB)]: Please review this trade chart / document.`);
+                      setShowAttachmentModal(false);
+                    }
                   }}
-                  className="w-full text-left p-3 rounded-lg border border-zinc-800 bg-[#060608] hover:border-zinc-700/60 hover:bg-zinc-900/50 transition text-[11px] flex justify-between cursor-pointer"
-                >
-                  <span className="text-zinc-300 font-bold">{f.name}</span>
-                  <span className="text-zinc-500">{f.size}</span>
-                </button>
-              ))}
+                />
+              </label>
             </div>
           </div>
         </div>
