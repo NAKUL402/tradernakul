@@ -111,7 +111,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://EdgeJournal.site" },
-      { property: "og:image", content: "https://EdgeJournal.site/logo.jpg" },
+      { property: "og:image", content: "https://EdgeJournal.site/logo.png" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Edge Journal" },
       {
@@ -119,14 +119,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "Track, analyze and improve your trading with Edge Journal's AI-powered analytics, equity curves and performance insights.",
       },
-      { name: "twitter:image", content: "https://EdgeJournal.site/logo.jpg" },
+      { name: "twitter:image", content: "https://EdgeJournal.site/logo.png" },
     ],
     links: [
       {
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "icon", href: "/favicon.jpg", type: "image/jpeg" },
+      { rel: "icon", href: "/favicon.png", type: "image/png" },
+      { rel: "shortcut icon", href: "/favicon.png", type: "image/png" },
+      { rel: "apple-touch-icon", href: "/logo.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {

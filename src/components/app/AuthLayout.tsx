@@ -21,7 +21,7 @@ export function AuthLayout({
       <div className="glass relative w-full max-w-md animate-rise rounded-3xl p-6 sm:p-8">
         <Link to="/" className="flex items-center gap-3">
           <img
-            src="/logo.jpg"
+            src="/logo.png"
             alt="Edge Journal Logo"
             className="size-10 rounded-xl object-cover glow-primary"
           />

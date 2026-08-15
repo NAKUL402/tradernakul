@@ -271,7 +271,7 @@ function LoginPage() {
           {/* Logo & Header */}
           <div className="flex flex-col items-center justify-center space-y-4">
             <img
-              src="/logo.jpg"
+              src="/logo.png"
               alt="Edge Journal"
               className="size-20 rounded-[20px] object-cover shadow-lg shadow-primary/20"
             />
