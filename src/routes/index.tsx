@@ -699,9 +699,15 @@ function Dashboard() {
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-6 text-muted-foreground text-xs">
+                <div className="text-center py-6 text-muted-foreground text-xs space-y-2">
+                  <p className="text-[10px] font-bold tracking-wider uppercase">
+                    <span className="text-foreground/90">PLAN. </span>
+                    <span className="text-blue-400 font-extrabold">EXECUTE. </span>
+                    <span className="text-foreground/90">REVIEW. </span>
+                    <span className="text-foreground/90">IMPROVE.</span>
+                  </p>
                   <p>No trades logged yet.</p>
-                  <Link to="/journal" search={{ openModal: true }} className="inline-block mt-2 text-primary font-bold hover:underline">
+                  <Link to="/journal" search={{ openModal: true }} className="inline-block mt-1 text-primary font-bold hover:underline">
                     Add Journal
                   </Link>
                 </div>
@@ -789,9 +795,17 @@ function Dashboard() {
             </div>
 
             {/* 4. Quick Actions Card */}
-            <div className="neon-card neon-glow-purple p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-xs font-bold text-foreground">Quick Actions</h3>
+            <div className="neon-card neon-glow-purple p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xs font-bold text-foreground">Quick Actions</h3>
+                  <p className="text-[10px] font-bold tracking-wider mt-0.5 uppercase">
+                    <span className="text-foreground/90">PLAN. </span>
+                    <span className="text-blue-400 font-extrabold">EXECUTE. </span>
+                    <span className="text-foreground/90">REVIEW. </span>
+                    <span className="text-foreground/90">IMPROVE.</span>
+                  </p>
+                </div>
                 <Zap className="size-3.5 text-muted-foreground" />
               </div>
               <div className="grid grid-cols-2 gap-2.5">
