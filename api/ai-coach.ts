@@ -5,27 +5,40 @@ import { createClient } from "@supabase/supabase-js";
  * POST /api/ai-coach
  * Live AI Integration for Edge Journal Coach.
  *
- * PRIMARY provider:  Groq (llama-3.3-70b-versatile)
- * BACKUP provider:   OpenRouter (openrouter/free route)
+ * PRIMARY PROVIDER:
+ *   Groq - llama-3.3-70b-versatile
  *
- * Fallback logic:
- *   - Groq is ALWAYS tried first.
- *   - OpenRouter is ONLY attempted when Groq has an eligible provider-side failure:
- *       • HTTP 429 (rate limit / quota exhaustion)
- *       • HTTP 5xx (temporary server error)
- *       • Timeout / network failure
- *   - OpenRouter is NEVER called when Groq succeeds.
- *   - Groq 401/403/404 errors are NOT eligible for fallback (our config issue, not provider availability).
- *   - If both providers fail, a clean user-facing error is returned.
- *   - Supabase history-save failures do NOT trigger provider fallback.
+ * BACKUP PROVIDER:
+ *   OpenRouter - openrouter/free
+ *
+ * FALLBACK LOGIC:
+ *   1. Try Groq first when GROQ_API_KEY exists.
+ *   2. If Groq succeeds, return immediately.
+ *   3. If Groq returns 401/403/404/429/5xx, try OpenRouter.
+ *   4. If Groq times out or has a network error, try OpenRouter.
+ *   5. If Groq key is missing, skip Groq and try OpenRouter.
+ *   6. If both providers fail, return a clean 503 error.
+ *   7. Supabase history-save failures never break the AI response.
  */
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Sentinel: typed error used to signal Groq failure is fallback-eligible
-// ─────────────────────────────────────────────────────────────────────────────
+type ChatHistoryItem = {
+  role: string;
+  content: string;
+  isError?: boolean;
+};
+
+type FallbackReason =
+  | "auth"
+  | "not_found"
+  | "rate_limit"
+  | "server_error"
+  | "timeout"
+  | "network";
+
 class GroqFallbackError extends Error {
-  readonly reason: "rate_limit" | "server_error" | "timeout" | "network";
-  constructor(message: string, reason: "rate_limit" | "server_error" | "timeout" | "network") {
+  readonly reason: FallbackReason;
+
+  constructor(message: string, reason: FallbackReason) {
     super(message);
     this.name = "GroqFallbackError";
     this.reason = reason;
@@ -33,100 +46,176 @@ class GroqFallbackError extends Error {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// OpenRouter fallback helper — entirely self-contained
+// Helpers
 // ─────────────────────────────────────────────────────────────────────────────
+
+function cleanEnvValue(value: string | undefined): string {
+  return (value || "").replace(/^["']|["']$/g, "").trim();
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return String(error);
+}
+
+function isTimeoutError(error: unknown): boolean {
+  const message = getErrorMessage(error).toLowerCase();
+
+  return (
+    message.includes("timeout") ||
+    message.includes("timed out") ||
+    message.includes("aborterror") ||
+    message.includes("aborted")
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// OpenRouter fallback
+// ─────────────────────────────────────────────────────────────────────────────
+
 async function callOpenRouter(
   systemText: string,
   filteredHistory: Array<{ role: string; content: string }>,
   userMessage: string,
 ): Promise<string> {
-  const rawOpenRouterKey = process.env["OPENROUTER_API_KEY"] || "";
-  const openRouterKey = rawOpenRouterKey.replace(/^["']|["']$/g, "").trim();
+  const openRouterKey = cleanEnvValue(process.env["OPENROUTER_API_KEY"]);
 
   if (!openRouterKey || openRouterKey.length < 10) {
     throw new Error("OPENROUTER_API_KEY is not configured.");
   }
 
-  // Build the message array in OpenAI-compatible format
-  const messages: Array<{ role: string; content: string }> = [
-    { role: "system", content: systemText },
+  const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
+    {
+      role: "system",
+      content: systemText,
+    },
   ];
+
   for (const item of filteredHistory) {
     messages.push({
-      role: item.role === "model" || item.role === "assistant" ? "assistant" : "user",
+      role:
+        item.role === "model" || item.role === "assistant"
+          ? "assistant"
+          : "user",
       content: item.content,
     });
   }
-  messages.push({ role: "user", content: userMessage.trim() });
 
-  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${openRouterKey.trim()}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": "https://Edge Journal.com",
-      "X-Title": "Edge Journal-AI-Coach",
-    },
-    body: JSON.stringify({
-      model: "openrouter/free", // Validated free route — dispatches to best available free model
-      messages,
-      temperature: 0.7,
-      max_tokens: 1024,
-    }),
-    signal: AbortSignal.timeout(20000), // 20s timeout for OpenRouter (can be slower than Groq)
+  messages.push({
+    role: "user",
+    content: userMessage.trim(),
   });
 
+  const siteUrl =
+    cleanEnvValue(process.env["VITE_SITE_URL"]) ||
+    "https://edgejournal.site";
+
+  const response = await fetch(
+    "https://openrouter.ai/api/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${openRouterKey}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": siteUrl,
+        "X-Title": "Edge Journal AI Coach",
+      },
+      body: JSON.stringify({
+        model: "openrouter/free",
+        messages,
+        temperature: 0.7,
+        max_tokens: 1024,
+      }),
+      signal: AbortSignal.timeout(20000),
+    },
+  );
+
   if (!response.ok) {
-    let errMsg = `OpenRouter API error: HTTP ${response.status}`;
+    let errorMessage = `OpenRouter API error: HTTP ${response.status}`;
+
     try {
-      const errData = (await response.json()) as any;
-      if (errData?.error?.message) errMsg = `OpenRouter error: ${errData.error.message}`;
+      const errorData = (await response.json()) as {
+        error?: {
+          message?: string;
+        };
+      };
+
+      if (errorData?.error?.message) {
+        errorMessage = errorData.error.message;
+      }
     } catch {
-      // ignore JSON parse error on error body
+      // Ignore invalid JSON error body.
     }
-    throw new Error(errMsg);
+
+    throw new Error(errorMessage);
   }
 
-  const data = (await response.json()) as any;
+  const data = (await response.json()) as {
+    choices?: Array<{
+      message?: {
+        content?: string;
+      };
+    }>;
+  };
+
   const text = data?.choices?.[0]?.message?.content;
 
   if (typeof text !== "string" || !text.trim()) {
     throw new Error("OpenRouter returned an empty response.");
   }
 
-  return text;
+  return text.trim();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Main handler
 // ─────────────────────────────────────────────────────────────────────────────
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse,
+) {
   // ── CORS ──────────────────────────────────────────────────────────────────
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization",
+  );
 
   if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
 
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method Not Allowed. Use POST." });
+    return res.status(405).json({
+      error: "Method Not Allowed. Use POST.",
+      code: "METHOD_NOT_ALLOWED",
+    });
   }
 
   try {
     const { message, history = [], tradeContext } = req.body || {};
 
-    if (!message || typeof message !== "string" || !message.trim()) {
+    // ── Validate message ────────────────────────────────────────────────────
+    if (
+      typeof message !== "string" ||
+      !message.trim()
+    ) {
       return res.status(400).json({
         error: "Message string is required in request body.",
         code: "BAD_REQUEST",
       });
     }
 
+    // ── AI system prompt ────────────────────────────────────────────────────
     let systemText = `You are Edge Journal Coach, an elite trading mentor. Your goal is to provide direct, honest, and highly actionable answers about trading, price action, SMC, psychology, and risk management.
 
 STRICT OPERATIONAL RULES:
+
 1. NO PRE-FIXED "QUICK TAKE" OPENINGS:
    - NEVER start your response with a fixed "Quick Take:" header or canned summary unless specifically asked.
    - Address the user's specific query directly and naturally right from the very first word.
@@ -134,239 +223,431 @@ STRICT OPERATIONAL RULES:
 2. ABSOLUTELY NO FAKE / ASSUMED REVIEWS (CRITICAL RULE):
    - If the user asks you to "Review this trade", "Review my chart", "Look at this screenshot", "Analyze this image", "Review this file", or anything visual/file-related, BUT NO actual image or file content is attached/uploaded in the message:
      YOU MUST NEVER INVENT, ASSUME, OR PRETEND TO SEE A CHART OR FILE.
-     YOU MUST CLEARLY AND POLITE DIRECTLY STATE:
+     YOU MUST CLEARLY AND POLITELY STATE:
      "You haven't uploaded a photo, chart screenshot, or file yet. Please upload or attach your trade screenshot/file so I can review it accurately for you."
    - ONLY review a chart, trade image, or attached file when the actual visual data or specific trade details are genuinely provided in the message.
    - Under no circumstances assume trade direction, entry, stop loss, or candlestick patterns that are not provided.
 
 3. CONCISE & ACTIONABLE:
-   - Use punchy, clear lines and actionable bullet points. No long fluff or textbook lectures.
+   - Use punchy, clear lines and actionable bullet points.
+   - No long fluff or textbook lectures.
    - Keep trading advice realistic, disciplined, and strictly risk-focused.
 
 4. NO DISCLAIMERS:
-   - Never say "As an AI...", "Please note that I am a language model...", or "I cannot guarantee...". Keep the conversation authentic and professional.
+   - Never say "As an AI...", "Please note that I am a language model...", or similar statements.
+   - Keep the conversation authentic and professional.
 
 5. LANGUAGE & TONE:
-   - Match the user's language (English, Roman Hindi, Hinglish).
-   - If Roman Hindi/Hinglish (e.g. "bhai meri trade review karo"), reply in natural Roman Hindi/Hinglish while keeping technical trading terms in English.
+   - Match the user's language: English, Roman Hindi, or Hinglish.
+   - If Roman Hindi/Hinglish is used, reply naturally in Roman Hindi/Hinglish while keeping technical trading terms in English.
 
 6. DETAILS ON DEMAND:
-   - Provide deep breakdown only when explicitly asked ("detail mein bata", "explain deeply", "full analysis"). Otherwise, stay clean, crisp, and direct.
+   - Provide a deep breakdown only when explicitly asked:
+     "detail mein bata", "explain deeply", "full analysis", etc.
+   - Otherwise stay clean, crisp, and direct.
 
 7. STATISTICAL INTEGRITY:
-   - If a \`patternSummary\` or \`tradeContext\` is provided below, use ONLY that real statistical data.
-   - Never invent win rates, trades, or metrics. If data is unavailable or insufficient (< 3 trades), explicitly state it.`;
+   - If a patternSummary or tradeContext is provided, use ONLY that real statistical data.
+   - Never invent win rates, trades, profits, losses, or metrics.
+   - If data is unavailable or insufficient, explicitly state that.
+
+8. EDGE JOURNAL CONTEXT:
+   - You are the AI Coach inside Edge Journal.
+   - Focus on helping the user understand their trading process, execution, psychology, risk management, price action, liquidity, structure, and journal data.
+   - Do not invent information from the user's journal.`;
+
     if (tradeContext && typeof tradeContext === "object") {
-      systemText += `\n\nUser's Current Trade Summary:\n${JSON.stringify(tradeContext, null, 2)}`;
+      systemText += `\n\nUser's Current Trade Summary:\n${JSON.stringify(
+        tradeContext,
+        null,
+        2,
+      )}`;
     }
 
-    // ── Format Chat History ─────────────────────────────────────────────────
-    const rawHistory = Array.isArray(history) ? history : [];
+    // ── Format chat history ─────────────────────────────────────────────────
+    const rawHistory: ChatHistoryItem[] = Array.isArray(history)
+      ? history
+      : [];
+
     const filteredHistory = rawHistory
       .filter(
-        (item: { role: string; content: string; isError?: boolean }) =>
-          !item.isError && typeof item.content === "string" && item.content.trim().length > 0,
+        (item) =>
+          !item.isError &&
+          typeof item.content === "string" &&
+          item.content.trim().length > 0,
       )
-      .slice(-10); // Limit to last 10 messages to prevent token overflow
+      .slice(-10)
+      .map((item) => ({
+        role: item.role,
+        content: item.content.trim(),
+      }));
 
-    // Helper to save to Supabase (fire-and-forget — failure must NOT affect AI response)
-    const saveToSupabase = async (reply: string, model: string) => {
+    // ───────────────────────────────────────────────────────────────────────
+    // Supabase history helper
+    // ───────────────────────────────────────────────────────────────────────
+
+    const saveToSupabase = async (
+      reply: string,
+      model: string,
+    ): Promise<void> => {
       try {
         const authHeaderRaw = req.headers.authorization;
-        const authHeader = Array.isArray(authHeaderRaw) ? authHeaderRaw[0] : authHeaderRaw;
-        const supabaseUrl = process.env["VITE_SUPABASE_URL"] || process.env["SUPABASE_URL"];
-        const supabaseAnonKey = process.env["VITE_SUPABASE_ANON_KEY"] || process.env["SUPABASE_ANON_KEY"];
+        const authHeader = Array.isArray(authHeaderRaw)
+          ? authHeaderRaw[0]
+          : authHeaderRaw;
+
+        const supabaseUrl =
+          cleanEnvValue(process.env["VITE_SUPABASE_URL"]) ||
+          cleanEnvValue(process.env["SUPABASE_URL"]);
+
+        const supabaseAnonKey =
+          cleanEnvValue(process.env["VITE_SUPABASE_ANON_KEY"]) ||
+          cleanEnvValue(process.env["SUPABASE_ANON_KEY"]);
 
         if (
-          typeof authHeader === "string" &&
-          typeof supabaseUrl === "string" &&
-          typeof supabaseAnonKey === "string"
+          typeof authHeader !== "string" ||
+          !supabaseUrl ||
+          !supabaseAnonKey
         ) {
-          const token = authHeader.replace("Bearer ", "");
-          const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-            global: { headers: { Authorization: `Bearer ${token}` } },
-          });
-          const authUserRes = await supabase.auth.getUser(token);
-          const user = authUserRes.data?.user;
-          if (user && user.id) {
-            await supabase.from("ai_chat_history").insert({
-              user_id: user.id,
-              user_message: message.trim(),
-              ai_response: reply,
-              model_used: model,
-            });
-            console.log(`[ai-coach] Saved chat history for user ${user.id}`);
-          }
+          return;
         }
-      } catch (dbErr) {
-        // Intentionally swallowed — Supabase failure must never affect the AI response
-        console.error("[ai-coach] Failed to save chat history to Supabase:", dbErr);
+
+        const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+
+        if (!token) {
+          return;
+        }
+
+        const supabase = createClient(
+          supabaseUrl,
+          supabaseAnonKey,
+          {
+            global: {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            },
+          },
+        );
+
+        const authUserRes = await supabase.auth.getUser(token);
+        const user = authUserRes.data?.user;
+
+        if (!user?.id) {
+          return;
+        }
+
+        await supabase.from("ai_chat_history").insert({
+          user_id: user.id,
+          user_message: message.trim(),
+          ai_response: reply,
+          model_used: model,
+        });
+
+        console.log(
+          `[ai-coach] Saved chat history for user ${user.id}`,
+        );
+      } catch (dbError) {
+        // Never allow Supabase history errors to break the AI response.
+        console.error(
+          "[ai-coach] Failed to save chat history to Supabase:",
+          dbError,
+        );
       }
     };
 
-    // =========================================================================
-    // PRIMARY: GROQ
-    // =========================================================================
-    const rawGroqKey = process.env["GROQ_API_KEY"] || "";
-    const groqApiKey = rawGroqKey.replace(/^["']|["']$/g, "").trim();
+    // ───────────────────────────────────────────────────────────────────────
+    // Provider configuration
+    // ───────────────────────────────────────────────────────────────────────
 
-    if (!groqApiKey || groqApiKey === "" || groqApiKey === "your_groq_api_key_here") {
+    const groqApiKey = cleanEnvValue(process.env["GROQ_API_KEY"]);
+    const openRouterApiKey = cleanEnvValue(
+      process.env["OPENROUTER_API_KEY"],
+    );
+
+    // If neither provider is configured, fail clearly.
+    if (!groqApiKey && !openRouterApiKey) {
       return res.status(500).json({
-        error: "GROQ_API_KEY is not configured or invalid.",
-        code: "CONFIG_ERROR",
+        error:
+          "AI service is not configured. Please configure GROQ_API_KEY or OPENROUTER_API_KEY in Vercel.",
+        code: "AI_NOT_CONFIGURED",
       });
     }
 
-    // groqFallbackError will be set when Groq fails with a fallback-eligible condition.
-    // It stays null when Groq succeeds or fails with a non-eligible error (auth, 404, etc.)
+    // ───────────────────────────────────────────────────────────────────────
+    // PRIMARY: GROQ
+    // ───────────────────────────────────────────────────────────────────────
+
     let groqFallbackError: GroqFallbackError | null = null;
 
-    try {
-      console.log("[ai-coach] AI Provider: GROQ (primary)");
+    if (groqApiKey) {
+      try {
+        console.log(
+          "[ai-coach] AI Provider: GROQ (primary)",
+        );
 
-      const groqMessages = [{ role: "system", content: systemText }];
-      for (const item of filteredHistory as Array<{ role: string; content: string }>) {
+        const groqMessages: Array<{
+          role: "system" | "user" | "assistant";
+          content: string;
+        }> = [
+          {
+            role: "system",
+            content: systemText,
+          },
+        ];
+
+        for (const item of filteredHistory) {
+          groqMessages.push({
+            role:
+              item.role === "model" ||
+              item.role === "assistant"
+                ? "assistant"
+                : "user",
+            content: item.content,
+          });
+        }
+
         groqMessages.push({
-          role: item.role === "model" || item.role === "assistant" ? "assistant" : "user",
-          content: item.content,
+          role: "user",
+          content: message.trim(),
         });
-      }
-      groqMessages.push({ role: "user", content: message.trim() });
 
-      const groqResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${groqApiKey.trim()}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
-          messages: groqMessages,
-          temperature: 0.7,
-          max_tokens: 1024,
-        }),
-        signal: AbortSignal.timeout(15000),
-      });
+        const groqResponse = await fetch(
+          "https://api.groq.com/openai/v1/chat/completions",
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${groqApiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "llama-3.3-70b-versatile",
+              messages: groqMessages,
+              temperature: 0.7,
+              max_tokens: 1024,
+            }),
+            signal: AbortSignal.timeout(15000),
+          },
+        );
 
-      if (groqResponse.ok) {
-        // ── GROQ SUCCESS — return immediately, do NOT call OpenRouter ──────
-        const groqData = (await groqResponse.json()) as any;
-        const groqText = groqData.choices?.[0]?.message?.content;
+        // ── GROQ SUCCESS ───────────────────────────────────────────────────
+        if (groqResponse.ok) {
+          const groqData = (await groqResponse.json()) as {
+            choices?: Array<{
+              message?: {
+                content?: string;
+              };
+            }>;
+          };
 
-        if (typeof groqText === "string" && groqText.trim()) {
-          // Fire-and-forget Supabase save
-          saveToSupabase(groqText, "groq-llama-3.3-70b-versatile").catch(console.error);
-          return res.status(200).json({
-            reply: groqText,
-            modelUsed: "groq-llama-3.3-70b-versatile",
-          });
-        } else {
-          // Empty response from Groq — not a provider-availability issue, return error directly
-          return res.status(500).json({
-            error: "Groq returned empty response.",
-            code: "EMPTY_RESPONSE",
-          });
-        }
-      } else {
-        // ── GROQ HTTP ERROR — classify whether fallback is eligible ─────────
-        let errorMsg = `Groq API failed with status ${groqResponse.status}: ${groqResponse.statusText}`;
-        try {
-          const errorData = (await groqResponse.json()) as any;
-          if (errorData?.error?.message) errorMsg = errorData.error.message;
-        } catch {
-          // ignore JSON parse error
-        }
+          const groqText =
+            groqData?.choices?.[0]?.message?.content;
 
-        if (groqResponse.status === 401 || groqResponse.status === 403) {
-          // Auth error — our config issue, NOT a fallback scenario
-          return res.status(groqResponse.status).json({
-            error: `API Key/Project Permission Configuration Error (HTTP ${groqResponse.status}): ${errorMsg}`,
-            code: "UNAUTHORIZED",
-          });
-        }
+          if (
+            typeof groqText === "string" &&
+            groqText.trim()
+          ) {
+            const cleanReply = groqText.trim();
 
-        if (groqResponse.status === 404) {
-          // Model not found — our config issue, NOT a fallback scenario
-          return res.status(404).json({
-            error: `Model Unavailable (HTTP 404): ${errorMsg}`,
-            code: "NOT_FOUND",
-          });
-        }
+            saveToSupabase(
+              cleanReply,
+              "groq-llama-3.3-70b-versatile",
+            ).catch((error) => {
+              console.error(
+                "[ai-coach] Supabase save error:",
+                error,
+              );
+            });
 
-        if (groqResponse.status === 429) {
-          // Rate limit / quota exhaustion — ELIGIBLE for fallback
-          console.warn("[ai-coach] Groq rate-limited (429). Will attempt OpenRouter fallback.");
-          groqFallbackError = new GroqFallbackError(errorMsg, "rate_limit");
-        } else if (groqResponse.status >= 500) {
-          // Groq server error — ELIGIBLE for fallback
-          console.warn(
-            `[ai-coach] Groq server error (${groqResponse.status}). Will attempt OpenRouter fallback.`,
+            return res.status(200).json({
+              reply: cleanReply,
+              modelUsed: "groq-llama-3.3-70b-versatile",
+              provider: "groq",
+            });
+          }
+
+          // Empty Groq response → try backup.
+          groqFallbackError = new GroqFallbackError(
+            "Groq returned an empty response.",
+            "server_error",
           );
-          groqFallbackError = new GroqFallbackError(errorMsg, "server_error");
         } else {
-          // Any other HTTP error (e.g. 400) — return directly, not eligible for fallback
-          return res.status(groqResponse.status).json({
-            error: `Groq API Error: ${errorMsg}`,
-            code: "API_ERROR",
-          });
+          // ── GROQ HTTP ERROR ───────────────────────────────────────────────
+          let errorMessage =
+            `Groq API failed with HTTP ${groqResponse.status}: ${groqResponse.statusText}`;
+
+          try {
+            const errorData = (await groqResponse.json()) as {
+              error?: {
+                message?: string;
+              };
+            };
+
+            if (errorData?.error?.message) {
+              errorMessage = errorData.error.message;
+            }
+          } catch {
+            // Ignore invalid JSON error body.
+          }
+
+          if (
+            groqResponse.status === 401 ||
+            groqResponse.status === 403
+          ) {
+            console.warn(
+              `[ai-coach] Groq authentication/permission error (${groqResponse.status}). Trying OpenRouter fallback.`,
+            );
+
+            groqFallbackError = new GroqFallbackError(
+              errorMessage,
+              "auth",
+            );
+          } else if (groqResponse.status === 404) {
+            console.warn(
+              "[ai-coach] Groq returned 404/model unavailable. Trying OpenRouter fallback.",
+            );
+
+            groqFallbackError = new GroqFallbackError(
+              errorMessage,
+              "not_found",
+            );
+          } else if (groqResponse.status === 429) {
+            console.warn(
+              "[ai-coach] Groq rate-limited (429). Trying OpenRouter fallback.",
+            );
+
+            groqFallbackError = new GroqFallbackError(
+              errorMessage,
+              "rate_limit",
+            );
+          } else if (groqResponse.status >= 500) {
+            console.warn(
+              `[ai-coach] Groq server error (${groqResponse.status}). Trying OpenRouter fallback.`,
+            );
+
+            groqFallbackError = new GroqFallbackError(
+              errorMessage,
+              "server_error",
+            );
+          } else {
+            // Other errors such as malformed request.
+            return res.status(groqResponse.status).json({
+              error: `Groq API Error: ${errorMessage}`,
+              code: "GROQ_API_ERROR",
+            });
+          }
+        }
+      } catch (error) {
+        // ── GROQ NETWORK / TIMEOUT ─────────────────────────────────────────
+        const errorMessage = getErrorMessage(error);
+
+        if (isTimeoutError(error)) {
+          console.warn(
+            "[ai-coach] Groq request timed out. Trying OpenRouter fallback.",
+          );
+
+          groqFallbackError = new GroqFallbackError(
+            errorMessage,
+            "timeout",
+          );
+        } else {
+          console.warn(
+            `[ai-coach] Groq network error: ${errorMessage}. Trying OpenRouter fallback.`,
+          );
+
+          groqFallbackError = new GroqFallbackError(
+            errorMessage,
+            "network",
+          );
         }
       }
-    } catch (err) {
-      // ── GROQ NETWORK / TIMEOUT ERROR — ELIGIBLE for fallback ─────────────
-      const errMsg = err instanceof Error ? err.message : String(err);
-      if (
-        errMsg.includes("TimeoutError") ||
-        errMsg.includes("abort") ||
-        errMsg.includes("timeout")
-      ) {
-        console.warn("[ai-coach] Groq request timed out. Will attempt OpenRouter fallback.");
-        groqFallbackError = new GroqFallbackError(errMsg, "timeout");
-      } else {
-        console.warn(`[ai-coach] Groq network error: ${errMsg}. Will attempt OpenRouter fallback.`);
-        groqFallbackError = new GroqFallbackError(errMsg, "network");
-      }
+    } else {
+      // No Groq key → directly use backup.
+      console.warn(
+        "[ai-coach] GROQ_API_KEY is missing. Skipping Groq and using OpenRouter.",
+      );
+
+      groqFallbackError = new GroqFallbackError(
+        "GROQ_API_KEY is not configured.",
+        "auth",
+      );
     }
 
-    // =========================================================================
-    // BACKUP: OPENROUTER — only reached when Groq had an eligible failure
-    // =========================================================================
+    // ───────────────────────────────────────────────────────────────────────
+    // BACKUP: OPENROUTER
+    // ───────────────────────────────────────────────────────────────────────
+
     if (groqFallbackError) {
+      if (!openRouterApiKey) {
+        return res.status(503).json({
+          error:
+            "Primary AI provider is unavailable and OPENROUTER_API_KEY is not configured.",
+          code: "BACKUP_NOT_CONFIGURED",
+          providerReason: groqFallbackError.reason,
+        });
+      }
+
       console.log(
-        `[ai-coach] AI Provider: OPENROUTER (fallback — Groq reason: ${groqFallbackError.reason})`,
+        `[ai-coach] AI Provider: OPENROUTER fallback (Groq reason: ${groqFallbackError.reason})`,
       );
 
       try {
         const openRouterText = await callOpenRouter(
           systemText,
-          filteredHistory as Array<{ role: string; content: string }>,
+          filteredHistory,
           message,
         );
 
-        // OpenRouter succeeded — return as normal response
-        saveToSupabase(openRouterText, "openrouter-free-backup").catch(console.error);
+        saveToSupabase(
+          openRouterText,
+          "openrouter-free-backup",
+        ).catch((error) => {
+          console.error(
+            "[ai-coach] Supabase save error:",
+            error,
+          );
+        });
+
         return res.status(200).json({
           reply: openRouterText,
           modelUsed: "openrouter-free-backup",
+          provider: "openrouter",
         });
-      } catch (orErr) {
-        // Both providers failed — return a clean user-facing error
-        const orErrMsg = orErr instanceof Error ? orErr.message : String(orErr);
-        console.error("[ai-coach] OpenRouter fallback also failed:", orErrMsg);
+      } catch (openRouterError) {
+        const openRouterErrorMessage =
+          getErrorMessage(openRouterError);
+
+        console.error(
+          "[ai-coach] OpenRouter fallback failed:",
+          openRouterErrorMessage,
+        );
 
         return res.status(503).json({
           error:
-            "Our AI service is currently unavailable. Both primary and backup providers failed. Please try again in a moment.",
+            "Our AI service is currently unavailable. Please try again in a moment.",
           code: "ALL_PROVIDERS_FAILED",
         });
       }
     }
 
-    // Should not reach here — all paths above return or set groqFallbackError
-    return res.status(500).json({ error: "Unexpected handler state.", code: "INTERNAL_ERROR" });
-  } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : "Internal Server Error";
+    // ───────────────────────────────────────────────────────────────────────
+    // Safety fallback
+    // ───────────────────────────────────────────────────────────────────────
+
     return res.status(500).json({
-      error: `AI Coach API Exception: ${errorMsg}`,
+      error: "Unexpected AI provider state.",
+      code: "INTERNAL_ERROR",
+    });
+  } catch (error: unknown) {
+    const errorMessage = getErrorMessage(error);
+
+    console.error(
+      "[ai-coach] Unexpected handler exception:",
+      errorMessage,
+    );
+
+    return res.status(500).json({
+      error: `AI Coach API Exception: ${errorMessage}`,
       code: "INTERNAL_ERROR",
     });
   }
