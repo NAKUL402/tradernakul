@@ -27,128 +27,112 @@ export const WEEKLY_GOLDEN_RULES: WeeklyGoldenRule[] = [
     week: 1,
     title: "Capital Protection First",
     rule: "Your first goal is not to make money. Your first goal is to protect your capital. A disciplined trader survives long enough to become profitable.",
-    principle:
-      "Never risk more than 1% to 2% of your account equity on a single trade setup.",
+    principle: "Never risk more than 1% to 2% of your account equity on a single trade setup.",
     category: "Capital Protection",
   },
   {
     week: 2,
     title: "Liquidity Sweep Awareness",
     rule: "Smart money feeds on retail stop losses. Never buy at support or sell at resistance before a liquidity sweep occurs.",
-    principle:
-      "Wait for session highs or lows to be swept before taking reversal entries.",
+    principle: "Wait for session highs or lows to be swept before taking reversal entries.",
     category: "Liquidity & Execution",
   },
   {
     week: 3,
     title: "The 30-Minute Post-Loss Rule",
     rule: "Revenge trading is an emotional attempt to control an uncontrollable market. Take a mandatory 30-minute break after every loss.",
-    principle:
-      "Step away from screens immediately after a stop out to reset your psychological state.",
+    principle: "Step away from screens immediately after a stop out to reset your psychological state.",
     category: "Psychology",
   },
   {
     week: 4,
     title: "Asymmetric Risk:Reward Ratio",
     rule: "Your win rate does not make you rich; your Risk-to-Reward ratio does. A 40% win rate with a 1:3 RRR builds long-term wealth.",
-    principle:
-      "Refuse setups offering less than 1:2 RRR, regardless of how enticing the pattern looks.",
+    principle: "Refuse setups offering less than 1:2 RRR, regardless of how enticing the pattern looks.",
     category: "Risk Control",
   },
   {
     week: 5,
     title: "Process Over Outcome",
     rule: "A winning trade executed against your plan is a bad trade. A losing trade executed strictly following your plan is a successful trade.",
-    principle:
-      "Evaluate trading success purely by rule adherence, not by short-term monetary results.",
+    principle: "Evaluate trading success purely by rule adherence, not by short-term monetary results.",
     category: "Discipline",
   },
   {
     week: 6,
     title: "Position Sizing Is Your Shield",
-    rule: "If a trade causes anxiety or heart palpitations, your lot size is too large. Size down until entry feels robotic and calm.",
-    principle:
-      "Calculate position size dynamically based on stop loss distance, not fixed lot numbers.",
+    rule: "If a trade causes anxiety, your lot size is too large. Size down until entry feels robotic and calm.",
+    principle: "Calculate position size dynamically based on stop loss distance, not fixed lot numbers.",
     category: "Capital Protection",
   },
   {
     week: 7,
     title: "FOMO Is a Retail Trap",
     rule: "Chasing a candle is paying top price for market noise. Elite traders let price return to their Point of Interest (POI).",
-    principle:
-      "If you miss the initial break, wait patiently for the retest or skip the move entirely.",
+    principle: "If you miss the initial break, wait patiently for the retest or skip the move entirely.",
     category: "Psychology",
   },
   {
     week: 8,
     title: "Cash Is a Valid Position",
-    rule: "Not trading in low-probability market conditions is an active trading edge. Preserving mental capital is as important as money.",
-    principle:
-      "Do not force trades on choppy or news-heavy days without high-conviction setups.",
+    rule: "Not trading in low-probability market conditions is an active trading edge.",
+    principle: "Do not force trades on choppy or news-heavy days without high-conviction setups.",
     category: "Discipline",
   },
   {
     week: 9,
     title: "Robotic Execution Discipline",
-    rule: "Hesitation at entry and early exit at target are signs of trade fear. Once setup is verified, execute without doubt.",
-    principle:
-      "Set entry, stop loss, and take profit, then let the market reach one of them without micro-managing.",
+    rule: "Hesitation at entry and early exit at target are signs of trade fear.",
+    principle: "Set entry, stop loss, and take profit, then let the market reach one of them.",
     category: "Liquidity & Execution",
   },
   {
     week: 10,
     title: "Drawdown Management Strategy",
     rule: "Drawdowns are a natural statistical cost of trading. Cut your position size by 50% during a 3-trade losing streak.",
-    principle:
-      "Protect confidence and bankroll by scaling down risk when market conditions mismatch your strategy.",
+    principle: "Protect confidence and bankroll by scaling down risk when market conditions mismatch your strategy.",
     category: "Risk Control",
   },
   {
     week: 11,
     title: "Session Volatility Alignment",
-    rule: "Trade when institutional volume is active. High probability moves happen during London and New York session overlaps.",
-    principle:
-      "Avoid entering new positions during Asian consolidation unless trading specific range-bound setups.",
+    rule: "Trade when institutional volume is active. High probability moves happen during London and New York sessions.",
+    principle: "Avoid entering new positions during Asian consolidation unless trading a specific range-bound setup.",
     category: "Liquidity & Execution",
   },
   {
     week: 12,
     title: "Overcoming Overconfidence",
     rule: "A winning streak can make you feel invincible. The market is most dangerous when you feel you cannot lose.",
-    principle:
-      "Stick to strict risk parameters even after 5 consecutive winning trades.",
+    principle: "Stick to strict risk parameters even after consecutive winning trades.",
     category: "Psychology",
   },
   {
     week: 13,
     title: "Order Block Validation",
-    rule: "Not all order blocks hold. Only trade order blocks that created market structure breaks (BOS) and left fair value gaps (FVG).",
-    principle:
-      "Filter setups by demanding displacement before placing limit orders at order blocks.",
+    rule: "Not all order blocks hold. Only trade order blocks that created market structure breaks and displacement.",
+    principle: "Filter setups by demanding displacement before placing limit orders at order blocks.",
     category: "Liquidity & Execution",
   },
   {
     week: 14,
     title: "Daily Max Loss Limit",
-    rule: "Set a hard daily loss limit of 2% of total capital. Once hit, close terminals and walk away for the rest of the day.",
-    principle:
-      "Protecting your account from catastrophe days is the key difference between pros and amateurs.",
+    rule: "Set a hard daily loss limit. Once hit, close terminals and walk away for the rest of the day.",
+    principle: "Protecting your account from catastrophe days is critical to long-term survival.",
     category: "Capital Protection",
   },
   {
     week: 15,
     title: "Trade Journaling Discipline",
     rule: "What gets measured gets improved. Journaling every trade with screenshots and emotions is your fastest path to mastery.",
-    principle:
-      "Review weekly trade logs every weekend to identify recurring execution patterns.",
+    principle: "Review weekly trade logs every weekend to identify recurring execution patterns.",
     category: "Discipline",
   },
   {
     week: 16,
     title: "Accepting Market Uncertainty",
     rule: "Every single trade has a random distribution of outcome. Accept risk completely before placing the order.",
-    principle:
-      "If you cannot accept loss on a trade, you are not ready to enter it.",
+    principle: "If you cannot accept loss on a trade, you are not ready to enter it.",
     category: "Psychology",
   },
 ];
@@ -194,11 +178,30 @@ export type ChatMessage = {
   isError?: boolean;
 };
 
+/**
+ * Sends a message to the production/server API.
+ *
+ * IMPORTANT:
+ * We intentionally use a relative URL:
+ * /api/ai-coach
+ *
+ * This means:
+ * - Production -> current Edge Journal domain
+ * - Local development -> current local dev origin
+ *
+ * NEVER hard-code localhost:3001 here.
+ */
 export async function sendChatMessageToAI(
   message: string,
   history: ChatMessage[] = [],
   userTrades: Trade[] = [],
 ): Promise<string> {
+  const cleanMessage = message.trim();
+
+  if (!cleanMessage) {
+    throw new Error("Please enter a message.");
+  }
+
   const summaryContext =
     userTrades.length > 0
       ? {
@@ -211,99 +214,55 @@ export async function sendChatMessageToAI(
 
   const historyToSend = history
     .filter((h) => !h.isError && h.id !== "init-1")
+    .filter((h) => typeof h.content === "string" && h.content.trim())
+    .slice(-10)
     .map((h) => ({
       role: h.role,
       content: h.content,
     }));
 
-  let response: Response | null = null;
-  let attempts = 0;
-  const maxAttempts = 2;
-  let lastErrorMsg = "";
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
 
-  while (attempts < maxAttempts) {
-    attempts++;
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
 
-    try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-      };
-
-      if (session?.access_token) {
-        headers.Authorization = `Bearer ${session.access_token}`;
-      }
-
-      const isDev = import.meta.env.DEV;
-      const baseUrl = isDev ? "http://localhost:3001" : "";
-
-      response = await fetch(`${baseUrl}/api/ai-coach`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          message,
-          history: historyToSend,
-          tradeContext: summaryContext,
-        }),
-        signal: AbortSignal.timeout(20000),
-      });
-
-      // Never retry client-side 4xx errors.
-      if (
-        response.ok ||
-        (response.status >= 400 && response.status < 500)
-      ) {
-        break;
-      }
-
-      lastErrorMsg = `Server returned HTTP ${response.status}`;
-
-      if (attempts < maxAttempts) {
-        console.warn(
-          `[ai-coach-service] HTTP ${response.status}. Retrying (${attempts}/${maxAttempts})...`,
-        );
-
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-      }
-    } catch (networkErr: unknown) {
-      const errorMessage =
-        networkErr instanceof Error
-          ? networkErr.message
-          : String(networkErr);
-
-      lastErrorMsg = `Network/Timeout Error: ${errorMessage}`;
-
-      if (attempts < maxAttempts) {
-        console.warn(
-          `[ai-coach-service] Network error. Retrying (${attempts}/${maxAttempts})...`,
-          errorMessage,
-        );
-
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-      } else {
-        throw new Error(
-          `Cannot reach AI Coach API after ${maxAttempts} attempts. ${
-            errorMessage.includes("Timeout") ||
-            errorMessage.includes("timeout") ||
-            errorMessage.includes("abort")
-              ? "Request timed out."
-              : `Original error: ${errorMessage}`
-          }`,
-        );
-      }
-    }
+  if (session?.access_token) {
+    headers.Authorization = `Bearer ${session.access_token}`;
   }
 
-  if (!response) {
+  let response: Response;
+
+  try {
+    /*
+     * CRITICAL FIX:
+     *
+     * Do NOT use:
+     * http://localhost:3001/api/ai-coach
+     *
+     * Always use the same-origin production/serverless endpoint.
+     */
+    response = await fetch("/api/ai-coach", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        message: cleanMessage,
+        history: historyToSend,
+        tradeContext: summaryContext,
+      }),
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : String(error);
+
     throw new Error(
-      `Failed to communicate with AI Coach: ${lastErrorMsg}`,
+      `AI Coach connection failed. Could not reach /api/ai-coach. ${message}`,
     );
   }
 
-  type CoachResponse = {
+  let data: {
     reply?: string;
     error?: string;
     code?: string;
@@ -311,42 +270,40 @@ export async function sendChatMessageToAI(
     provider?: string;
     rateLimited?: boolean;
     retryAfterSeconds?: number;
-  };
+  } | null = null;
 
-  let data: CoachResponse;
+  const responseText = await response.text();
 
   try {
-    data = (await response.json()) as CoachResponse;
+    data = responseText
+      ? (JSON.parse(responseText) as typeof data)
+      : null;
   } catch {
     throw new Error(
-      `Server returned non-JSON response (HTTP ${response.status}). The AI Coach API may have crashed or is unavailable.`,
+      `AI Coach API returned an invalid response (HTTP ${response.status}).`,
     );
   }
 
   if (!response.ok) {
     if (
       response.status === 429 ||
-      data.code === "RATE_LIMIT" ||
-      data.rateLimited
+      data?.code === "RATE_LIMIT" ||
+      data?.rateLimited
     ) {
-      const waitSec = data.retryAfterSeconds ?? 60;
+      const waitSeconds = data?.retryAfterSeconds ?? 60;
 
       throw new Error(
-        `⏱ AI API rate limit reached. Please wait ${waitSec} seconds before sending another message.`,
+        `AI API rate limit reached. Please wait ${waitSeconds} seconds and try again.`,
       );
     }
 
     throw new Error(
-      data.error ||
-        `Server HTTP ${response.status}: ${response.statusText}`,
+      data?.error ||
+        `AI Coach API failed with HTTP ${response.status}.`,
     );
   }
 
-  if (data.error) {
-    throw new Error(data.error);
-  }
-
-  if (!data.reply || typeof data.reply !== "string") {
+  if (!data?.reply || typeof data.reply !== "string") {
     throw new Error(
       "AI Coach returned an empty response. Please try again.",
     );
@@ -356,11 +313,7 @@ export async function sendChatMessageToAI(
 }
 
 /**
- * Local AI Coach analytics.
- *
- * IMPORTANT:
- * This named export is required by:
- * src/routes/ai-coach.tsx
+ * Generates local AI Coach analytics.
  */
 export function analyzeTradeDataWithAI(
   userTrades: Trade[],
@@ -368,8 +321,7 @@ export function analyzeTradeDataWithAI(
   const weekIdx = getCurrentWeekIndex();
 
   const currentWeeklyRule =
-    WEEKLY_GOLDEN_RULES[weekIdx] ??
-    WEEKLY_GOLDEN_RULES[0]!;
+    WEEKLY_GOLDEN_RULES[weekIdx] || WEEKLY_GOLDEN_RULES[0]!;
 
   const suggestedPrompts = [
     "How do I prevent revenge trading after a stop out?",
@@ -378,7 +330,7 @@ export function analyzeTradeDataWithAI(
     "How can I improve my average Risk-to-Reward ratio?",
   ];
 
-  if (!userTrades || userTrades.length === 0) {
+  if (!userTrades.length) {
     return {
       qualityScore: 78,
       institutionalScore: 74,
@@ -389,29 +341,29 @@ export function analyzeTradeDataWithAI(
       currentWeeklyRule,
 
       topMistakes: [
-        "No live trade logs detected yet. Enter your recent trades to generate institutional analytics.",
-        "Executing trades without logging entry setup & stop loss parameters.",
+        "No live trade logs detected yet. Enter recent trades to generate institutional analytics.",
+        "Trade setup and risk parameters are not yet available for analysis.",
       ],
 
       topStrengths: [
-        "AI Coach engine active and connected to institutional evaluation rules.",
-        "Open access active — ready to analyze your edge instantly upon trade input.",
+        "AI Coach engine is ready for live trade analysis.",
+        "Trade analytics will become more personalized as journal data increases.",
       ],
 
       improvementPlan: [
-        "Phase 1: Log at least 5 live trades with pair name, side (Buy/Sell), entry price and stop loss.",
-        "Phase 2: Maintain a fixed 1% risk per trade and tag setup type (Order Block / Liquidity Sweep).",
-        "Phase 3: Conduct a weekend performance review using AI Coach insights.",
+        "Log at least 5 live trades with pair, direction, entry and stop loss.",
+        "Maintain consistent risk per trade.",
+        "Review your journal every weekend.",
       ],
 
       psychologyText:
-        "Patience is not passive waiting; it is actively refusing low-probability setups. Log your entries to unlock personalized psychological profiling.",
+        "Patience means refusing low-probability setups. Use your journal to identify emotional execution patterns.",
 
       riskReviewText:
-        "Ensure strict risk control of 1% to 2% per trade. Always utilize an automated position sizing calculator prior to execution.",
+        "Maintain strict risk control and calculate position size from your stop-loss distance.",
 
       finalVerdict:
-        "Your AI Mentor is active. Log your trades in the Journal to receive automated institutional grading and edge analysis.",
+        "Your AI Mentor is ready. Log trades in the Journal to unlock personalized edge analysis.",
 
       suggestedPrompts,
     };
@@ -452,70 +404,64 @@ export function analyzeTradeDataWithAI(
             ? "C"
             : "D";
 
-  const bestPair = s.bestPair?.name || "XAUUSD";
-  const worstPair = s.worstPair?.name || "USDJPY";
+  const bestPair = s.bestPair?.name || "N/A";
+  const worstPair = s.worstPair?.name || "N/A";
 
   const bestSetup =
-    bySetup.sort(
-      (a, b) => b.winRate - a.winRate,
-    )[0]?.name || "Order Block";
+    bySetup
+      .slice()
+      .sort((a, b) => b.winRate - a.winRate)[0]?.name ||
+    "Core Setup";
 
   const mistakes: string[] = [];
 
   if (str.loss >= 3) {
     mistakes.push(
-      `Max loss streak reached ${str.loss} trades. Acknowledge emotional tilt and enforce a 30-min post-loss break.`,
+      `Maximum loss streak reached ${str.loss} trades. Enforce a cooling-off period after losses.`,
     );
   }
 
-  if (worstPair !== bestPair) {
+  if (
+    worstPair !== "N/A" &&
+    bestPair !== "N/A" &&
+    worstPair !== bestPair
+  ) {
     mistakes.push(
-      `Suboptimal performance on ${worstPair}. Reduce lot size or eliminate setups on this asset.`,
+      `Performance on ${worstPair} is weaker than your strongest asset. Review whether this asset fits your edge.`,
     );
   }
 
   if (s.avgRRR < 1.8) {
     mistakes.push(
-      `Average Risk:Reward ratio is 1:${s.avgRRR.toFixed(2)}. Target a minimum of 1:2.0 RRR to compound gains.`,
+      `Average Risk:Reward is 1:${s.avgRRR.toFixed(2)}. Focus on higher-quality setups with stronger asymmetric R:R.`,
     );
   }
 
-  if (
-    userTrades.some(
-      (trade) => trade.riskPct > 2.5,
-    )
-  ) {
+  if (userTrades.some((trade) => trade.riskPct > 2.5)) {
     mistakes.push(
-      "Position sizing exceeded 2.5% risk on certain trades. Standardize risk to max 1-2%.",
+      "Some trades exceeded 2.5% risk. Standardize position sizing and protect account capital.",
     );
   }
 
-  if (mistakes.length === 0) {
+  if (!mistakes.length) {
     mistakes.push(
-      "Watch out for news-driven volatility spikes during London open liquidity sweeps.",
+      "No major statistical weakness detected from the available trade data. Continue monitoring execution quality.",
     );
   }
 
   const strengths: string[] = [
-    `Strong win rate on ${bestPair} (${
-      s.bestPair
-        ? s.bestPair.winRate.toFixed(0)
-        : "65"
-    }%). Keep this as your primary asset focus.`,
-
-    `High execution precision on ${bestSetup} setups with positive expected value.`,
-
-    `Consistent trade logging maintained across ${s.total} trades.`,
+    bestPair !== "N/A"
+      ? `Strongest recorded asset: ${bestPair}.`
+      : "Trade data is being tracked.",
+    `Best recorded setup category: ${bestSetup}.`,
+    `Trade journal contains ${s.total} recorded trades.`,
   ];
 
-  const improvementPlan: string[] = [
-    `Phase 1: Focus exclusively on high-conviction ${bestPair} + ${bestSetup} setups. Cut non-core pairs.`,
-
-    "Phase 2: Enforce a strict 1% risk per trade limit with dynamic position sizing.",
-
-    "Phase 3: Implement mandatory 30-minute cooling-off period after any stop loss execution.",
-
-    "Phase 4: Perform weekly review of trade screenshots and emotional state notes.",
+  const improvementPlan = [
+    `Focus analysis around your strongest asset and ${bestSetup} setups.`,
+    "Maintain consistent position sizing and predefined risk.",
+    "Use a cooling-off period after significant losing streaks.",
+    "Review screenshots and execution notes during weekly review.",
   ];
 
   const disciplineScore = Math.min(
@@ -535,23 +481,15 @@ export function analyzeTradeDataWithAI(
 
   const psychologyText =
     `${currentWeeklyRule.rule} ` +
-    `Your win rate is ${s.winRate.toFixed(
-      1,
-    )}%. Maintain robotic execution discipline and ignore short-term outcome noise.`;
+    `Your current recorded win rate is ${s.winRate.toFixed(1)}%.`;
 
   const riskReviewText =
-    `Profit Factor is ${s.profitFactor.toFixed(
-      2,
-    )} and average RRR is 1:${s.avgRRR.toFixed(
-      2,
-    )}. Capital preservation must remain your primary metric of trading excellence.`;
+    `Profit Factor is ${s.profitFactor.toFixed(2)} and average RRR is 1:${s.avgRRR.toFixed(2)}. ` +
+    "Capital preservation remains the primary priority.";
 
   const finalVerdict =
-    `Verdict: Your trading edge is statistically evident. ` +
-    `Net performance is ${
-      s.net >= 0 ? "profitable" : "improving"
-    } (${money(s.net)}). ` +
-    `Maintain 100% adherence to your trading plan rules without deviation.`;
+    `Your current journal data shows ${s.net >= 0 ? "positive" : "negative"} net performance ` +
+    `(${money(s.net)}). Focus on consistent execution rather than individual trade outcomes.`;
 
   return {
     qualityScore,
