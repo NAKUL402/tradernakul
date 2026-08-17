@@ -1,609 +1,608 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { createClient } from "@supabase/supabase-js";
+import {
+  groupStats,
+  money,
+  stats,
+  streaks,
+  aggregateTradePatterns,
+  type Trade,
+} from "./trades";
 
-const GROQ_MODEL = "llama-3.3-70b-versatile";
-const OPENROUTER_MODEL = "openrouter/free";
+import { supabase } from "./supabase";
 
-type ChatHistoryItem = {
-  role: string;
+export type WeeklyGoldenRule = {
+  week: number;
+  title: string;
+  rule: string;
+  principle: string;
+  category:
+    | "Capital Protection"
+    | "Discipline"
+    | "Psychology"
+    | "Liquidity & Execution"
+    | "Risk Control";
+};
+
+export const WEEKLY_GOLDEN_RULES: WeeklyGoldenRule[] = [
+  {
+    week: 1,
+    title: "Capital Protection First",
+    rule: "Your first goal is not to make money. Your first goal is to protect your capital. A disciplined trader survives long enough to become profitable.",
+    principle:
+      "Never risk more than 1% to 2% of your account equity on a single trade setup.",
+    category: "Capital Protection",
+  },
+  {
+    week: 2,
+    title: "Liquidity Sweep Awareness",
+    rule: "Smart money feeds on retail stop losses. Never buy at support or sell at resistance before a liquidity sweep occurs.",
+    principle:
+      "Wait for session highs or lows to be swept before taking reversal entries.",
+    category: "Liquidity & Execution",
+  },
+  {
+    week: 3,
+    title: "The 30-Minute Post-Loss Rule",
+    rule: "Revenge trading is an emotional attempt to control an uncontrollable market. Take a mandatory 30-minute break after every loss.",
+    principle:
+      "Step away from screens immediately after a stop out to reset your psychological state.",
+    category: "Psychology",
+  },
+  {
+    week: 4,
+    title: "Asymmetric Risk:Reward Ratio",
+    rule: "Your win rate does not make you rich; your Risk-to-Reward ratio does. A 40% win rate with a 1:3 RRR builds long-term wealth.",
+    principle:
+      "Refuse setups offering less than 1:2 RRR, regardless of how enticing the pattern looks.",
+    category: "Risk Control",
+  },
+  {
+    week: 5,
+    title: "Process Over Outcome",
+    rule: "A winning trade executed against your plan is a bad trade. A losing trade executed strictly following your plan is a successful trade.",
+    principle:
+      "Evaluate trading success purely by rule adherence, not by short-term monetary results.",
+    category: "Discipline",
+  },
+  {
+    week: 6,
+    title: "Position Sizing Is Your Shield",
+    rule: "If a trade causes anxiety or heart palpitations, your lot size is too large. Size down until entry feels robotic and calm.",
+    principle:
+      "Calculate position size dynamically based on stop loss distance, not fixed lot numbers.",
+    category: "Capital Protection",
+  },
+  {
+    week: 7,
+    title: "FOMO Is a Retail Trap",
+    rule: "Chasing a candle is paying top price for market noise. Elite traders let price return to their Point of Interest (POI).",
+    principle:
+      "If you miss the initial break, wait patiently for the retest or skip the move entirely.",
+    category: "Psychology",
+  },
+  {
+    week: 8,
+    title: "Cash Is a Valid Position",
+    rule: "Not trading in low-probability market conditions is an active trading edge. Preserving mental capital is as important as money.",
+    principle:
+      "Do not force trades on choppy or news-heavy days without high-conviction setups.",
+    category: "Discipline",
+  },
+  {
+    week: 9,
+    title: "Robotic Execution Discipline",
+    rule: "Hesitation at entry and early exit at target are signs of trade fear. Once setup is verified, execute without doubt.",
+    principle:
+      "Set entry, stop loss, and take profit, then let the market reach one of them without micro-managing.",
+    category: "Liquidity & Execution",
+  },
+  {
+    week: 10,
+    title: "Drawdown Management Strategy",
+    rule: "Drawdowns are a natural statistical cost of trading. Cut your position size by 50% during a 3-trade losing streak.",
+    principle:
+      "Protect confidence and bankroll by scaling down risk when market conditions mismatch your strategy.",
+    category: "Risk Control",
+  },
+  {
+    week: 11,
+    title: "Session Volatility Alignment",
+    rule: "Trade when institutional volume is active. High probability moves happen during London and New York session overlaps.",
+    principle:
+      "Avoid entering new positions during Asian consolidation unless trading specific range-bound setups.",
+    category: "Liquidity & Execution",
+  },
+  {
+    week: 12,
+    title: "Overcoming Overconfidence",
+    rule: "A winning streak can make you feel invincible. The market is most dangerous when you feel you cannot lose.",
+    principle:
+      "Stick to strict risk parameters even after 5 consecutive winning trades.",
+    category: "Psychology",
+  },
+  {
+    week: 13,
+    title: "Order Block Validation",
+    rule: "Not all order blocks hold. Only trade order blocks that created market structure breaks (BOS) and left fair value gaps (FVG).",
+    principle:
+      "Filter setups by demanding displacement before placing limit orders at order blocks.",
+    category: "Liquidity & Execution",
+  },
+  {
+    week: 14,
+    title: "Daily Max Loss Limit",
+    rule: "Set a hard daily loss limit of 2% of total capital. Once hit, close terminals and walk away for the rest of the day.",
+    principle:
+      "Protecting your account from catastrophe days is the key difference between pros and amateurs.",
+    category: "Capital Protection",
+  },
+  {
+    week: 15,
+    title: "Trade Journaling Discipline",
+    rule: "What gets measured gets improved. Journaling every trade with screenshots and emotions is your fastest path to mastery.",
+    principle:
+      "Review weekly trade logs every weekend to identify recurring execution patterns.",
+    category: "Discipline",
+  },
+  {
+    week: 16,
+    title: "Accepting Market Uncertainty",
+    rule: "Every single trade has a random distribution of outcome. Accept risk completely before placing the order.",
+    principle:
+      "If you cannot accept loss on a trade, you are not ready to enter it.",
+    category: "Psychology",
+  },
+];
+
+export function getCurrentWeekIndex(): number {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 1);
+
+  const diff =
+    now.getTime() -
+    start.getTime() +
+    (start.getTimezoneOffset() - now.getTimezoneOffset()) * 60000;
+
+  const oneDay = 1000 * 60 * 60 * 24;
+  const dayOfYear = Math.floor(diff / oneDay);
+  const weekNum = Math.floor(dayOfYear / 7);
+
+  return weekNum % WEEKLY_GOLDEN_RULES.length;
+}
+
+export type AICoachAnalysis = {
+  qualityScore: number;
+  institutionalScore: number;
+  disciplineScore: number;
+  patienceScore: number;
+  riskControlScore: number;
+  overallGrade: "A+" | "A" | "B" | "C" | "D";
+  currentWeeklyRule: WeeklyGoldenRule;
+  topMistakes: string[];
+  topStrengths: string[];
+  improvementPlan: string[];
+  psychologyText: string;
+  riskReviewText: string;
+  finalVerdict: string;
+  suggestedPrompts: string[];
+};
+
+export type ChatMessage = {
+  id: string;
+  role: "user" | "assistant";
   content: string;
+  timestamp: string;
   isError?: boolean;
 };
 
-type TradeContext = Record<string, unknown>;
+/**
+ * Sends the user's message to the Edge Journal AI backend.
+ *
+ * The frontend sends only the previous conversation history.
+ * The current message is appended by /api/ai-coach.
+ */
+export async function sendChatMessageToAI(
+  message: string,
+  history: ChatMessage[] = [],
+  userTrades: Trade[] = [],
+): Promise<string> {
+  const summaryContext =
+    userTrades && userTrades.length > 0
+      ? {
+          totalTrades: userTrades.length,
+          stats: stats(userTrades),
+          streaks: streaks(userTrades),
+          patternSummary: aggregateTradePatterns(userTrades),
+        }
+      : null;
 
-function cleanEnvValue(value: string | undefined): string {
-  return (value || "").replace(/^["']|["']$/g, "").trim();
-}
+  const historyToSend = history
+    .filter((h) => !h.isError && h.id !== "init-1")
+    .map((h) => ({
+      role: h.role,
+      content: h.content,
+    }));
 
-function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
+  let response: Response | null = null;
+  let attempts = 0;
+  const maxAttempts = 2;
+  let lastErrorMsg = "";
+
+  while (attempts < maxAttempts) {
+    attempts++;
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      const token = session?.access_token;
+
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
+      const isDev = import.meta.env.DEV;
+      const baseUrl = isDev ? "http://localhost:3001" : "";
+
+      response = await fetch(`${baseUrl}/api/ai-coach`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          message,
+          history: historyToSend,
+          tradeContext: summaryContext,
+        }),
+        signal: AbortSignal.timeout(20000),
+      });
+
+      // Do not retry client-side 4xx errors.
+      if (
+        response.ok ||
+        (response.status >= 400 && response.status < 500)
+      ) {
+        break;
+      }
+
+      lastErrorMsg = `Server returned HTTP ${response.status}`;
+
+      if (attempts < maxAttempts) {
+        console.warn(
+          `[ai-coach-service] HTTP ${response.status}. Retrying (${attempts}/${maxAttempts})...`,
+        );
+
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+    } catch (networkErr: unknown) {
+      const errorMessage =
+        networkErr instanceof Error
+          ? networkErr.message
+          : String(networkErr);
+
+      lastErrorMsg = `Network/Timeout Error: ${errorMessage}`;
+
+      if (attempts < maxAttempts) {
+        console.warn(
+          `[ai-coach-service] Network error. Retrying (${attempts}/${maxAttempts})...`,
+          errorMessage,
+        );
+
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      } else {
+        throw new Error(
+          `Cannot reach AI Coach API after ${maxAttempts} attempts. ${
+            errorMessage.includes("Timeout") ||
+            errorMessage.includes("abort")
+              ? "Request timed out."
+              : `Original error: ${errorMessage}`
+          }`,
+        );
+      }
+    }
   }
 
-  return String(error);
-}
-
-function normalizeRole(role: string): "user" | "assistant" {
-  return role === "assistant" || role === "model" ? "assistant" : "user";
-}
-
-function buildSystemPrompt(tradeContext?: TradeContext): string {
-  let systemText = `You are Edge Journal Coach, an elite trading mentor.
-
-Your job is to provide direct, honest, practical and actionable answers about:
-- Trading
-- Price action
-- Smart Money Concepts (SMC)
-- Liquidity
-- Market structure
-- Order Blocks
-- Inducement
-- Trading psychology
-- Risk management
-- Trade journaling
-- Performance analysis
-
-STRICT RULES:
-
-1. NO FIXED "QUICK TAKE" OPENING
-Never automatically start with "Quick Take:" or any other canned heading.
-Answer the user's actual question naturally from the first sentence.
-
-2. NEVER INVENT A TRADE REVIEW
-If the user asks:
-- Review my trade
-- Review my chart
-- Analyze my screenshot
-- Look at this chart
-- Analyze this image
-- Review this file
-
-and no actual image/file/trade details are available, do NOT pretend to see it.
-
-Instead say clearly:
-"You haven't uploaded a photo, chart screenshot, or file yet. Please upload or attach your trade screenshot/file so I can review it accurately for you."
-
-Never invent:
-- Entry
-- Stop loss
-- Take profit
-- Direction
-- Candlestick pattern
-- Liquidity level
-- Market structure
-- Risk/reward
-- Any other trade detail
-
-3. CONCISE AND ACTIONABLE
-Use short, clear paragraphs and bullets when useful.
-Avoid unnecessary textbook explanations.
-Focus on practical execution.
-
-4. NO AI DISCLAIMERS
-Do not say:
-"As an AI..."
-"I am a language model..."
-or similar statements.
-
-5. LANGUAGE
-Match the user's language.
-
-If the user speaks Roman Hindi/Hinglish, reply naturally in Roman Hindi/Hinglish while keeping trading terminology in English.
-
-6. DETAILS ON DEMAND
-Only give a deep/full breakdown when the user asks for:
-- detail
-- deep analysis
-- full analysis
-- explain deeply
-- step-by-step
-
-Otherwise keep answers concise.
-
-7. STATISTICAL INTEGRITY
-If tradeContext or patternSummary is supplied, use only the actual supplied data.
-Never invent:
-- win rate
-- number of trades
-- profit
-- loss
-- expectancy
-- drawdown
-- streak
-- setup performance
-- instrument performance
-
-If there is insufficient data, clearly say so.
-
-8. RISK DISCIPLINE
-Never encourage reckless risk-taking.
-Keep trading advice disciplined and risk-focused.
-
-9. EDGE JOURNAL CONTEXT
-You are the AI Coach inside Edge Journal.
-When appropriate, help the user understand their own journal data and trading behaviour.
-
-10. DO NOT CLAIM TO HAVE ACCESS TO DATA THAT WAS NOT PROVIDED
-Only use information actually included in the current request, chat history, or tradeContext.`;
-
-  if (tradeContext && typeof tradeContext === "object") {
-    systemText += `
-
-USER'S CURRENT TRADE / JOURNAL CONTEXT:
-${JSON.stringify(tradeContext, null, 2)}
-
-Use this context only when relevant.
-Do not invent or modify its statistics.`;
+  if (!response) {
+    throw new Error(
+      `Failed to communicate with AI Coach: ${lastErrorMsg}`,
+    );
   }
 
-  return systemText;
+  type CoachResponse = {
+    reply?: string;
+    error?: string;
+    code?: string;
+    modelUsed?: string;
+    provider?: string;
+    rateLimited?: boolean;
+    retryAfterSeconds?: number;
+  };
+
+  let data: CoachResponse | null = null;
+
+  try {
+    data = (await response.json()) as CoachResponse;
+  } catch {
+    throw new Error(
+      `Server returned non-JSON response (HTTP ${response.status}). ` +
+        `The AI Coach API may have crashed or is unavailable.`,
+    );
+  }
+
+  if (!response.ok) {
+    if (
+      response.status === 429 ||
+      data?.code === "RATE_LIMIT" ||
+      data?.rateLimited
+    ) {
+      const waitSec = data?.retryAfterSeconds ?? 60;
+
+      throw new Error(
+        `⏱ AI API rate limit reached. Please wait ${waitSec} seconds before sending another message.`,
+      );
+    }
+
+    const errorMessage =
+      data?.error ||
+      `Server HTTP ${response.status}: ${response.statusText}`;
+
+    throw new Error(errorMessage);
+  }
+
+  if (data?.error) {
+    throw new Error(data.error);
+  }
+
+  if (!data?.reply || typeof data.reply !== "string") {
+    throw new Error(
+      "AI Coach returned an empty response. Please try again.",
+    );
+  }
+
+  return data.reply;
 }
 
-function buildMessages(
-  systemText: string,
-  history: ChatHistoryItem[],
-  userMessage: string,
-) {
-  const messages: Array<{
-    role: "system" | "user" | "assistant";
-    content: string;
-  }> = [
-    {
-      role: "system",
-      content: systemText,
-    },
+/**
+ * Generates the local AI Coach analytics shown on the dashboard.
+ *
+ * IMPORTANT:
+ * This export is required by src/routes/ai-coach.tsx.
+ */
+export function analyzeTradeDataWithAI(
+  userTrades: Trade[],
+): AICoachAnalysis {
+  const weekIdx = getCurrentWeekIndex();
+
+  const currentWeeklyRule =
+    WEEKLY_GOLDEN_RULES[weekIdx] ||
+    WEEKLY_GOLDEN_RULES[0]!;
+
+  const suggestedPrompts = [
+    "How do I prevent revenge trading after a stop out?",
+    "What is the best way to trade London Session liquidity sweeps?",
+    "How should I adjust position size during a drawdown?",
+    "How can I improve my average Risk-to-Reward ratio?",
   ];
 
-  for (const item of history) {
-    messages.push({
-      role: normalizeRole(item.role),
-      content: item.content.trim(),
-    });
+  if (!userTrades || userTrades.length === 0) {
+    return {
+      qualityScore: 78,
+      institutionalScore: 74,
+      disciplineScore: 80,
+      patienceScore: 75,
+      riskControlScore: 82,
+      overallGrade: "B",
+      currentWeeklyRule,
+
+      topMistakes: [
+        "No live trade logs detected yet. Enter your recent trades to generate institutional analytics.",
+        "Executing trades without logging entry setup & stop loss parameters.",
+      ],
+
+      topStrengths: [
+        "AI Coach engine active and connected to institutional evaluation rules.",
+        "Open access active — ready to analyze your edge instantly upon trade input.",
+      ],
+
+      improvementPlan: [
+        "Phase 1: Log at least 5 live trades with pair name, side (Buy/Sell), entry price and stop loss.",
+        "Phase 2: Maintain a fixed 1% risk per trade and tag setup type (Order Block / Liquidity Sweep).",
+        "Phase 3: Conduct a weekend performance review using AI Coach insights.",
+      ],
+
+      psychologyText:
+        "Patience is not passive waiting; it is actively refusing low-probability setups. Log your entries to unlock personalized psychological profiling.",
+
+      riskReviewText:
+        "Ensure strict risk control of 1% to 2% per trade. Always utilize an automated position sizing calculator prior to execution.",
+
+      finalVerdict:
+        "Your AI Mentor is active. Log your trades in the Journal to receive automated institutional grading and edge analysis.",
+
+      suggestedPrompts,
+    };
   }
 
-  messages.push({
-    role: "user",
-    content: userMessage.trim(),
-  });
-
-  return messages;
-}
-
-async function callGroq(
-  systemText: string,
-  history: ChatHistoryItem[],
-  userMessage: string,
-): Promise<string> {
-  const groqApiKey = cleanEnvValue(process.env.GROQ_API_KEY);
-
-  if (!groqApiKey) {
-    throw new Error("GROQ_API_KEY is not configured.");
-  }
-
-  const messages = buildMessages(systemText, history, userMessage);
-
-  const response = await fetch(
-    "https://api.groq.com/openai/v1/chat/completions",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${groqApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: GROQ_MODEL,
-        messages,
-        temperature: 0.7,
-        max_tokens: 1024,
-      }),
-      signal: AbortSignal.timeout(15000),
-    },
+  const s = stats(userTrades);
+  const str = streaks(userTrades);
+  const bySetup = groupStats(
+    userTrades,
+    (trade) => trade.setup,
   );
 
-  const responseText = await response.text();
+  const qualityScore = Math.min(
+    99,
+    Math.max(
+      35,
+      Math.round(
+        s.winRate * 0.65 +
+          s.avgRRR * 14,
+      ),
+    ),
+  );
 
-  let responseData: any = null;
+  const institutionalScore = Math.min(
+    98,
+    Math.max(
+      30,
+      Math.round(
+        s.profitFactor * 30 + 22,
+      ),
+    ),
+  );
 
-  try {
-    responseData = responseText ? JSON.parse(responseText) : null;
-  } catch {
-    responseData = null;
-  }
+  const overallGrade:
+    | "A+"
+    | "A"
+    | "B"
+    | "C"
+    | "D" =
+    qualityScore >= 88
+      ? "A+"
+      : qualityScore >= 78
+        ? "A"
+        : qualityScore >= 68
+          ? "B"
+          : qualityScore >= 58
+            ? "C"
+            : "D";
 
-  if (!response.ok) {
-    const providerMessage =
-      responseData?.error?.message ||
-      responseData?.message ||
-      response.statusText ||
-      "Unknown Groq error";
+  const bestPair =
+    s.bestPair?.name || "XAUUSD";
 
-    throw new Error(
-      `Groq HTTP ${response.status}: ${providerMessage}`,
+  const worstPair =
+    s.worstPair?.name || "USDJPY";
+
+  const bestSetup =
+    bySetup.sort(
+      (a, b) => b.winRate - a.winRate,
+    )[0]?.name || "Order Block";
+
+  const mistakes: string[] = [];
+
+  if (str.loss >= 3) {
+    mistakes.push(
+      `Max loss streak reached ${str.loss} trades. Acknowledge emotional tilt and enforce a 30-min post-loss break.`,
     );
   }
 
-  const reply = responseData?.choices?.[0]?.message?.content;
-
-  if (typeof reply !== "string" || !reply.trim()) {
-    throw new Error("Groq returned an empty response.");
-  }
-
-  return reply.trim();
-}
-
-async function callOpenRouter(
-  systemText: string,
-  history: ChatHistoryItem[],
-  userMessage: string,
-): Promise<string> {
-  const openRouterApiKey = cleanEnvValue(
-    process.env.OPENROUTER_API_KEY,
-  );
-
-  if (!openRouterApiKey) {
-    throw new Error("OPENROUTER_API_KEY is not configured.");
-  }
-
-  const messages = buildMessages(systemText, history, userMessage);
-
-  const response = await fetch(
-    "https://openrouter.ai/api/v1/chat/completions",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${openRouterApiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://edgejournal.site",
-        "X-Title": "Edge Journal AI Coach",
-      },
-      body: JSON.stringify({
-        model: OPENROUTER_MODEL,
-        messages,
-        temperature: 0.7,
-        max_tokens: 1024,
-      }),
-      signal: AbortSignal.timeout(20000),
-    },
-  );
-
-  const responseText = await response.text();
-
-  let responseData: any = null;
-
-  try {
-    responseData = responseText ? JSON.parse(responseText) : null;
-  } catch {
-    responseData = null;
-  }
-
-  if (!response.ok) {
-    const providerMessage =
-      responseData?.error?.message ||
-      responseData?.message ||
-      response.statusText ||
-      "Unknown OpenRouter error";
-
-    throw new Error(
-      `OpenRouter HTTP ${response.status}: ${providerMessage}`,
+  if (
+    worstPair &&
+    worstPair !== bestPair
+  ) {
+    mistakes.push(
+      `Suboptimal performance on ${worstPair}. Reduce lot size or eliminate setups on this asset.`,
     );
   }
 
-  const reply = responseData?.choices?.[0]?.message?.content;
-
-  if (typeof reply !== "string" || !reply.trim()) {
-    throw new Error("OpenRouter returned an empty response.");
-  }
-
-  return reply.trim();
-}
-
-async function saveToSupabase(
-  req: VercelRequest,
-  userMessage: string,
-  reply: string,
-  modelUsed: string,
-): Promise<void> {
-  try {
-    const authHeaderRaw = req.headers.authorization;
-
-    const authHeader = Array.isArray(authHeaderRaw)
-      ? authHeaderRaw[0]
-      : authHeaderRaw;
-
-    const supabaseUrl =
-      process.env.VITE_SUPABASE_URL ||
-      process.env.SUPABASE_URL;
-
-    const supabaseAnonKey =
-      process.env.VITE_SUPABASE_ANON_KEY ||
-      process.env.SUPABASE_ANON_KEY;
-
-    if (
-      typeof authHeader !== "string" ||
-      !supabaseUrl ||
-      !supabaseAnonKey
-    ) {
-      return;
-    }
-
-    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
-
-    if (!token) {
-      return;
-    }
-
-    const supabase = createClient(
-      supabaseUrl,
-      supabaseAnonKey,
-      {
-        global: {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      },
-    );
-
-    const authUserResult = await supabase.auth.getUser(token);
-
-    const user = authUserResult.data?.user;
-
-    if (!user?.id) {
-      return;
-    }
-
-    const { error } = await supabase
-      .from("ai_chat_history")
-      .insert({
-        user_id: user.id,
-        user_message: userMessage.trim(),
-        ai_response: reply,
-        model_used: modelUsed,
-      });
-
-    if (error) {
-      console.error(
-        "[ai-coach] Supabase history save failed:",
-        error,
-      );
-
-      return;
-    }
-
-    console.log(
-      `[ai-coach] Chat history saved for user ${user.id}`,
-    );
-  } catch (error) {
-    console.error(
-      "[ai-coach] Supabase history save error:",
-      error,
+  if (s.avgRRR < 1.8) {
+    mistakes.push(
+      `Average Risk:Reward ratio is 1:${s.avgRRR.toFixed(
+        2,
+      )}. Target a minimum of 1:2.0 RRR to compound gains.`,
     );
   }
-}
 
-export default async function handler(
-  req: VercelRequest,
-  res: VercelResponse,
-) {
-  // ---------------------------------------------------------------------------
-  // CORS
-  // ---------------------------------------------------------------------------
+  if (
+    userTrades.some(
+      (trade) => trade.riskPct > 2.5,
+    )
+  ) {
+    mistakes.push(
+      "Position sizing exceeded 2.5% risk on certain trades. Standardize risk to max 1-2%.",
+    );
+  }
 
-  res.setHeader(
-    "Access-Control-Allow-Origin",
-    "*",
+  if (mistakes.length === 0) {
+    mistakes.push(
+      "Watch out for news-driven volatility spikes during London open liquidity sweeps.",
+    );
+  }
+
+  const strengths: string[] = [
+    `Strong win rate on ${bestPair} (${
+      s.bestPair
+        ? s.bestPair.winRate.toFixed(0)
+        : "65"
+    }%). Keep this as your primary asset focus.`,
+
+    `High execution precision on ${bestSetup} setups with positive expected value.`,
+
+    `Consistent trade logging maintained across ${s.total} trades.`,
+  ];
+
+  const improvementPlan: string[] = [
+    `Phase 1: Focus exclusively on high-conviction ${bestPair} + ${bestSetup} setups. Cut non-core pairs.`,
+
+    "Phase 2: Enforce a strict 1% risk per trade limit with dynamic position sizing.",
+
+    "Phase 3: Implement mandatory 30-minute cooling-off period after any stop loss execution.",
+
+    "Phase 4: Perform weekly review of trade screenshots and emotional state notes.",
+  ];
+
+  const disciplineScore = Math.min(
+    96,
+    Math.max(
+      50,
+      Math.round(s.winRate + 22),
+    ),
   );
 
-  res.setHeader(
-    "Access-Control-Allow-Methods",
-    "POST, OPTIONS",
+  const patienceScore = Math.min(
+    95,
+    Math.max(
+      45,
+      Math.round(s.avgRRR * 26),
+    ),
   );
 
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Authorization",
+  const riskControlScore = Math.min(
+    98,
+    Math.max(
+      40,
+      Math.round(s.profitFactor * 32),
+    ),
   );
 
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
+  const psychologyText =
+    `${currentWeeklyRule.rule} ` +
+    `Your win rate is ${s.winRate.toFixed(
+      1,
+    )}%. Maintain robotic execution discipline and ignore short-term outcome noise.`;
 
-  if (req.method !== "POST") {
-    return res.status(405).json({
-      error: "Method Not Allowed. Use POST.",
-      code: "METHOD_NOT_ALLOWED",
-    });
-  }
+  const riskReviewText =
+    `Profit Factor is ${s.profitFactor.toFixed(
+      2,
+    )} and average RRR is 1:${s.avgRRR.toFixed(
+      2,
+    )}. Capital preservation must remain your primary metric of trading excellence.`;
 
-  try {
-    // -------------------------------------------------------------------------
-    // Request body
-    // -------------------------------------------------------------------------
+  const finalVerdict =
+    `Verdict: Your trading edge is statistically evident. ` +
+    `Net performance is ${
+      s.net >= 0
+        ? "profitable"
+        : "improving"
+    } (${money(s.net)}). ` +
+    `Maintain 100% adherence to your trading plan rules without deviation.`;
 
-    const body = req.body || {};
-
-    const message = body.message;
-    const history = body.history;
-    const tradeContext = body.tradeContext;
-
-    if (
-      typeof message !== "string" ||
-      !message.trim()
-    ) {
-      return res.status(400).json({
-        error: "Message string is required in request body.",
-        code: "BAD_REQUEST",
-      });
-    }
-
-    const rawHistory: ChatHistoryItem[] =
-      Array.isArray(history) ? history : [];
-
-    const filteredHistory = rawHistory
-      .filter(
-        (item) =>
-          !item.isError &&
-          typeof item.content === "string" &&
-          item.content.trim().length > 0,
-      )
-      .slice(-10);
-
-    const safeTradeContext =
-      tradeContext &&
-      typeof tradeContext === "object" &&
-      !Array.isArray(tradeContext)
-        ? (tradeContext as TradeContext)
-        : undefined;
-
-    const systemText =
-      buildSystemPrompt(safeTradeContext);
-
-    // -------------------------------------------------------------------------
-    // PRIMARY PROVIDER: GROQ
-    // -------------------------------------------------------------------------
-
-    let groqErrorMessage = "";
-
-    try {
-      console.log(
-        `[ai-coach] Trying Groq model: ${GROQ_MODEL}`,
-      );
-
-      const groqReply = await callGroq(
-        systemText,
-        filteredHistory,
-        message,
-      );
-
-      console.log(
-        "[ai-coach] Groq request succeeded.",
-      );
-
-      // Save history without blocking the AI response.
-      void saveToSupabase(
-        req,
-        message,
-        groqReply,
-        `groq-${GROQ_MODEL}`,
-      );
-
-      return res.status(200).json({
-        reply: groqReply,
-        modelUsed: `groq-${GROQ_MODEL}`,
-        provider: "groq",
-      });
-    } catch (error) {
-      groqErrorMessage = getErrorMessage(error);
-
-      console.warn(
-        `[ai-coach] Groq failed: ${groqErrorMessage}`,
-      );
-
-      // IMPORTANT:
-      // We intentionally continue to OpenRouter for ALL Groq failures.
-      //
-      // This fixes the previous situation where a Groq 404 immediately
-      // stopped the request and the backup provider was never tried.
-    }
-
-    // -------------------------------------------------------------------------
-    // BACKUP PROVIDER: OPENROUTER
-    // -------------------------------------------------------------------------
-
-    try {
-      console.log(
-        `[ai-coach] Groq failed. Trying OpenRouter: ${OPENROUTER_MODEL}`,
-      );
-
-      const openRouterReply = await callOpenRouter(
-        systemText,
-        filteredHistory,
-        message,
-      );
-
-      console.log(
-        "[ai-coach] OpenRouter request succeeded.",
-      );
-
-      void saveToSupabase(
-        req,
-        message,
-        openRouterReply,
-        `openrouter-${OPENROUTER_MODEL}`,
-      );
-
-      return res.status(200).json({
-        reply: openRouterReply,
-        modelUsed: `openrouter-${OPENROUTER_MODEL}`,
-        provider: "openrouter",
-      });
-    } catch (error) {
-      const openRouterErrorMessage =
-        getErrorMessage(error);
-
-      console.error(
-        `[ai-coach] OpenRouter also failed: ${openRouterErrorMessage}`,
-      );
-
-      // -----------------------------------------------------------------------
-      // Both providers failed
-      // -----------------------------------------------------------------------
-
-      const hasGroqKey = Boolean(
-        cleanEnvValue(process.env.GROQ_API_KEY),
-      );
-
-      const hasOpenRouterKey = Boolean(
-        cleanEnvValue(process.env.OPENROUTER_API_KEY),
-      );
-
-      if (!hasGroqKey && !hasOpenRouterKey) {
-        return res.status(500).json({
-          error:
-            "AI providers are not configured. Please configure GROQ_API_KEY or OPENROUTER_API_KEY.",
-          code: "AI_KEYS_MISSING",
-        });
-      }
-
-      if (!hasGroqKey) {
-        return res.status(503).json({
-          error:
-            "The backup AI service is currently unavailable. Please try again in a moment.",
-          code: "OPENROUTER_FAILED",
-        });
-      }
-
-      if (!hasOpenRouterKey) {
-        return res.status(503).json({
-          error:
-            "The primary AI service is currently unavailable and the backup provider is not configured.",
-          code: "GROQ_FAILED_BACKUP_NOT_CONFIGURED",
-        });
-      }
-
-      return res.status(503).json({
-        error:
-          "Our AI service is temporarily unavailable. Please try again in a moment.",
-        code: "ALL_PROVIDERS_FAILED",
-        details: {
-          groq: groqErrorMessage,
-          openrouter: openRouterErrorMessage,
-        },
-      });
-    }
-  } catch (error) {
-    const errorMessage = getErrorMessage(error);
-
-    console.error(
-      "[ai-coach] Unexpected handler error:",
-      errorMessage,
-    );
-
-    return res.status(500).json({
-      error:
-        "AI Coach encountered an unexpected error.",
-      code: "INTERNAL_ERROR",
-    });
-  }
+  return {
+    qualityScore,
+    institutionalScore,
+    disciplineScore,
+    patienceScore,
+    riskControlScore,
+    overallGrade,
+    currentWeeklyRule,
+    topMistakes: mistakes,
+    topStrengths: strengths,
+    improvementPlan,
+    psychologyText,
+    riskReviewText,
+    finalVerdict,
+    suggestedPrompts,
+  };
 }
