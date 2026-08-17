@@ -194,19 +194,13 @@ export type ChatMessage = {
   isError?: boolean;
 };
 
-/**
- * Sends the user's message to the Edge Journal AI backend.
- *
- * The frontend sends only the previous conversation history.
- * The current message is appended by /api/ai-coach.
- */
 export async function sendChatMessageToAI(
   message: string,
   history: ChatMessage[] = [],
   userTrades: Trade[] = [],
 ): Promise<string> {
   const summaryContext =
-    userTrades && userTrades.length > 0
+    userTrades.length > 0
       ? {
           totalTrades: userTrades.length,
           stats: stats(userTrades),
@@ -235,14 +229,12 @@ export async function sendChatMessageToAI(
         data: { session },
       } = await supabase.auth.getSession();
 
-      const token = session?.access_token;
-
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
       };
 
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
+      if (session?.access_token) {
+        headers.Authorization = `Bearer ${session.access_token}`;
       }
 
       const isDev = import.meta.env.DEV;
@@ -259,7 +251,7 @@ export async function sendChatMessageToAI(
         signal: AbortSignal.timeout(20000),
       });
 
-      // Do not retry client-side 4xx errors.
+      // Never retry client-side 4xx errors.
       if (
         response.ok ||
         (response.status >= 400 && response.status < 500)
@@ -295,6 +287,7 @@ export async function sendChatMessageToAI(
         throw new Error(
           `Cannot reach AI Coach API after ${maxAttempts} attempts. ${
             errorMessage.includes("Timeout") ||
+            errorMessage.includes("timeout") ||
             errorMessage.includes("abort")
               ? "Request timed out."
               : `Original error: ${errorMessage}`
@@ -320,42 +313,40 @@ export async function sendChatMessageToAI(
     retryAfterSeconds?: number;
   };
 
-  let data: CoachResponse | null = null;
+  let data: CoachResponse;
 
   try {
     data = (await response.json()) as CoachResponse;
   } catch {
     throw new Error(
-      `Server returned non-JSON response (HTTP ${response.status}). ` +
-        `The AI Coach API may have crashed or is unavailable.`,
+      `Server returned non-JSON response (HTTP ${response.status}). The AI Coach API may have crashed or is unavailable.`,
     );
   }
 
   if (!response.ok) {
     if (
       response.status === 429 ||
-      data?.code === "RATE_LIMIT" ||
-      data?.rateLimited
+      data.code === "RATE_LIMIT" ||
+      data.rateLimited
     ) {
-      const waitSec = data?.retryAfterSeconds ?? 60;
+      const waitSec = data.retryAfterSeconds ?? 60;
 
       throw new Error(
         `⏱ AI API rate limit reached. Please wait ${waitSec} seconds before sending another message.`,
       );
     }
 
-    const errorMessage =
-      data?.error ||
-      `Server HTTP ${response.status}: ${response.statusText}`;
-
-    throw new Error(errorMessage);
+    throw new Error(
+      data.error ||
+        `Server HTTP ${response.status}: ${response.statusText}`,
+    );
   }
 
-  if (data?.error) {
+  if (data.error) {
     throw new Error(data.error);
   }
 
-  if (!data?.reply || typeof data.reply !== "string") {
+  if (!data.reply || typeof data.reply !== "string") {
     throw new Error(
       "AI Coach returned an empty response. Please try again.",
     );
@@ -365,10 +356,11 @@ export async function sendChatMessageToAI(
 }
 
 /**
- * Generates the local AI Coach analytics shown on the dashboard.
+ * Local AI Coach analytics.
  *
  * IMPORTANT:
- * This export is required by src/routes/ai-coach.tsx.
+ * This named export is required by:
+ * src/routes/ai-coach.tsx
  */
 export function analyzeTradeDataWithAI(
   userTrades: Trade[],
@@ -376,7 +368,7 @@ export function analyzeTradeDataWithAI(
   const weekIdx = getCurrentWeekIndex();
 
   const currentWeeklyRule =
-    WEEKLY_GOLDEN_RULES[weekIdx] ||
+    WEEKLY_GOLDEN_RULES[weekIdx] ??
     WEEKLY_GOLDEN_RULES[0]!;
 
   const suggestedPrompts = [
@@ -427,6 +419,7 @@ export function analyzeTradeDataWithAI(
 
   const s = stats(userTrades);
   const str = streaks(userTrades);
+
   const bySetup = groupStats(
     userTrades,
     (trade) => trade.setup,
@@ -436,10 +429,7 @@ export function analyzeTradeDataWithAI(
     99,
     Math.max(
       35,
-      Math.round(
-        s.winRate * 0.65 +
-          s.avgRRR * 14,
-      ),
+      Math.round(s.winRate * 0.65 + s.avgRRR * 14),
     ),
   );
 
@@ -447,18 +437,11 @@ export function analyzeTradeDataWithAI(
     98,
     Math.max(
       30,
-      Math.round(
-        s.profitFactor * 30 + 22,
-      ),
+      Math.round(s.profitFactor * 30 + 22),
     ),
   );
 
-  const overallGrade:
-    | "A+"
-    | "A"
-    | "B"
-    | "C"
-    | "D" =
+  const overallGrade: AICoachAnalysis["overallGrade"] =
     qualityScore >= 88
       ? "A+"
       : qualityScore >= 78
@@ -469,11 +452,8 @@ export function analyzeTradeDataWithAI(
             ? "C"
             : "D";
 
-  const bestPair =
-    s.bestPair?.name || "XAUUSD";
-
-  const worstPair =
-    s.worstPair?.name || "USDJPY";
+  const bestPair = s.bestPair?.name || "XAUUSD";
+  const worstPair = s.worstPair?.name || "USDJPY";
 
   const bestSetup =
     bySetup.sort(
@@ -488,10 +468,7 @@ export function analyzeTradeDataWithAI(
     );
   }
 
-  if (
-    worstPair &&
-    worstPair !== bestPair
-  ) {
+  if (worstPair !== bestPair) {
     mistakes.push(
       `Suboptimal performance on ${worstPair}. Reduce lot size or eliminate setups on this asset.`,
     );
@@ -499,9 +476,7 @@ export function analyzeTradeDataWithAI(
 
   if (s.avgRRR < 1.8) {
     mistakes.push(
-      `Average Risk:Reward ratio is 1:${s.avgRRR.toFixed(
-        2,
-      )}. Target a minimum of 1:2.0 RRR to compound gains.`,
+      `Average Risk:Reward ratio is 1:${s.avgRRR.toFixed(2)}. Target a minimum of 1:2.0 RRR to compound gains.`,
     );
   }
 
@@ -545,26 +520,17 @@ export function analyzeTradeDataWithAI(
 
   const disciplineScore = Math.min(
     96,
-    Math.max(
-      50,
-      Math.round(s.winRate + 22),
-    ),
+    Math.max(50, Math.round(s.winRate + 22)),
   );
 
   const patienceScore = Math.min(
     95,
-    Math.max(
-      45,
-      Math.round(s.avgRRR * 26),
-    ),
+    Math.max(45, Math.round(s.avgRRR * 26)),
   );
 
   const riskControlScore = Math.min(
     98,
-    Math.max(
-      40,
-      Math.round(s.profitFactor * 32),
-    ),
+    Math.max(40, Math.round(s.profitFactor * 32)),
   );
 
   const psychologyText =
@@ -583,9 +549,7 @@ export function analyzeTradeDataWithAI(
   const finalVerdict =
     `Verdict: Your trading edge is statistically evident. ` +
     `Net performance is ${
-      s.net >= 0
-        ? "profitable"
-        : "improving"
+      s.net >= 0 ? "profitable" : "improving"
     } (${money(s.net)}). ` +
     `Maintain 100% adherence to your trading plan rules without deviation.`;
 
