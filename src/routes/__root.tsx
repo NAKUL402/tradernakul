@@ -8,8 +8,9 @@ import {
   Navigate,
   HeadContent,
   Scripts,
+  type ErrorComponentProps,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { lazy, useEffect, type ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
@@ -40,16 +41,17 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error, reset }: ErrorComponentProps) {
   const router = useRouter();
+  const normalizedError = error instanceof Error ? error : new Error(String(error));
 
   useEffect(() => {
     try {
-      reportLovableError(error, { boundary: "tanstack_root_error_component" });
+      reportLovableError(normalizedError, { boundary: "tanstack_root_error_component" });
     } catch (e) {
       console.error("Error reporting exception:", e);
     }
-  }, [error]);
+  }, [normalizedError]);
 
   const handleRefresh = () => {
     try {
@@ -67,7 +69,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
           Edge Journal Dashboard
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          {error?.message?.toLowerCase().includes("session") || error?.message?.toLowerCase().includes("auth")
+          {normalizedError.message.toLowerCase().includes("session") || normalizedError.message.toLowerCase().includes("auth")
             ? "Your session needs to be refreshed."
             : "Something went wrong while loading the application."}
         </p>
@@ -90,6 +92,8 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     </div>
   );
 }
+
+const LazyErrorComponent = lazy(() => Promise.resolve({ default: ErrorComponent }));
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
@@ -140,7 +144,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
-  errorComponent: ErrorComponent,
+  errorComponent: LazyErrorComponent,
 });
 
 function RootShell({ children }: { children: ReactNode }) {
