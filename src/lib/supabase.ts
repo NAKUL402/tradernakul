@@ -9,7 +9,8 @@ import { createClient } from "@supabase/supabase-js";
 
 // Read with direct dot notation — Vite inlines these at build time.
 const _viteUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const _viteKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+const _viteKey = (import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY) as string | undefined;
 
 // SSR / Node.js fallback (for server-side rendering via Nitro)
 const _processUrl =
@@ -18,7 +19,7 @@ const _processUrl =
     : "";
 const _processKey =
   typeof process !== "undefined" && process.env
-    ? (process.env["VITE_SUPABASE_ANON_KEY"] ?? process.env["SUPABASE_ANON_KEY"] ?? "")
+    ? (process.env["VITE_SUPABASE_ANON_KEY"] ?? process.env["VITE_SUPABASE_PUBLISHABLE_KEY"] ?? process.env["SUPABASE_ANON_KEY"] ?? process.env["SUPABASE_PUBLISHABLE_KEY"] ?? "")
     : "";
 
 // Runtime window override (optional escape hatch, never set in prod)
@@ -38,7 +39,6 @@ export const isSupabaseConfigured = Boolean(
   supabaseUrl &&
   supabaseAnonKey &&
   supabaseUrl.startsWith("https://") &&
-  supabaseUrl.includes(".supabase.co") &&
   supabaseAnonKey.length > 20,
 );
 
