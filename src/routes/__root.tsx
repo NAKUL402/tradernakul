@@ -176,7 +176,7 @@ function RootShell({ children }: { children: ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: envScript }} />
       </head>
       <body>
-        {children}
+        <AuthProvider>{children}</AuthProvider>
         <Scripts />
       </body>
     </html>
@@ -310,13 +310,11 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
-    <AuthProvider>
-      <QueryClientProvider client={queryClient}>
-        <AuthGuard>
-          <Outlet />
-        </AuthGuard>
-        <Toaster position="top-center" />
-      </QueryClientProvider>
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthGuard>
+        <Outlet />
+      </AuthGuard>
+      <Toaster position="top-center" />
+    </QueryClientProvider>
   );
 }
