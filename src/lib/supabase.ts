@@ -10,7 +10,7 @@ import { createClient } from "@supabase/supabase-js";
 // Read with direct dot notation — Vite inlines these at build time.
 const _viteUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const _viteKey = (import.meta.env.VITE_SUPABASE_ANON_KEY ||
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY) as string | undefined;
+  import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"]) as string | undefined;
 
 // SSR / Node.js fallback (for server-side rendering via Nitro)
 const _processUrl =
