@@ -6,6 +6,7 @@ import { ArrowRight, Mail, User, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { sendOwnerApprovalEmail } from "@/lib/email-service";
 import { LoginGuide } from "@/components/app/LoginGuide";
+import { lovable } from "@/integrations/lovable";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -162,18 +163,15 @@ function LoginPage() {
           ? window.location.origin
           : (import.meta.env.VITE_SITE_URL as string) || "https://tradernakul.vercel.app";
 
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo,
-          queryParams: {
-            access_type: "offline",
-            prompt: "select_account",
-          },
+      const { error, redirected } = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: redirectTo,
+        extraParams: {
+          prompt: "select_account",
         },
       });
 
       if (error) throw error;
+      if (redirected) return;
       // Browser redirects to Google — on return, onAuthStateChange in auth-context.tsx
       // picks up the session automatically via the URL hash/code exchange.
     } catch (err: any) {

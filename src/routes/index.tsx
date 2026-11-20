@@ -273,12 +273,9 @@ function Dashboard() {
     userTrades.forEach(t => {
       if (!t.entryTime) return;
       const hour = parseInt(t.entryTime.split(":")[0] || "0", 10);
-      if (hour >= 0 && hour < 4) bins[0].count++;
-      else if (hour >= 4 && hour < 8) bins[1].count++;
-      else if (hour >= 8 && hour < 12) bins[2].count++;
-      else if (hour >= 12 && hour < 16) bins[3].count++;
-      else if (hour >= 16 && hour < 20) bins[4].count++;
-      else bins[5].count++;
+      const bucketIndex = Number.isFinite(hour) && hour >= 0 && hour < 24 ? Math.floor(hour / 4) : 5;
+      const bucket = bins[bucketIndex];
+      if (bucket) bucket.count++;
     });
     return bins;
   }, [userTrades, s.total]);
@@ -682,7 +679,7 @@ function Dashboard() {
                     </div>
                     <div>
                       <p className="text-muted-foreground text-[9.5px]">Lots</p>
-                      <p className="font-bold text-foreground">{lastTrade.lotSize || "1"}</p>
+                      <p className="font-bold text-foreground">{lastTrade.lots || "1"}</p>
                     </div>
                     <div>
                       <p className="text-muted-foreground text-[9.5px]">Entry</p>

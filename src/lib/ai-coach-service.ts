@@ -230,7 +230,7 @@ export async function sendChatMessageToAI(
   };
 
   if (session?.access_token) {
-    headers.Authorization = `Bearer ${session.access_token}`;
+    headers["Authorization"] = `Bearer ${session.access_token}`;
   }
 
   let response: Response;
@@ -262,7 +262,7 @@ export async function sendChatMessageToAI(
     );
   }
 
-  let data: {
+  type AiCoachApiResponse = {
     reply?: string;
     error?: string;
     code?: string;
@@ -270,13 +270,14 @@ export async function sendChatMessageToAI(
     provider?: string;
     rateLimited?: boolean;
     retryAfterSeconds?: number;
-  } | null = null;
+  };
+  let data: AiCoachApiResponse | null = null;
 
   const responseText = await response.text();
 
   try {
     data = responseText
-      ? (JSON.parse(responseText) as typeof data)
+      ? (JSON.parse(responseText) as AiCoachApiResponse)
       : null;
   } catch {
     throw new Error(

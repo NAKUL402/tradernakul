@@ -682,6 +682,7 @@ function Reports() {
             <h3 className="text-sm font-bold text-foreground">AI Insights <span className="text-xs text-muted-foreground font-normal">(Based on your trades)</span></h3>
             <Link
               to="/ai-coach"
+              search={{ chat: false }}
               className="text-xs font-semibold text-purple-400 hover:text-purple-300 flex items-center gap-1 transition"
             >
               <span>View Full Analysis</span>

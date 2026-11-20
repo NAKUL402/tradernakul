@@ -316,7 +316,7 @@ export async function fetchUserTrades(): Promise<Trade[]> {
         console.error("[Trades] Supabase fetch error:", error.message);
       } else if (data) {
         isRemoteSuccess = true;
-        let parsedTrades = data.map((t: any) => {
+        let parsedTrades: Trade[] = data.map((t: any): Trade => {
           let parsedTags: string[] = [];
           if (Array.isArray(t.tags)) {
             parsedTags = t.tags;
@@ -391,7 +391,7 @@ export async function fetchUserTrades(): Promise<Trade[]> {
           }
 
           // Fallback to getPublicUrl for any path that couldn't generate a signed URL
-          pathsToSign.forEach((path) => {
+          pathsToSign.forEach((path: string) => {
             if (!urlMap.has(path)) {
               const publicUrl = supabase.storage.from("trade-screenshots").getPublicUrl(path).data?.publicUrl;
               if (publicUrl) {
@@ -400,15 +400,16 @@ export async function fetchUserTrades(): Promise<Trade[]> {
             }
           });
 
-          parsedTrades = parsedTrades.map((t: Trade) => {
-            if (t.screenshot && urlMap.has(t.screenshot)) {
-              return { ...t, screenshot: urlMap.get(t.screenshot)! };
+          parsedTrades = parsedTrades.map((t) => {
+            const signedUrl = urlMap.get(t.screenshot);
+            if (t.screenshot && signedUrl) {
+              return { ...t, screenshot: signedUrl };
             }
             return t;
           });
         }
 
-        remoteTrades = parsedTrades.filter((t) => !deletedIds.has(t.id));
+        remoteTrades = parsedTrades.filter((t: Trade) => !deletedIds.has(t.id));
         setLocalTrades(remoteTrades);
       }
     } catch (err) {
